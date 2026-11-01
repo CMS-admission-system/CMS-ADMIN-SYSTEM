@@ -110,13 +110,13 @@ select option {
 }
 
 select option:checked {
-  background-color: #006747 !important;
+  background-color: #16a34a !important;
   color: #ffffff !important;
 }
 
 input[type="checkbox"],
 input[type="radio"] {
-  accent-color: #006747;
+  accent-color: #16a34a;
 }
 
 label {
