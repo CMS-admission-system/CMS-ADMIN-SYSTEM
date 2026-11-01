@@ -44,6 +44,9 @@ class Settings(BaseSettings):
             url = url.replace("postgres://", "postgresql+psycopg2://", 1)
         elif url.startswith("postgresql://") and "+psycopg2" not in url:
             url = url.replace("postgresql://", "postgresql+psycopg2://", 1)
+        # Strip unsupported query parameters like ?ssl-mode=REQUIRED for PyMySQL compatibility
+        for param in ["?ssl-mode=REQUIRED", "&ssl-mode=REQUIRED", "?ssl-mode=required", "&ssl-mode=required"]:
+            url = url.replace(param, "")
         return url
 
 
