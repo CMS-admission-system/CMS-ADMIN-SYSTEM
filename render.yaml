@@ -18,7 +18,7 @@ services:
       - key: CORS_ORIGINS
         value: "*"
       - key: DATABASE_URL
-        sync: false
+        value: mysql+pymysql://2dqhC13C1WmSRUJ.root:NNCSNv5IG4Gz2ipP@gateway01.ap-southeast-1.prod.aws.tidbcloud.com:4000/cms_admission
       - key: SMTP_HOST
         value: smtp.gmail.com
       - key: SMTP_PORT
