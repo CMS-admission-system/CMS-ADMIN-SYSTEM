@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from .. import models
 from ..database import get_db
+from ..email_template import render_full_admission_email_html
 from ..realtime import emit_realtime_event
 from ..security import create_staff_token, verify_password
 
@@ -188,83 +189,18 @@ def dispatch_status_email(
 
     if is_confirmed:
         subject = f"CMS College of Engineering - Admission Confirmed: {application_id}"
-        body_html = f"""<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"></head>
-<body style="margin: 0; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f7f9f8; color: #2d3748;">
-  <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-    <div style="background-color: #006747; color: #ffffff; padding: 24px; text-align: center;">
-      <h1 style="margin: 0; font-size: 22px; font-weight: 700; letter-spacing: 0.5px;">CMS COLLEGE OF ENGINEERING</h1>
-      <p style="margin: 6px 0 0 0; font-size: 14px; opacity: 0.95;">Admissions Office — Seat Confirmation Notice</p>
-    </div>
-    <div style="padding: 28px 24px;">
-      <p style="font-size: 16px; margin: 0 0 16px 0;">Dear <strong>{student_display}</strong>,</p>
-      <p style="font-size: 15px; line-height: 1.6; margin: 0 0 20px 0;">
-        Congratulations! Your admission at CMS College of Engineering has been officially <strong style="color: #006747;">CONFIRMED</strong>.
-      </p>
-      <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-left: 5px solid #006747; padding: 16px; border-radius: 6px; margin: 20px 0;">
-        <p style="margin: 0 0 8px 0; font-size: 14px;"><strong>Application ID:</strong> <span style="font-size: 16px; font-weight: bold; color: #006747;">{application_id}</span></p>
-        <p style="margin: 0 0 8px 0; font-size: 14px;"><strong>Confirmation Status:</strong> <span style="display: inline-block; background-color: #dcfce7; color: #15803d; padding: 2px 8px; border-radius: 4px; font-weight: 600; font-size: 13px;">Confirmed</span></p>
-        <p style="margin: 0; font-size: 14px;"><strong>Allotted Course:</strong> <strong>{course_display}</strong></p>
-      </div>
-      <h3 style="color: #006747; font-size: 16px; margin: 24px 0 12px 0;">Next Steps for Enrollment:</h3>
-      <ol style="margin: 0 0 24px 0; padding-left: 20px; font-size: 14px; line-height: 1.7; color: #374151;">
-        <li style="margin-bottom: 8px;"><strong>Submit Original Certificates:</strong> Bring original 10th &amp; 12th / Diploma Marksheets, Transfer Certificate (TC), Conduct Certificate, and Community Certificate to the CMS Admissions Office.</li>
-        <li style="margin-bottom: 8px;"><strong>Passport Photographs:</strong> Carry 4 recent passport-size color photographs and 1 copy of your Aadhaar card.</li>
-        <li style="margin-bottom: 8px;"><strong>Fee Settlement:</strong> Complete payment of tuition / admission fee as scheduled and collect your official stamped payment receipt.</li>
-        <li style="margin-bottom: 8px;"><strong>Orientation &amp; Class Schedule:</strong> Watch your email for the upcoming academic orientation schedule and hostel allotment instructions.</li>
-      </ol>
-      <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
-      <p style="font-size: 12px; color: #6b7280; line-height: 1.5; margin: 0;">
-        CMS College of Engineering Admissions Office<br/>
-        Phone: +91 427 244 5566 | Email: {active_settings.SMTP_FROM}
-      </p>
-    </div>
-  </div>
-</body>
-</html>"""
     else:
         subject = f"CMS College of Engineering - Admission Application Enquiring: {application_id}"
-        body_html = f"""<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"></head>
-<body style="margin: 0; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f7f9f8; color: #2d3748;">
-  <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-    <div style="background-color: #006747; color: #ffffff; padding: 24px; text-align: center;">
-      <h1 style="margin: 0; font-size: 22px; font-weight: 700; letter-spacing: 0.5px;">CMS COLLEGE OF ENGINEERING</h1>
-      <p style="margin: 6px 0 0 0; font-size: 14px; opacity: 0.95;">Admissions Office — Application Enquiry Received</p>
-    </div>
-    <div style="padding: 28px 24px;">
-      <p style="font-size: 16px; margin: 0 0 16px 0;">Dear <strong>{student_display}</strong>,</p>
-      <p style="font-size: 15px; line-height: 1.6; margin: 0 0 20px 0;">
-        Thank you for your interest in CMS College of Engineering. Your admission enquiry has been successfully registered.
-      </p>
-      <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-left: 5px solid #006747; padding: 16px; border-radius: 6px; margin: 20px 0;">
-        <p style="margin: 0 0 8px 0; font-size: 14px;"><strong>Application ID:</strong> <span style="font-size: 16px; font-weight: bold; color: #006747;">{application_id}</span></p>
-        <p style="margin: 0 0 8px 0; font-size: 14px;"><strong>Status:</strong> <span style="display: inline-block; background-color: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 4px; font-weight: 600; font-size: 13px;">Enquiring</span></p>
-        <p style="margin: 0; font-size: 14px;"><strong>Selected Programme:</strong> <strong>{course_display}</strong></p>
-      </div>
-      <h3 style="color: #006747; font-size: 16px; margin: 24px 0 12px 0;">Next Steps:</h3>
-      <ol style="margin: 0 0 24px 0; padding-left: 20px; font-size: 14px; line-height: 1.7; color: #374151;">
-        <li style="margin-bottom: 8px;"><strong>Complete Full Admission Form:</strong> Access our portal to complete all personal, parent, and academic information required for admission.</li>
-        <li style="margin-bottom: 8px;"><strong>Prepare Academic Records:</strong> Keep your 10th and 12th marksheets, Transfer Certificate, and Community Certificate ready for review.</li>
-        <li style="margin-bottom: 8px;"><strong>Admission Counseling:</strong> Our admissions counseling team will contact you or you can visit our campus for seat reservation and fee guidance.</li>
-      </ol>
-      <div style="text-align: center; margin: 28px 0;">
-        <a href="{form_link}" style="background-color: #006747; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 15px; display: inline-block; box-shadow: 0 2px 4px rgba(0,103,71,0.25);">Complete Full Admission Form &rarr;</a>
-      </div>
-      <p style="font-size: 13px; color: #6b7280; text-align: center; margin: 0 0 24px 0;">
-        Direct link: <a href="{form_link}" style="color: #006747;">{form_link}</a>
-      </p>
-      <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
-      <p style="font-size: 12px; color: #6b7280; line-height: 1.5; margin: 0;">
-        CMS College of Engineering Admissions Office<br/>
-        Phone: +91 427 244 5566 | Email: {enquiring_email or active_settings.SMTP_FROM}
-      </p>
-    </div>
-  </div>
-</body>
-</html>"""
+
+    body_html = render_full_admission_email_html(
+        application_id=application_id,
+        status=norm_status,
+        student_name=student_display,
+        course_name=course_display,
+        details=application_details,
+        form_link=form_link,
+        college_email=enquiring_email or active_settings.SMTP_FROM,
+    )
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
