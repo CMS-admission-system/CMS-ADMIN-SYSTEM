@@ -96,8 +96,8 @@ def render_full_admission_email_html(
     student_name: str,
     course_name: str,
     details: dict[str, Any] | None,
-    form_link: str,
-    college_email: str,
+    form_link: str = "",
+    college_email: str = "",
 ) -> str:
     """Renders the complete, authentic admission preview form inside the email body."""
     details = details or {}
@@ -290,7 +290,7 @@ def render_full_admission_email_html(
         <p style="font-size: 15px; margin: 0 0 14px; line-height: 1.5;">Dear <strong>{student_display}</strong>,</p>
         <p style="font-size: 14px; line-height: 1.6; margin: 0 0 16px; color: #334155;">{message_intro}</p>
 
-        <div style="background-color: {notice_bg}; border: 1px solid {notice_border}; border-left: 5px solid {notice_border}; padding: 14px 18px; border-radius: 6px; margin: 16px 0;">
+        <div style="background-color: {notice_bg}; border: 1px solid {notice_border}; border-left: 5px solid {notice_border}; padding: 14px 18px; border-radius: 6px; margin: 16px 0 0;">
           <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
             <tr>
               <td style="padding: 4px 0; width: 140px; color: #475569;"><strong>Application ID:</strong></td>
@@ -306,12 +306,6 @@ def render_full_admission_email_html(
             </tr>
           </table>
         </div>
-
-        {"<!-- Confirmed next steps -->" if is_confirmed else f"""
-        <div style="text-align: center; margin: 20px 0 12px;">
-          <a href="{form_link}" style="background-color: #006747; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px; display: inline-block;">View / Complete Application Portal &rarr;</a>
-        </div>
-        """}
       </div>
     </div>
 
