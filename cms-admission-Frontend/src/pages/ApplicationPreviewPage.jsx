@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, CreditCard, Eye, Printer, Save, Send, X } from 'lucide-react';
+import { ArrowLeft, CreditCard, Eye, Printer, Send, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { calculateCutoff, formatDate } from '../utils/helpers';
@@ -568,9 +568,6 @@ export default function ApplicationPreviewPage() {
         <div className="form-actions preview-actions screen-only" style={{ marginTop: '14px' }}>
           <button type="button" className="secondary-btn" onClick={() => navigate('/register?step=9')}>
             <ArrowLeft size={16} /> Previous
-          </button>
-          <button type="button" className="secondary-btn" onClick={handleSaveDraft}>
-            <Save size={16} /> Save Draft
           </button>
           <button type="button" className="secondary-btn" onClick={() => window.print()}>
             <Printer size={16} /> Print Application

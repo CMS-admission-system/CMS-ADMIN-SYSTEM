@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, ArrowRight, Camera, CheckCircle2, Eye, ImagePlus, Save, Search, Trash2, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Camera, CheckCircle2, Eye, ImagePlus, Search, Trash2, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import SignaturePadBox from '../components/SignaturePadBox';
@@ -369,9 +369,14 @@ export default function RegisterPage() {
         && (!formData.guardianMobile || !getIndianMobileError(formData.guardianMobile)),
       ),
       Boolean(
-        formData.transportRequired
-        && (formData.transportRequired === 'No' || String(formData.pickupPoint || formData.busRoute || '').trim())
-        && formData.accommodation
+        formData.accommodation
+        && (
+          formData.accommodation === 'Hostel'
+          || (
+            formData.transportRequired
+            && (formData.transportRequired === 'No' || String(formData.pickupPoint || formData.busRoute || '').trim())
+          )
+        )
       ),
       Boolean(
         formData.hscGroup
@@ -538,14 +543,14 @@ export default function RegisterPage() {
     }
 
     if (currentStep === 6) {
-      if (!formData.transportRequired) {
-        nextErrors.transportRequired = 'Please select Yes or No for Transport Requirement.';
-      }
-      if (formData.transportRequired === 'Yes' && !String(formData.pickupPoint || formData.busRoute || '').trim()) {
-        nextErrors.pickupPoint = 'Pickup point is required when transport is needed.';
-      }
       if (!formData.accommodation) {
         nextErrors.accommodation = 'Choose Hostel or Day Scholar.';
+      } else if (formData.accommodation === 'Day Scholar') {
+        if (!formData.transportRequired) {
+          nextErrors.transportRequired = 'Please select Yes or No for Transport Requirement.';
+        } else if (formData.transportRequired === 'Yes' && !String(formData.pickupPoint || formData.busRoute || '').trim()) {
+          nextErrors.pickupPoint = 'Pickup point is required when transport is needed.';
+        }
       }
     }
 
@@ -879,14 +884,20 @@ export default function RegisterPage() {
       </div>
       <div className="field-group">
         <label htmlFor="email">Email ID (optional)</label>
-        <input
-          id="email"
-          type="email"
-          autoComplete="email"
-          placeholder="student@example.com"
-          value={formData.email || ''}
-          onChange={(event) => updateField('email', event.target.value)}
-        />
+        <div className="email-input-group">
+          <input
+            id="email"
+            type="text"
+            autoComplete="email"
+            placeholder="username"
+            value={(formData.email || '').replace(/@gmail\.com$/i, '')}
+            onChange={(event) => {
+              const username = event.target.value.replace(/@.*$/, '').trim();
+              updateField('email', username ? `${username}@gmail.com` : '');
+            }}
+          />
+          <span aria-hidden="true">@gmail.com</span>
+        </div>
         {errors.email ? <small className="error-text">{errors.email}</small> : null}
       </div>
       <div className="field-group full-width">
@@ -936,26 +947,6 @@ export default function RegisterPage() {
         <label htmlFor="pinCode">PIN Code <span className="required-indicator">*</span></label>
         <input id="pinCode" type="text" required inputMode="numeric" pattern="[0-9]{6}" maxLength={6} value={formData.pinCode || ''} onChange={(event) => updateField('pinCode', event.target.value.replace(/\D/g, '').slice(0, 6))} />
         {errors.pinCode ? <small className="error-text">{errors.pinCode}</small> : null}
-      </div>
-      <div className="field-group">
-        <label htmlFor="consultantName">Consultant Name (optional)</label>
-        <input
-          id="consultantName"
-          type="text"
-          placeholder="Consultant / referral name"
-          value={formData.consultantName || ''}
-          onChange={(event) => updateField('consultantName', event.target.value)}
-        />
-      </div>
-      <div className="field-group">
-        <label htmlFor="organizationName">Organization Name (optional)</label>
-        <input
-          id="organizationName"
-          type="text"
-          placeholder="Organization / consultancy"
-          value={formData.organizationName || ''}
-          onChange={(event) => updateField('organizationName', event.target.value)}
-        />
       </div>
     </div>
   );
@@ -1014,52 +1005,7 @@ export default function RegisterPage() {
 
   const renderAccommodationStep = () => (
     <div className="form-grid">
-      <fieldset className="field-group choice-fieldset">
-        <legend>Transport Requirement <span className="required-indicator">*</span></legend>
-        <div className="choice-grid two-choice-grid">
-          {['Yes', 'No'].map((option) => (
-            <button
-              key={option}
-              type="button"
-              className={`choice-card ${formData.transportRequired === option ? 'active' : ''}`}
-              aria-pressed={formData.transportRequired === option}
-              onClick={() => {
-                setFormData((previous) => ({
-                  ...previous,
-                  transportRequired: option,
-                  transportApplication: option === 'Yes' ? 'Yes' : 'No',
-                  ...(option === 'No' ? { pickupPoint: '', busRoute: '' } : {}),
-                  ...(option === 'Yes' && !previous.accommodation ? { accommodation: 'Day Scholar' } : {}),
-                }));
-                setErrors((previous) => ({ ...previous, transportRequired: '', pickupPoint: '' }));
-              }}
-            >
-              {option === 'Yes' ? 'Yes (Bus Required)' : 'No (Not Required)'}
-            </button>
-          ))}
-        </div>
-        {errors.transportRequired ? <small className="error-text">{errors.transportRequired}</small> : null}
-      </fieldset>
-
-      {formData.transportRequired === 'Yes' ? (
-        <div className="field-group full-width">
-          <label htmlFor="pickupPoint">Pickup Point <span className="required-indicator">*</span></label>
-          <input
-            id="pickupPoint"
-            type="text"
-            required
-            placeholder="Enter boarding / pickup stage (e.g., Gandhipuram, Hope College)"
-            value={formData.pickupPoint || formData.busRoute || ''}
-            onChange={(event) => {
-              updateField('pickupPoint', event.target.value);
-              updateField('busRoute', event.target.value);
-            }}
-          />
-          {errors.pickupPoint ? <small className="error-text">{errors.pickupPoint}</small> : null}
-        </div>
-      ) : null}
-
-      <fieldset className="field-group choice-fieldset">
+      <fieldset className="field-group choice-fieldset full-width">
         <legend>Accommodation Type <span className="required-indicator">*</span></legend>
         <div className="choice-grid two-choice-grid">
           {['Hostel', 'Day Scholar'].map((accommodation) => (
@@ -1074,8 +1020,9 @@ export default function RegisterPage() {
                   accommodation,
                   hostelAccommodation: accommodation === 'Hostel' ? 'Yes' : 'No',
                   hostelApplication: accommodation === 'Hostel' ? 'Yes' : 'No',
+                  ...(accommodation === 'Hostel' ? { transportRequired: 'No', transportApplication: 'No', pickupPoint: '', busRoute: '' } : {}),
                 }));
-                setErrors((previous) => ({ ...previous, accommodation: '' }));
+                setErrors((previous) => ({ ...previous, accommodation: '', transportRequired: '', pickupPoint: '' }));
               }}
             >
               {accommodation}
@@ -1084,6 +1031,54 @@ export default function RegisterPage() {
         </div>
         {errors.accommodation ? <small className="error-text">{errors.accommodation}</small> : null}
       </fieldset>
+
+      {formData.accommodation === 'Day Scholar' ? (
+        <div className="form-grid two-column full-width">
+          <fieldset className="field-group choice-fieldset">
+            <legend>Transport Requirement <span className="required-indicator">*</span></legend>
+            <div className="choice-grid two-choice-grid">
+              {['Yes', 'No'].map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  className={`choice-card ${formData.transportRequired === option ? 'active' : ''}`}
+                  aria-pressed={formData.transportRequired === option}
+                  onClick={() => {
+                    setFormData((previous) => ({
+                      ...previous,
+                      transportRequired: option,
+                      transportApplication: option === 'Yes' ? 'Yes' : 'No',
+                      ...(option === 'No' ? { pickupPoint: '', busRoute: '' } : {}),
+                    }));
+                    setErrors((previous) => ({ ...previous, transportRequired: '', pickupPoint: '' }));
+                  }}
+                >
+                  {option === 'Yes' ? 'Yes' : 'No'}
+                </button>
+              ))}
+            </div>
+            {errors.transportRequired ? <small className="error-text">{errors.transportRequired}</small> : null}
+          </fieldset>
+
+          {formData.transportRequired === 'Yes' ? (
+            <div className="field-group">
+              <label htmlFor="pickupPoint">Pickup Point <span className="required-indicator">*</span></label>
+              <input
+                id="pickupPoint"
+                type="text"
+                required
+                placeholder="Enter boarding / pickup stage (e.g., Gandhipuram, Hope College)"
+                value={formData.pickupPoint || formData.busRoute || ''}
+                onChange={(event) => {
+                  updateField('pickupPoint', event.target.value);
+                  updateField('busRoute', event.target.value);
+                }}
+              />
+              {errors.pickupPoint ? <small className="error-text">{errors.pickupPoint}</small> : null}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 
@@ -1177,9 +1172,8 @@ export default function RegisterPage() {
         </div>
       ))}
       <div className="field-group full-width summary-box cutoff-summary" aria-live="polite">
-        <strong>Automatically calculated cutoff</strong>
-        <p>{cutOffValue === null ? 'Enter valid Mathematics, Physics, and Chemistry marks (0–100 each) to calculate.' : `${cutOffValue.toFixed(2)} / 200`}</p>
-        <small>Cutoff = Mathematics + (Physics / 2) + (Chemistry / 2)</small>
+        <strong>Calculated Cutoff Mark</strong>
+        <p>{cutOffValue === null ? '— / 200' : `${cutOffValue.toFixed(2)} / 200`}</p>
       </div>
     </div>
   );
@@ -1423,11 +1417,6 @@ export default function RegisterPage() {
           <button type="button" className="secondary-btn" onClick={goPrevious}>
             <ArrowLeft size={16} /> Previous
           </button>
-          {currentStep > 3 ? (
-            <button type="button" className="secondary-btn" onClick={handleSaveDraft}>
-              <Save size={16} /> Save Draft
-            </button>
-          ) : null}
           {currentStep < steps.length ? (
             <button type="button" className="primary-btn" onClick={goNext}>
               Next <ArrowRight size={16} />

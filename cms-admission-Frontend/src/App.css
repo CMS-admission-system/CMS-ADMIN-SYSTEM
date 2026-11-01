@@ -439,6 +439,31 @@
   min-width: 0;
 }
 
+.email-input-group {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.email-input-group > span {
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  border: 1px solid rgba(0, 77, 56, 0.2);
+  border-radius: 14px;
+  background: var(--surface-muted);
+  color: var(--text-soft);
+  font-weight: 600;
+  font-size: 0.88rem;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.email-input-group input {
+  min-width: 0;
+  flex: 1;
+}
+
 .progress-bar {
   position: relative;
   width: 100%;
