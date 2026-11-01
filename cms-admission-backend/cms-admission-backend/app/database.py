@@ -7,7 +7,7 @@ _is_sqlite = settings.db_url.startswith("sqlite")
 _connect_args = {}
 if _is_sqlite:
     _connect_args["check_same_thread"] = False
-elif "aivencloud.com" in settings.db_url or "ssl" in settings.DATABASE_URL.lower():
+elif "aivencloud.com" in settings.db_url or "tidbcloud.com" in settings.db_url or "ssl" in settings.DATABASE_URL.lower():
     _connect_args["ssl"] = {}
 
 engine = create_engine(
