@@ -104,6 +104,21 @@ textarea:focus {
   box-shadow: 0 0 0 4px rgba(0, 103, 71, 0.08);
 }
 
+select option {
+  background-color: #ffffff;
+  color: #1f2a2a;
+}
+
+select option:checked {
+  background-color: #006747 !important;
+  color: #ffffff !important;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: #006747;
+}
+
 label {
   display: block;
   margin-bottom: 0.55rem;

@@ -514,22 +514,40 @@
 }
 
 .choice-card {
-  border: 1px solid var(--border);
-  background: #fff;
+  border: 1.5px solid var(--border);
+  background: #ffffff;
   border-radius: 16px;
-  padding: 0.9rem 1rem;
+  padding: 0.9rem 1.1rem;
   text-align: left;
   font-weight: 600;
   min-height: 68px;
   color: var(--text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+.choice-card:hover:not(.active) {
+  border-color: #006747;
+  background: #f4faf6;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 103, 71, 0.12);
 }
 
 .choice-card.active {
-  background: rgba(0, 103, 71, 0.12) !important;
-  border: 2px solid #006747 !important;
-  color: #004d38 !important;
-  box-shadow: 0 0 0 3px rgba(0, 103, 71, 0.16) !important;
+  background: #006747 !important;
+  border: 2px solid #004d38 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 16px rgba(0, 103, 71, 0.35) !important;
   font-weight: 700;
+  transform: translateY(-1px);
+}
+
+.choice-card.active:hover {
+  background: #005339 !important;
+  color: #ffffff !important;
 }
 
 .choice-fieldset {
@@ -2009,7 +2027,7 @@ input[type="number"] {
   border-top: none;
 }
 
-/* Transparent Selection Highlighting */
+/* Selection Highlighting */
 .paper-option {
   display: inline-flex;
   align-items: center;
@@ -2025,11 +2043,11 @@ input[type="number"] {
 }
 
 .paper-option.selected {
-  background-color: rgba(0, 103, 71, 0.13) !important;
-  border: 1.5px solid #006747 !important;
-  color: #004d38 !important;
+  background-color: #006747 !important;
+  border: 1.5px solid #004d38 !important;
+  color: #ffffff !important;
   font-weight: 700 !important;
-  box-shadow: 0 0 0 2px rgba(0, 103, 71, 0.15);
+  box-shadow: 0 0 0 2px rgba(0, 103, 71, 0.2);
 }
 
 .paper-checkbox {
@@ -2046,9 +2064,9 @@ input[type="number"] {
 }
 
 .paper-option.selected .paper-checkbox {
-  border-color: #006747;
-  background-color: #006747;
-  color: #ffffff;
+  border-color: #ffffff;
+  background-color: #ffffff;
+  color: #006747;
 }
 
 /* Courses Grid */
@@ -2073,10 +2091,10 @@ input[type="number"] {
 }
 
 .cms-course-item.selected {
-  background: rgba(0, 103, 71, 0.13) !important;
-  border: 1.5px solid #006747 !important;
+  background: #006747 !important;
+  border: 1.5px solid #004d38 !important;
   font-weight: 700;
-  color: #004d38;
+  color: #ffffff !important;
 }
 
 /* Fees Table */
