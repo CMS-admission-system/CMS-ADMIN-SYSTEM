@@ -7,6 +7,7 @@ import AdmissionPaymentPage from './pages/AdmissionPaymentPage';
 import LoginPage from './pages/LoginPage';
 import OfficerApplicationDetailPage from './pages/OfficerApplicationDetailPage';
 import OfficerDashboardPage from './pages/OfficerDashboardPage';
+import OfficerDocumentEditPage from './pages/OfficerDocumentEditPage';
 import OfficerSettingsPage from './pages/OfficerSettingsPage';
 import RegisterPage from './pages/RegisterPage';
 import StudentWelcomePage from './pages/StudentWelcomePage';
@@ -43,6 +44,7 @@ function AppRoutes() {
         <Route path="/login/:role" element={<LoginPage />} />
 
         <Route path="/officer/dashboard" element={<ProtectedRoute allowedRole="officer"><OfficerDashboardPage /></ProtectedRoute>} />
+        <Route path="/officer/documents" element={<ProtectedRoute allowedRole="officer"><OfficerDocumentEditPage /></ProtectedRoute>} />
         <Route path="/officer/application/:id" element={<ProtectedRoute allowedRole="officer"><OfficerApplicationDetailPage /></ProtectedRoute>} />
         <Route path="/officer/settings" element={<ProtectedRoute allowedRole="officer"><OfficerSettingsPage /></ProtectedRoute>} />
         <Route path="/officer" element={<Navigate to="/officer/dashboard" replace />} />

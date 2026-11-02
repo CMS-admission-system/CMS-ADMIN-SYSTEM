@@ -76,11 +76,8 @@ export default function OfficerApplicationDetailPage() {
 
   const handleConfirm = () => {
     if (application.status !== 'Enquiring') return;
-    const confirmed = window.confirm('Confirm this application and move it to the confirmed list?');
-    if (!confirmed) return;
     saveCurrentChanges();
-    confirmApplication(id, 'Admission Officer');
-    navigate('/officer/dashboard', { replace: true });
+    navigate(`/payment?id=${encodeURIComponent(id)}&from=admin`);
   };
 
   const handleForwardToVC = () => {
@@ -113,8 +110,8 @@ export default function OfficerApplicationDetailPage() {
   const handleWorkflowAction = application.status === 'Enquiring' ? handleConfirm : handleForwardToVC;
 
   return (
-    <main className="page-shell admin-shell">
-      <aside className="admin-sidebar">
+    <main className="page-shell admin-shell officer-shell">
+      <aside className="admin-sidebar officer-top-header">
         <div className="sidebar-brand">
           <img src="/cms-logo.png" alt="CMS logo" className="brand-logo small" />
           <div>
@@ -122,9 +119,14 @@ export default function OfficerApplicationDetailPage() {
             <strong>{application.studentName}</strong>
           </div>
         </div>
+
+        <nav className="admin-nav">
+          <Link to="/officer/dashboard" className="nav-item">Dashboard</Link>
+          <Link to={`/officer/documents?id=${encodeURIComponent(application.id)}`} className="nav-item">Edit Settings</Link>
+        </nav>
       </aside>
 
-      <section className="admin-content">
+      <section className="admin-content" style={{ width: '100%' }}>
         <header className="admin-topbar">
           <div>
             <p className="eyebrow accent">Application review</p>

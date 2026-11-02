@@ -1299,30 +1299,35 @@
   padding: 24px;
 }
 
-.admin-shell.vc-shell {
+.admin-shell.vc-shell,
+.admin-shell.officer-shell {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-.vc-shell .admin-sidebar.vc-top-header {
+.vc-shell .admin-sidebar.vc-top-header,
+.officer-shell .admin-sidebar.officer-top-header {
   min-height: auto;
   width: 100%;
   padding: 20px 24px;
   border-radius: 24px;
 }
 
-.vc-shell .vc-top-header .sidebar-brand {
+.vc-shell .vc-top-header .sidebar-brand,
+.officer-shell .officer-top-header .sidebar-brand {
   margin-bottom: 16px;
 }
 
-.vc-shell .vc-top-header .admin-nav {
+.vc-shell .vc-top-header .admin-nav,
+.officer-shell .officer-top-header .admin-nav {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
 }
 
-.vc-shell .vc-top-header .admin-nav .nav-item {
+.vc-shell .vc-top-header .admin-nav .nav-item,
+.officer-shell .officer-top-header .admin-nav .nav-item {
   width: auto;
   min-width: 160px;
 }
