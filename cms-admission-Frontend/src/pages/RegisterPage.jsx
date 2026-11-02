@@ -244,79 +244,29 @@ const communities = ['OC', 'BC', 'BC(M)', 'MBC & DNC', 'SC', 'SC(A)', 'ST', 'SCC
 export function getHscGroupSubjects(groupValue) {
   if (!groupValue) return [];
   const g = String(groupValue).toLowerCase();
-  if (g.includes('computer science') && g.includes('math')) {
-    return [
-      { key: 'mathematics', label: 'Mathematics', forCutoff: true },
-      { key: 'physicsMarks', label: 'Physics', forCutoff: true },
-      { key: 'chemistryMarks', label: 'Chemistry', forCutoff: true },
-      { key: 'computerScienceMarks', label: 'Computer Science', forCutoff: false },
-    ];
-  }
-  if (g.includes('biology')) {
-    return [
-      { key: 'mathematics', label: 'Mathematics', forCutoff: true },
-      { key: 'physicsMarks', label: 'Physics', forCutoff: true },
-      { key: 'chemistryMarks', label: 'Chemistry', forCutoff: true },
-      { key: 'biologyMarks', label: 'Biology', forCutoff: false },
-    ];
-  }
-  if (g.includes('pure science')) {
-    return [
-      { key: 'physicsMarks', label: 'Physics', forCutoff: false },
-      { key: 'chemistryMarks', label: 'Chemistry', forCutoff: false },
-      { key: 'botanyMarks', label: 'Botany', forCutoff: false },
-      { key: 'zoologyMarks', label: 'Zoology', forCutoff: false },
-    ];
-  }
-  if (g.includes('commerce') && (g.includes('math') || g.includes('business maths'))) {
-    return [
-      { key: 'mathematics', label: 'Business Mathematics', forCutoff: false },
-      { key: 'commerceMarks', label: 'Commerce', forCutoff: false },
-      { key: 'accountancyMarks', label: 'Accountancy', forCutoff: false },
-      { key: 'economicsMarks', label: 'Economics', forCutoff: false },
-    ];
-  }
-  if (g.includes('commerce') || g.includes('computer applications')) {
-    return [
-      { key: 'commerceMarks', label: 'Commerce', forCutoff: false },
-      { key: 'accountancyMarks', label: 'Accountancy', forCutoff: false },
-      { key: 'economicsMarks', label: 'Economics', forCutoff: false },
-      { key: 'computerApplicationsMarks', label: 'Computer Applications', forCutoff: false },
-    ];
-  }
+
+  // TNEA Vocational Stream: Related Maths, Vocational Theory, Vocational Practical
   if (g.includes('vocational')) {
     return [
       { key: 'mathematics', label: 'Related Mathematics', forCutoff: true },
-      { key: 'physicsMarks', label: 'Physics / Vocational Theory', forCutoff: true },
-      { key: 'chemistryMarks', label: 'Chemistry / Practical', forCutoff: true },
-      { key: 'vocationalMarks', label: 'Vocational Subject', forCutoff: false },
+      { key: 'physicsMarks', label: 'Vocational Subject (Theory)', forCutoff: true },
+      { key: 'chemistryMarks', label: 'Vocational Subject (Practical)', forCutoff: true },
     ];
   }
-  if (g.includes('arts') || g.includes('humanities')) {
-    return [
-      { key: 'historyMarks', label: 'History', forCutoff: false },
-      { key: 'politicalScienceMarks', label: 'Political Science', forCutoff: false },
-      { key: 'economicsMarks', label: 'Economics', forCutoff: false },
-      { key: 'otherSubjectMarks', label: 'Optional Subject', forCutoff: false },
-    ];
-  }
+
+  // TNEA Academic Streams: Mathematics, Physics & Chemistry required for Engineering Cutoff
   return [
-    { key: 'mathematics', label: 'Mathematics / Main Subject 1', forCutoff: true },
-    { key: 'physicsMarks', label: 'Physics / Main Subject 2', forCutoff: true },
-    { key: 'chemistryMarks', label: 'Chemistry / Main Subject 3', forCutoff: true },
-    { key: 'otherSubjectMarks', label: 'Subject 4', forCutoff: false },
+    { key: 'mathematics', label: 'Mathematics', forCutoff: true },
+    { key: 'physicsMarks', label: 'Physics', forCutoff: true },
+    { key: 'chemistryMarks', label: 'Chemistry', forCutoff: true },
   ];
 }
 
 const hscGroupOptions = [
-  'Computer Science (Maths, Physics, Chemistry, Computer Science)',
-  'Biology (Maths, Physics, Chemistry, Biology)',
-  'Pure Science (Physics, Chemistry, Botany, Zoology)',
-  'Commerce with Mathematics (Commerce, Accountancy, Economics, Business Maths)',
-  'Commerce with Computer Applications (Commerce, Accountancy, Economics, Computer Applications)',
-  'Arts / Humanities',
-  'Vocational Stream',
-  'Others',
+  'HSC Academic: Mathematics, Physics, Chemistry & Computer Science',
+  'HSC Academic: Mathematics, Physics, Chemistry & Biology',
+  'HSC Academic: Mathematics, Physics, Chemistry & Other Elective',
+  'HSC Vocational Stream: Related Mathematics & Vocational Subjects (Theory & Practical)',
 ];
 
 function getIndianMobileError(value) {

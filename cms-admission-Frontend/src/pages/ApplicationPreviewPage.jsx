@@ -238,9 +238,6 @@ export default function ApplicationPreviewPage() {
                     </div>
                   )}
                 </div>
-                <div className="cms-excellence-badge">
-                  20 YEARS OF<br />EDUCATIONAL EXCELLENCE
-                </div>
               </div>
             </div>
 
@@ -417,11 +414,11 @@ export default function ApplicationPreviewPage() {
           <table className="cms-paper-table" style={{ textAlign: 'center', marginTop: '-1px' }}>
             <thead>
               <tr>
-                <th style={{ textAlign: 'center', width: '20%' }}>MATHS</th>
-                <th style={{ textAlign: 'center', width: '25%' }}>PHYSICS (THEORY + PRACTICAL)</th>
-                <th style={{ textAlign: 'center', width: '25%' }}>CHEMISTRY (THEORY + PRACTICAL)</th>
-                <th style={{ textAlign: 'center', width: '15%' }}>CUT-OFF MARKS</th>
-                <th style={{ textAlign: 'center', width: '15%' }}>TOTAL</th>
+                <th style={{ textAlign: 'center', width: '20%' }}>{String(draft.hscGroup || '').toLowerCase().includes('vocational') ? 'RELATED MATHS' : 'MATHS'}</th>
+                <th style={{ textAlign: 'center', width: '25%' }}>{String(draft.hscGroup || '').toLowerCase().includes('vocational') ? 'VOCATIONAL THEORY' : 'PHYSICS (THEORY + PRACTICAL)'}</th>
+                <th style={{ textAlign: 'center', width: '25%' }}>{String(draft.hscGroup || '').toLowerCase().includes('vocational') ? 'VOCATIONAL PRACTICAL' : 'CHEMISTRY (THEORY + PRACTICAL)'}</th>
+                <th style={{ textAlign: 'center', width: '15%' }}>CUT-OFF (200)</th>
+                <th style={{ textAlign: 'center', width: '15%' }}>TOTAL (600)</th>
               </tr>
             </thead>
             <tbody>
