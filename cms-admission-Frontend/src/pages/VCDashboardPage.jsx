@@ -6,7 +6,7 @@ import { downloadApplicationsCsv, formatDate } from '../utils/helpers';
 
 export default function VCDashboardPage() {
   const navigate = useNavigate();
-  const { applications, auth, logoutDemoUser, isLiveConnected } = useAppContext();
+  const { applications, auth, logoutDemoUser } = useAppContext();
   const sentToVC = applications.filter((app) => app.status === 'Sent to VC' || app.status === 'Confirmed' || app.status === 'Confirm');
   const [searchTerm, setSearchTerm] = useState('');
   const normalizedSearch = searchTerm.trim().toLocaleLowerCase();
@@ -29,7 +29,7 @@ export default function VCDashboardPage() {
 
   return (
     <main className="page-shell admin-shell vc-shell">
-      <aside className="admin-sidebar">
+      <aside className="admin-sidebar vc-top-header">
         <div className="sidebar-brand">
           <img src="/cms-logo.png" alt="CMS logo" className="brand-logo small" />
           <div>
@@ -51,35 +51,9 @@ export default function VCDashboardPage() {
             <h2>{auth.username || 'Vice-Chairman'}</h2>
           </div>
           <div className="toolbar" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontSize: '12px',
-              fontWeight: 600,
-              color: isLiveConnected ? '#15803d' : '#6b7280',
-              backgroundColor: isLiveConnected ? '#dcfce7' : '#f3f4f6',
-              padding: '4px 10px',
-              borderRadius: '999px',
-              border: `1px solid ${isLiveConnected ? '#bbf7d0' : '#e5e7eb'}`
-            }}>
-              <span style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                backgroundColor: isLiveConnected ? '#16a34a' : '#9ca3af',
-                boxShadow: isLiveConnected ? '0 0 0 2px rgba(34,197,94,0.3)' : 'none'
-              }}></span>
-              {isLiveConnected ? 'Live Central Sync' : 'Reconnecting...'}
-            </span>
             <button type="button" className="secondary-btn compact" onClick={handleCsvExport}><Download size={16} /> Export Excel/CSV</button>
           </div>
         </header>
-
-        <div className="stats-grid">
-          <div className="stat-card"><span>Sent to VC</span><strong>{sentToVC.length}</strong></div>
-          <div className="stat-card"><span>Matching records</span><strong>{filteredSentToVC.length}</strong></div>
-        </div>
 
         <div className="content-panel table-card">
           <div className="section-header space-between">

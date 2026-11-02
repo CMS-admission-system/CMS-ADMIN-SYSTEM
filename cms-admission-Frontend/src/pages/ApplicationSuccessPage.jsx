@@ -32,9 +32,6 @@ export default function ApplicationSuccessPage() {
         </div>
 
         <div className="cta-row success-actions">
-          <Link to="/officer/dashboard" className="primary-btn" style={{ background: '#006747', color: '#ffffff' }}>
-            Go to Admin Dashboard
-          </Link>
           <Link to="/" className="secondary-btn">Back to home</Link>
           <button type="button" className="secondary-btn" onClick={() => window.print()}>
             <Printer size={16} /> Print

@@ -240,12 +240,73 @@ const indianStatesAndTerritories = [
 ];
 
 const communities = ['OC', 'BC', 'BC(M)', 'MBC & DNC', 'SC', 'SC(A)', 'ST', 'SCC'];
-const requiredMarks = ['mathematics', 'physicsMarks', 'chemistryMarks'];
-const markLabels = {
-  mathematics: 'Mathematics',
-  physicsMarks: 'Physics',
-  chemistryMarks: 'Chemistry',
-};
+
+export function getHscGroupSubjects(groupValue) {
+  if (!groupValue) return [];
+  const g = String(groupValue).toLowerCase();
+  if (g.includes('computer science') && g.includes('math')) {
+    return [
+      { key: 'mathematics', label: 'Mathematics', forCutoff: true },
+      { key: 'physicsMarks', label: 'Physics', forCutoff: true },
+      { key: 'chemistryMarks', label: 'Chemistry', forCutoff: true },
+      { key: 'computerScienceMarks', label: 'Computer Science', forCutoff: false },
+    ];
+  }
+  if (g.includes('biology')) {
+    return [
+      { key: 'mathematics', label: 'Mathematics', forCutoff: true },
+      { key: 'physicsMarks', label: 'Physics', forCutoff: true },
+      { key: 'chemistryMarks', label: 'Chemistry', forCutoff: true },
+      { key: 'biologyMarks', label: 'Biology', forCutoff: false },
+    ];
+  }
+  if (g.includes('pure science')) {
+    return [
+      { key: 'physicsMarks', label: 'Physics', forCutoff: false },
+      { key: 'chemistryMarks', label: 'Chemistry', forCutoff: false },
+      { key: 'botanyMarks', label: 'Botany', forCutoff: false },
+      { key: 'zoologyMarks', label: 'Zoology', forCutoff: false },
+    ];
+  }
+  if (g.includes('commerce') && (g.includes('math') || g.includes('business maths'))) {
+    return [
+      { key: 'mathematics', label: 'Business Mathematics', forCutoff: false },
+      { key: 'commerceMarks', label: 'Commerce', forCutoff: false },
+      { key: 'accountancyMarks', label: 'Accountancy', forCutoff: false },
+      { key: 'economicsMarks', label: 'Economics', forCutoff: false },
+    ];
+  }
+  if (g.includes('commerce') || g.includes('computer applications')) {
+    return [
+      { key: 'commerceMarks', label: 'Commerce', forCutoff: false },
+      { key: 'accountancyMarks', label: 'Accountancy', forCutoff: false },
+      { key: 'economicsMarks', label: 'Economics', forCutoff: false },
+      { key: 'computerApplicationsMarks', label: 'Computer Applications', forCutoff: false },
+    ];
+  }
+  if (g.includes('vocational')) {
+    return [
+      { key: 'mathematics', label: 'Related Mathematics', forCutoff: true },
+      { key: 'physicsMarks', label: 'Physics / Vocational Theory', forCutoff: true },
+      { key: 'chemistryMarks', label: 'Chemistry / Practical', forCutoff: true },
+      { key: 'vocationalMarks', label: 'Vocational Subject', forCutoff: false },
+    ];
+  }
+  if (g.includes('arts') || g.includes('humanities')) {
+    return [
+      { key: 'historyMarks', label: 'History', forCutoff: false },
+      { key: 'politicalScienceMarks', label: 'Political Science', forCutoff: false },
+      { key: 'economicsMarks', label: 'Economics', forCutoff: false },
+      { key: 'otherSubjectMarks', label: 'Optional Subject', forCutoff: false },
+    ];
+  }
+  return [
+    { key: 'mathematics', label: 'Mathematics / Main Subject 1', forCutoff: true },
+    { key: 'physicsMarks', label: 'Physics / Main Subject 2', forCutoff: true },
+    { key: 'chemistryMarks', label: 'Chemistry / Main Subject 3', forCutoff: true },
+    { key: 'otherSubjectMarks', label: 'Subject 4', forCutoff: false },
+  ];
+}
 
 const hscGroupOptions = [
   'Computer Science (Maths, Physics, Chemistry, Computer Science)',
@@ -330,11 +391,20 @@ export default function RegisterPage() {
   }));
 
   const availableCourses = PROGRAMME_COURSES[formData.programme]?.[formData.degree] || [];
-  const cutOffValue = useMemo(() => calculateCutoff({
-    mathematics: formData.mathematics,
-    physics: formData.physicsMarks,
-    chemistry: formData.chemistryMarks,
-  }), [formData.mathematics, formData.physicsMarks, formData.chemistryMarks]);
+  const activeGroupSubjects = useMemo(() => getHscGroupSubjects(formData.hscGroup), [formData.hscGroup]);
+  const hasCutoffEligibleSubjects = useMemo(() => {
+    const keys = activeGroupSubjects.map((s) => s.key);
+    return keys.includes('mathematics') && keys.includes('physicsMarks') && keys.includes('chemistryMarks');
+  }, [activeGroupSubjects]);
+
+  const cutOffValue = useMemo(() => {
+    if (!hasCutoffEligibleSubjects) return null;
+    return calculateCutoff({
+      mathematics: formData.mathematics,
+      physics: formData.physicsMarks,
+      chemistry: formData.chemistryMarks,
+    });
+  }, [hasCutoffEligibleSubjects, formData.mathematics, formData.physicsMarks, formData.chemistryMarks]);
 
   const completedStepCount = useMemo(() => {
     const isValidMark = (value) => (
@@ -383,7 +453,8 @@ export default function RegisterPage() {
         && String(formData.schoolName || '').trim()
         && String(formData.schoolAddress || '').trim()
         && isValidHscMark
-        && requiredMarks.every((field) => isValidMark(formData[field])),
+        && activeGroupSubjects.length > 0
+        && activeGroupSubjects.every((field) => isValidMark(formData[field.key])),
       ),
       Boolean(
         formData.declaration
@@ -565,11 +636,11 @@ export default function RegisterPage() {
       } else if (!Number.isFinite(Number(formData.hscMarks)) || Number(formData.hscMarks) < 0 || Number(formData.hscMarks) > 600) {
         nextErrors.hscMarks = 'Class 12 total marks must be between 0 and 600.';
       }
-      requiredMarks.forEach((field) => {
-        const value = formData[field];
+      activeGroupSubjects.forEach((field) => {
+        const value = formData[field.key];
         if (value === '' || value === null || value === undefined
           || !Number.isFinite(Number(value)) || Number(value) < 0 || Number(value) > 100) {
-          nextErrors[field] = 'Enter a valid mark from 0 to 100.';
+          nextErrors[field.key] = `Enter a valid mark from 0 to 100 for ${field.label}.`;
         }
       });
     }
@@ -1140,40 +1211,70 @@ export default function RegisterPage() {
         />
         {errors.hscMarks ? <small className="error-text">{errors.hscMarks}</small> : null}
       </div>
-      {requiredMarks.map((field) => (
-        <div className="field-group" key={field}>
-          <label htmlFor={field}>{markLabels[field]} Marks (out of 100) <span className="required-indicator">*</span></label>
-          <input
-            id={field}
-            type="number"
-            min="0"
-            max="100"
-            step="any"
-            placeholder="0 - 100"
-            value={formData[field] ?? ''}
-            onWheel={(e) => e.target.blur()}
-            onChange={(event) => {
-              const rawVal = event.target.value;
-              if (rawVal === '') {
-                updateField(field, '');
-              } else {
-                const num = Number(rawVal);
-                if (num > 100) {
-                  updateField(field, 100);
-                } else if (num < 0) {
-                  updateField(field, 0);
+      {activeGroupSubjects.length > 0 ? (
+        activeGroupSubjects.map((field) => (
+          <div className="field-group" key={field.key}>
+            <label htmlFor={field.key}>
+              {field.label} Marks (out of 100) <span className="required-indicator">*</span>
+              {field.forCutoff ? (
+                <span style={{
+                  marginLeft: '8px',
+                  fontSize: '0.72rem',
+                  background: '#dcfce7',
+                  color: '#15803d',
+                  padding: '2px 8px',
+                  borderRadius: '999px',
+                  fontWeight: 600,
+                  display: 'inline-block',
+                }}>
+                  Eligible for Cutoff
+                </span>
+              ) : null}
+            </label>
+            <input
+              id={field.key}
+              type="number"
+              min="0"
+              max="100"
+              step="any"
+              placeholder="0 - 100"
+              value={formData[field.key] ?? ''}
+              onWheel={(e) => e.target.blur()}
+              onChange={(event) => {
+                const rawVal = event.target.value;
+                if (rawVal === '') {
+                  updateField(field.key, '');
                 } else {
-                  updateField(field, rawVal);
+                  const num = Number(rawVal);
+                  if (num > 100) {
+                    updateField(field.key, 100);
+                  } else if (num < 0) {
+                    updateField(field.key, 0);
+                  } else {
+                    updateField(field.key, rawVal);
+                  }
                 }
-              }
-            }}
-          />
-          {errors[field] ? <small className="error-text">{errors[field]}</small> : null}
-        </div>
-      ))}
+              }}
+            />
+            {errors[field.key] ? <small className="error-text">{errors[field.key]}</small> : null}
+          </div>
+        ))
+      ) : (
+        <p className="field-help full-width" style={{ marginTop: '8px' }}>
+          Please select your 12th standard group above to enter subject marks.
+        </p>
+      )}
       <div className="field-group full-width summary-box cutoff-summary" aria-live="polite">
         <strong>Calculated Cutoff Mark</strong>
-        <p>{cutOffValue === null ? '— / 200' : `${cutOffValue.toFixed(2)} / 200`}</p>
+        <p>
+          {!formData.hscGroup
+            ? '— / 200'
+            : !hasCutoffEligibleSubjects
+              ? 'N/A (Group not eligible for standard Engineering cutoff)'
+              : cutOffValue === null
+                ? '— / 200'
+                : `${cutOffValue.toFixed(2)} / 200`}
+        </p>
       </div>
     </div>
   );
@@ -1190,7 +1291,7 @@ export default function RegisterPage() {
           <table className="excel-docs-table">
             <thead>
               <tr>
-                <th style={{ width: '44px', textAlign: 'center' }}>#</th>
+                <th style={{ width: '56px', textAlign: 'center' }}>S.No</th>
                 <th>Document Name</th>
                 <th style={{ width: '130px', textAlign: 'center' }}>Status</th>
                 <th style={{ minWidth: '220px' }}>Upload</th>
