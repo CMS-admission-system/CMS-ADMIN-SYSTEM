@@ -307,7 +307,7 @@ export default function ApplicationPreviewPage() {
               </tr>
               <tr>
                 <th>COURSE &amp; DEPARTMENT PREFERRED</th>
-                <td style={{ fontWeight: 700, color: '#16a34a' }}>
+                <td style={{ fontWeight: 700, color: '#166534' }}>
                   {draft.degree ? `${draft.degree} — ` : ''}{selectedCourse || '—'}
                   {draft.programme ? <span style={{ marginLeft: '8px', color: '#64748b', fontWeight: 500, fontSize: '0.78rem' }}>({draft.programme})</span> : null}
                 </td>
@@ -435,7 +435,7 @@ export default function ApplicationPreviewPage() {
           {/* Courses (B.E/B.TECH) Preferred matching Reference Image 2 */}
           <div className="cms-section-header">
             COURSES ({draft.degree || 'B.E/B.TECH'}) PREFERRED
-            {selectedCourse ? <span style={{ marginLeft: '10px', color: '#16a34a', fontWeight: 800 }}>— {draft.degree ? `${draft.degree} ` : ''}{selectedCourse}</span> : null}
+            {selectedCourse ? <span style={{ marginLeft: '10px', color: '#166534', fontWeight: 800 }}>— {draft.degree ? `${draft.degree} ` : ''}{selectedCourse}</span> : null}
           </div>
           <div className="cms-courses-grid">
             <div>
@@ -670,10 +670,10 @@ export default function ApplicationPreviewPage() {
           {/* Confirm Box (At the bottom) */}
           <div className="action-card-box confirm-box" style={{
             background: 'rgba(255, 255, 255, 0.95)',
-            border: '2px solid #16a34a',
+            border: '2px solid #166534',
             borderRadius: '12px',
             padding: '16px 20px',
-            boxShadow: '0 4px 12px rgba(22, 163, 74, 0.12)',
+            boxShadow: '0 4px 12px rgba(22, 101, 52, 0.12)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
@@ -690,7 +690,7 @@ export default function ApplicationPreviewPage() {
               type="button"
               className="primary-btn"
               onClick={handleConfirmSeat}
-              style={{ minWidth: '160px', background: '#16a34a', borderColor: '#15803d' }}
+              style={{ minWidth: '160px', background: '#166534', borderColor: '#14532d' }}
             >
               <CreditCard size={16} /> Confirm Seat
             </button>

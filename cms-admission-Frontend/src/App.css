@@ -571,16 +571,16 @@
 }
 
 .choice-card.active {
-  background: #16a34a !important;
-  border: 2px solid #15803d !important;
+  background: #166534 !important;
+  border: 2px solid #14532d !important;
   color: #ffffff !important;
-  box-shadow: 0 4px 16px rgba(22, 163, 74, 0.3) !important;
+  box-shadow: 0 4px 16px rgba(22, 101, 52, 0.35) !important;
   font-weight: 700;
   transform: translateY(-1px);
 }
 
 .choice-card.active:hover {
-  background: #15803d !important;
+  background: #14532d !important;
   color: #ffffff !important;
 }
 
@@ -2116,11 +2116,11 @@ input[type="number"] {
 }
 
 .paper-option.selected {
-  background-color: #16a34a !important;
-  border: 1.5px solid #15803d !important;
+  background-color: #166534 !important;
+  border: 1.5px solid #14532d !important;
   color: #ffffff !important;
   font-weight: 700 !important;
-  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.2);
+  box-shadow: 0 0 0 2px rgba(22, 101, 52, 0.2);
 }
 
 .paper-checkbox {
@@ -2139,7 +2139,7 @@ input[type="number"] {
 .paper-option.selected .paper-checkbox {
   border-color: #ffffff;
   background-color: #ffffff;
-  color: #16a34a;
+  color: #166534;
 }
 
 /* Courses Grid */
@@ -2164,8 +2164,8 @@ input[type="number"] {
 }
 
 .cms-course-item.selected {
-  background: #16a34a !important;
-  border: 1.5px solid #15803d !important;
+  background: #166534 !important;
+  border: 1.5px solid #14532d !important;
   font-weight: 700;
   color: #ffffff !important;
 }
