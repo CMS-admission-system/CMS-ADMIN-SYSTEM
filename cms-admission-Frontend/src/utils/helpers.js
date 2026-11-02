@@ -1,6 +1,6 @@
 export const PROGRAMME_COURSES = {
   UG: {
-    'B.E': ['CSE', 'BME', 'CS', 'ECE', 'MECH', 'AIML', 'Electrical and Computer Engineering'],
+    'B.E': ['CSE', 'BME', 'CS', 'ECE', 'MECH', 'AIML', 'Electrical and Computer Engineering', 'EEE (Electrical and Electronics Engineering)'],
     'B.Tech': ['AI&DS'],
   },
   PG: {

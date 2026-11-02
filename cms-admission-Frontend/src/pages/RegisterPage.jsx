@@ -5,6 +5,7 @@ import { useAppContext } from '../context/AppContext';
 import SignaturePadBox from '../components/SignaturePadBox';
 import { fetchDemoStudent } from '../services/emisService';
 import { calculateCutoff, PROGRAMME_COURSES } from '../utils/helpers';
+import CameraCaptureModal from '../components/CameraCaptureModal';
 
 const steps = [
   'Admission category & Quota',
@@ -357,10 +358,14 @@ export default function RegisterPage() {
   const [emisMessage, setEmisMessage] = useState('');
   const [isFetchingEmis, setIsFetchingEmis] = useState(false);
   const [previewDocModal, setPreviewDocModal] = useState(null);
+  const [cameraModalDocKey, setCameraModalDocKey] = useState(null);
+  const isMobile = typeof navigator !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent || '');
 
   const [formData, setFormData] = useState(() => ({
     ...draft,
     signature: null,
+    hasParents: draft?.hasParents !== undefined ? Boolean(draft.hasParents) : true,
+    hasGuardian: Boolean(draft?.hasGuardian || draft?.guardianName),
     aadhaar: formatAadhaar(draft?.aadhaar),
     admissionCategory: normalizeAdmissionCategory(draft?.admissionCategory),
     programme: savedProgramme,
@@ -435,11 +440,18 @@ export default function RegisterPage() {
         && /^\d{6}$/.test(formData.pinCode),
       ),
       Boolean(
-        ['fatherName', 'fatherOccupation', 'motherName', 'motherOccupation', 'fatherMobile', 'motherMobile']
-          .every((field) => String(formData[field] || '').trim())
-        && !getIndianMobileError(formData.fatherMobile)
-        && !getIndianMobileError(formData.motherMobile)
-        && (!formData.guardianMobile || !getIndianMobileError(formData.guardianMobile)),
+        (formData.hasParents || formData.hasGuardian)
+        && (!formData.hasParents || (
+          ['fatherName', 'fatherOccupation', 'motherName', 'motherOccupation', 'fatherMobile', 'motherMobile']
+            .every((field) => String(formData[field] || '').trim())
+          && !getIndianMobileError(formData.fatherMobile)
+          && !getIndianMobileError(formData.motherMobile)
+        ))
+        && (!formData.hasGuardian || (
+          ['guardianName', 'guardianOccupation', 'guardianMobile']
+            .every((field) => String(formData[field] || '').trim())
+          && !getIndianMobileError(formData.guardianMobile)
+        )),
       ),
       Boolean(
         formData.accommodation
@@ -505,6 +517,19 @@ export default function RegisterPage() {
 
   const handleDocumentFile = (docKey, file) => {
     if (!file) return;
+    if (file.dataUrl) {
+      setFormData((previous) => ({
+        ...previous,
+        documents: {
+          ...(previous.documents || {}),
+          [docKey]: file,
+          ...(docKey === 'CommunityCertificate' ? { CC: file } : {}),
+          ...(docKey === 'PassportSizePhotographs' ? { StudentPhoto: file } : {}),
+        },
+        ...(docKey === 'PassportSizePhotographs' ? { studentPhoto: file } : {}),
+      }));
+      return;
+    }
     if (file.size > 10 * 1024 * 1024) {
       window.alert('File size must be 10 MB or smaller.');
       return;
@@ -523,7 +548,9 @@ export default function RegisterPage() {
           ...(previous.documents || {}),
           [docKey]: fileData,
           ...(docKey === 'CommunityCertificate' ? { CC: fileData } : {}),
+          ...(docKey === 'PassportSizePhotographs' ? { StudentPhoto: fileData } : {}),
         },
+        ...(docKey === 'PassportSizePhotographs' ? { studentPhoto: fileData } : {}),
       }));
     };
     reader.readAsDataURL(file);
@@ -599,18 +626,32 @@ export default function RegisterPage() {
     }
 
     if (currentStep === 4) {
-      ['fatherName', 'fatherOccupation', 'motherName', 'motherOccupation', 'fatherMobile', 'motherMobile'].forEach((field) => {
-        if (!String(formData[field] || '').trim()) nextErrors[field] = 'This field is required.';
-      });
-      ['fatherMobile', 'motherMobile'].forEach((field) => {
-        if (formData[field]) {
-          const mobileError = getIndianMobileError(formData[field]);
-          if (mobileError) nextErrors[field] = mobileError;
+      if (!formData.hasParents && !formData.hasGuardian) {
+        nextErrors.parentSelection = 'Please select at least one option: Parents Information or Guardian Information.';
+      }
+
+      if (formData.hasParents) {
+        ['fatherName', 'fatherOccupation', 'motherName', 'motherOccupation', 'fatherMobile', 'motherMobile'].forEach((field) => {
+          if (!String(formData[field] || '').trim()) nextErrors[field] = 'This field is required.';
+        });
+        if (formData.fatherMobile) {
+          const mobileError = getIndianMobileError(formData.fatherMobile);
+          if (mobileError) nextErrors.fatherMobile = mobileError;
         }
-      });
-      if (formData.guardianMobile) {
-        const mobileError = getIndianMobileError(formData.guardianMobile);
-        if (mobileError) nextErrors.guardianMobile = mobileError;
+        if (formData.motherMobile) {
+          const mobileError = getIndianMobileError(formData.motherMobile);
+          if (mobileError) nextErrors.motherMobile = mobileError;
+        }
+      }
+
+      if (formData.hasGuardian) {
+        ['guardianName', 'guardianOccupation', 'guardianMobile'].forEach((field) => {
+          if (!String(formData[field] || '').trim()) nextErrors[field] = 'This field is required.';
+        });
+        if (formData.guardianMobile) {
+          const mobileError = getIndianMobileError(formData.guardianMobile);
+          if (mobileError) nextErrors.guardianMobile = mobileError;
+        }
       }
     }
 
@@ -1050,54 +1091,225 @@ export default function RegisterPage() {
   );
 
   const renderParentsStep = () => (
-    <div className="form-grid two-column">
-      <div className="field-group">
-        <label htmlFor="fatherName">Father Name <span className="required-indicator">*</span></label>
-        <input id="fatherName" required value={formData.fatherName || ''} onChange={(event) => updateField('fatherName', event.target.value)} />
-        {errors.fatherName ? <small className="error-text">{errors.fatherName}</small> : null}
-      </div>
-      <div className="field-group">
-        <label htmlFor="motherName">Mother Name <span className="required-indicator">*</span></label>
-        <input id="motherName" required value={formData.motherName || ''} onChange={(event) => updateField('motherName', event.target.value)} />
-        {errors.motherName ? <small className="error-text">{errors.motherName}</small> : null}
-      </div>
-      <div className="field-group">
-        <label htmlFor="fatherOccupation">Father Occupation <span className="required-indicator">*</span></label>
-        <input id="fatherOccupation" required value={formData.fatherOccupation || ''} onChange={(event) => updateField('fatherOccupation', event.target.value)} />
-        {errors.fatherOccupation ? <small className="error-text">{errors.fatherOccupation}</small> : null}
-      </div>
-      <div className="field-group">
-        <label htmlFor="motherOccupation">Mother Occupation <span className="required-indicator">*</span></label>
-        <input id="motherOccupation" required value={formData.motherOccupation || ''} onChange={(event) => updateField('motherOccupation', event.target.value)} />
-        {errors.motherOccupation ? <small className="error-text">{errors.motherOccupation}</small> : null}
-      </div>
-      <div className="field-group">
-        <label htmlFor="fatherMobile">Father Mobile Number <span className="required-indicator">*</span></label>
-        <div className="phone-input">
-          <span aria-hidden="true">+91</span>
-          <input id="fatherMobile" type="tel" required inputMode="numeric" pattern="[6-9][0-9]{9}" maxLength={10} value={formData.fatherMobile || ''} onChange={(event) => updateField('fatherMobile', event.target.value.replace(/\D/g, '').slice(0, 10))} />
+    <div style={{ marginTop: '16px' }}>
+      {errors.parentSelection ? (
+        <div style={{ background: '#fef2f2', border: '1.5px solid #ef4444', borderRadius: '10px', padding: '12px 16px', color: '#b91c1c', fontWeight: 700, marginBottom: '16px' }}>
+          {errors.parentSelection}
         </div>
-        {errors.fatherMobile ? <small className="error-text">{errors.fatherMobile}</small> : null}
-      </div>
-      <div className="field-group">
-        <label htmlFor="motherMobile">Mother Mobile Number <span className="required-indicator">*</span></label>
-        <div className="phone-input">
-          <span aria-hidden="true">+91</span>
-          <input id="motherMobile" type="tel" required inputMode="numeric" pattern="[6-9][0-9]{9}" maxLength={10} value={formData.motherMobile || ''} onChange={(event) => updateField('motherMobile', event.target.value.replace(/\D/g, '').slice(0, 10))} />
+      ) : null}
+
+      <div
+        className="parents-two-panel-grid"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+          gap: '24px',
+          alignItems: 'start',
+        }}
+      >
+        {/* LEFT SIDE: Parents Information */}
+        <div
+          className="parent-panel-card"
+          style={{
+            background: 'rgba(255, 255, 255, 0.95)',
+            border: `2px solid ${formData.hasParents ? '#166534' : '#cbd5e1'}`,
+            borderRadius: '16px',
+            padding: '20px',
+            boxShadow: formData.hasParents ? '0 4px 16px rgba(22, 101, 52, 0.12)' : 'none',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          {/* Selectable Header */}
+          <button
+            type="button"
+            onClick={() => {
+              const nextVal = !formData.hasParents;
+              updateField('hasParents', nextVal);
+              if (errors.parentSelection) setErrors((prev) => ({ ...prev, parentSelection: '' }));
+            }}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: formData.hasParents ? '#dcfce7' : '#f8fafc',
+              border: `2px solid ${formData.hasParents ? '#166534' : '#94a3b8'}`,
+              borderRadius: '12px',
+              padding: '12px 16px',
+              cursor: 'pointer',
+              marginBottom: formData.hasParents ? '20px' : '0',
+              textAlign: 'left',
+            }}
+          >
+            <div>
+              <strong style={{ display: 'block', fontSize: '1.05rem', color: formData.hasParents ? '#166534' : '#1e293b', fontWeight: 800 }}>
+                {formData.hasParents ? '✓ Parents Information' : 'Select Parents Information'}
+              </strong>
+              <span style={{ fontSize: '0.8rem', color: formData.hasParents ? '#15803d' : '#64748b', fontWeight: 600 }}>
+                {formData.hasParents ? 'Selected & Active (Father & Mother details)' : 'Click to select Parents Information'}
+              </span>
+            </div>
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '26px',
+                height: '26px',
+                borderRadius: '50%',
+                background: formData.hasParents ? '#166534' : '#cbd5e1',
+                color: '#ffffff',
+                fontWeight: 800,
+                fontSize: '0.85rem',
+              }}
+            >
+              {formData.hasParents ? '✓' : '+'}
+            </span>
+          </button>
+
+          {/* Form Fields: Father & Mother */}
+          {formData.hasParents ? (
+            <div className="form-grid" style={{ gap: '14px', marginTop: 0 }}>
+              <div className="field-group">
+                <label htmlFor="fatherName">Father Name <span className="required-indicator">*</span></label>
+                <input id="fatherName" required value={formData.fatherName || ''} onChange={(event) => updateField('fatherName', event.target.value)} placeholder="Enter father's full name" />
+                {errors.fatherName ? <small className="error-text">{errors.fatherName}</small> : null}
+              </div>
+
+              <div className="field-group">
+                <label htmlFor="fatherOccupation">Father Occupation <span className="required-indicator">*</span></label>
+                <input id="fatherOccupation" required value={formData.fatherOccupation || ''} onChange={(event) => updateField('fatherOccupation', event.target.value)} placeholder="Enter father's occupation" />
+                {errors.fatherOccupation ? <small className="error-text">{errors.fatherOccupation}</small> : null}
+              </div>
+
+              <div className="field-group">
+                <label htmlFor="fatherMobile">Father Mobile Number <span className="required-indicator">*</span></label>
+                <div className="phone-input">
+                  <span aria-hidden="true">+91</span>
+                  <input id="fatherMobile" type="tel" required inputMode="numeric" pattern="[6-9][0-9]{9}" maxLength={10} value={formData.fatherMobile || ''} onChange={(event) => updateField('fatherMobile', event.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="10-digit mobile" />
+                </div>
+                {errors.fatherMobile ? <small className="error-text">{errors.fatherMobile}</small> : null}
+              </div>
+
+              <div className="field-group">
+                <label htmlFor="motherName">Mother Name <span className="required-indicator">*</span></label>
+                <input id="motherName" required value={formData.motherName || ''} onChange={(event) => updateField('motherName', event.target.value)} placeholder="Enter mother's full name" />
+                {errors.motherName ? <small className="error-text">{errors.motherName}</small> : null}
+              </div>
+
+              <div className="field-group">
+                <label htmlFor="motherOccupation">Mother Occupation <span className="required-indicator">*</span></label>
+                <input id="motherOccupation" required value={formData.motherOccupation || ''} onChange={(event) => updateField('motherOccupation', event.target.value)} placeholder="Enter mother's occupation" />
+                {errors.motherOccupation ? <small className="error-text">{errors.motherOccupation}</small> : null}
+              </div>
+
+              <div className="field-group">
+                <label htmlFor="motherMobile">Mother Mobile Number <span className="required-indicator">*</span></label>
+                <div className="phone-input">
+                  <span aria-hidden="true">+91</span>
+                  <input id="motherMobile" type="tel" required inputMode="numeric" pattern="[6-9][0-9]{9}" maxLength={10} value={formData.motherMobile || ''} onChange={(event) => updateField('motherMobile', event.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="10-digit mobile" />
+                </div>
+                {errors.motherMobile ? <small className="error-text">{errors.motherMobile}</small> : null}
+              </div>
+            </div>
+          ) : (
+            <p style={{ margin: '14px 0 0', fontSize: '0.9rem', color: '#64748b', textAlign: 'center', fontWeight: 600 }}>
+              Click the button above to select and enter Parents Information.
+            </p>
+          )}
         </div>
-        {errors.motherMobile ? <small className="error-text">{errors.motherMobile}</small> : null}
-      </div>
-      <div className="field-group"><label htmlFor="guardianName">Guardian Name (optional)</label><input id="guardianName" value={formData.guardianName || ''} onChange={(event) => updateField('guardianName', event.target.value)} /></div>
-      <div className="field-group"><label htmlFor="guardianOccupation">Guardian Occupation (optional)</label><input id="guardianOccupation" value={formData.guardianOccupation || ''} onChange={(event) => updateField('guardianOccupation', event.target.value)} /></div>
-      <div className="field-group">
-        <label htmlFor="guardianMobile">Guardian Mobile Number (optional)</label>
-        <div className="phone-input">
-          <span aria-hidden="true">+91</span>
-          <input id="guardianMobile" type="tel" inputMode="numeric" pattern="[6-9][0-9]{9}" maxLength={10} value={formData.guardianMobile || ''} onChange={(event) => updateField('guardianMobile', event.target.value.replace(/\D/g, '').slice(0, 10))} />
+
+        {/* RIGHT SIDE: Guardian Information */}
+        <div
+          className="parent-panel-card"
+          style={{
+            background: 'rgba(255, 255, 255, 0.95)',
+            border: `2px solid ${formData.hasGuardian ? '#166534' : '#cbd5e1'}`,
+            borderRadius: '16px',
+            padding: '20px',
+            boxShadow: formData.hasGuardian ? '0 4px 16px rgba(22, 101, 52, 0.12)' : 'none',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          {/* Selectable Header */}
+          <button
+            type="button"
+            onClick={() => {
+              const nextVal = !formData.hasGuardian;
+              updateField('hasGuardian', nextVal);
+              if (errors.parentSelection) setErrors((prev) => ({ ...prev, parentSelection: '' }));
+            }}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: formData.hasGuardian ? '#dcfce7' : '#f8fafc',
+              border: `2px solid ${formData.hasGuardian ? '#166534' : '#94a3b8'}`,
+              borderRadius: '12px',
+              padding: '12px 16px',
+              cursor: 'pointer',
+              marginBottom: formData.hasGuardian ? '20px' : '0',
+              textAlign: 'left',
+            }}
+          >
+            <div>
+              <strong style={{ display: 'block', fontSize: '1.05rem', color: formData.hasGuardian ? '#166534' : '#1e293b', fontWeight: 800 }}>
+                {formData.hasGuardian ? '✓ Guardian Information' : 'Select Guardian Information'}
+              </strong>
+              <span style={{ fontSize: '0.8rem', color: formData.hasGuardian ? '#15803d' : '#64748b', fontWeight: 600 }}>
+                {formData.hasGuardian ? 'Selected & Active (Guardian details)' : 'Click to select Guardian Information'}
+              </span>
+            </div>
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '26px',
+                height: '26px',
+                borderRadius: '50%',
+                background: formData.hasGuardian ? '#166534' : '#cbd5e1',
+                color: '#ffffff',
+                fontWeight: 800,
+                fontSize: '0.85rem',
+              }}
+            >
+              {formData.hasGuardian ? '✓' : '+'}
+            </span>
+          </button>
+
+          {/* Form Fields: Guardian */}
+          {formData.hasGuardian ? (
+            <div className="form-grid" style={{ gap: '14px', marginTop: 0 }}>
+              <div className="field-group">
+                <label htmlFor="guardianName">Guardian Name <span className="required-indicator">*</span></label>
+                <input id="guardianName" required value={formData.guardianName || ''} onChange={(event) => updateField('guardianName', event.target.value)} placeholder="Enter guardian's full name" />
+                {errors.guardianName ? <small className="error-text">{errors.guardianName}</small> : null}
+              </div>
+
+              <div className="field-group">
+                <label htmlFor="guardianOccupation">Guardian Occupation <span className="required-indicator">*</span></label>
+                <input id="guardianOccupation" required value={formData.guardianOccupation || ''} onChange={(event) => updateField('guardianOccupation', event.target.value)} placeholder="Enter guardian's occupation" />
+                {errors.guardianOccupation ? <small className="error-text">{errors.guardianOccupation}</small> : null}
+              </div>
+
+              <div className="field-group">
+                <label htmlFor="guardianMobile">Guardian Mobile Number <span className="required-indicator">*</span></label>
+                <div className="phone-input">
+                  <span aria-hidden="true">+91</span>
+                  <input id="guardianMobile" type="tel" required inputMode="numeric" pattern="[6-9][0-9]{9}" maxLength={10} value={formData.guardianMobile || ''} onChange={(event) => updateField('guardianMobile', event.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="10-digit mobile" />
+                </div>
+                {errors.guardianMobile ? <small className="error-text">{errors.guardianMobile}</small> : null}
+              </div>
+            </div>
+          ) : (
+            <p style={{ margin: '14px 0 0', fontSize: '0.9rem', color: '#64748b', textAlign: 'center', fontWeight: 600 }}>
+              Click the button above to select and enter Guardian Information if applicable.
+            </p>
+          )}
         </div>
-        {errors.guardianMobile ? <small className="error-text">{errors.guardianMobile}</small> : null}
       </div>
-      <p className="field-help full-width">Guardian details are optional. Complete the required parent fields to continue.</p>
     </div>
   );
 
@@ -1352,23 +1564,35 @@ export default function RegisterPage() {
                     </td>
                     <td>
                       <div className="doc-actions">
-                        <label
-                          className="secondary-btn compact signature-tool-btn"
-                          title="Take photo with camera"
-                          style={{ margin: 0, padding: '4px 8px', fontSize: '0.76rem' }}
-                        >
-                          <Camera size={13} /> Take Photo
-                          <input
-                            type="file"
-                            accept="image/*"
-                            capture="environment"
-                            className="visually-hidden"
-                            onChange={(e) => {
-                              handleDocumentFile(key, e.target.files?.[0]);
-                              e.target.value = '';
-                            }}
-                          />
-                        </label>
+                        {isMobile ? (
+                          <label
+                            className="secondary-btn compact signature-tool-btn"
+                            title="Take photo with mobile camera"
+                            style={{ margin: 0, padding: '4px 8px', fontSize: '0.76rem' }}
+                          >
+                            <Camera size={13} /> Take Photo
+                            <input
+                              type="file"
+                              accept="image/*"
+                              capture="environment"
+                              className="visually-hidden"
+                              onChange={(e) => {
+                                handleDocumentFile(key, e.target.files?.[0]);
+                                e.target.value = '';
+                              }}
+                            />
+                          </label>
+                        ) : (
+                          <button
+                            type="button"
+                            className="secondary-btn compact signature-tool-btn"
+                            title="Open Laptop Camera"
+                            style={{ margin: 0, padding: '4px 8px', fontSize: '0.76rem', cursor: 'pointer' }}
+                            onClick={() => setCameraModalDocKey(key)}
+                          >
+                            <Camera size={13} /> Take Photo
+                          </button>
+                        )}
 
                         <label
                           className="secondary-btn compact signature-tool-btn"
@@ -1555,6 +1779,19 @@ export default function RegisterPage() {
           )}
         </div>
       </section>
+
+      {/* Laptop Camera Modal */}
+      <CameraCaptureModal
+        isOpen={Boolean(cameraModalDocKey)}
+        onClose={() => setCameraModalDocKey(null)}
+        onPhotoCaptured={(photo) => {
+          if (cameraModalDocKey) {
+            handleDocumentFile(cameraModalDocKey, photo);
+            setCameraModalDocKey(null);
+          }
+        }}
+        title={`Laptop Camera — ${cameraModalDocKey ? (certificateLabels[cameraModalDocKey] || cameraModalDocKey) : 'Take Photo'}`}
+      />
 
       {/* Document View Preview Modal */}
       {previewDocModal ? (

@@ -361,6 +361,16 @@ export default function ApplicationPreviewPage() {
                   Mother: <strong>{draft.motherMobile ? `+91 ${draft.motherMobile}` : '—'}</strong>
                 </td>
               </tr>
+              {draft.guardianName ? (
+                <tr>
+                  <th>GUARDIAN&apos;S DETAILS</th>
+                  <td>
+                    Name: <strong>{display(draft.guardianName)}</strong>
+                    {draft.guardianOccupation ? <> &nbsp;|&nbsp; Occupation: <strong>{draft.guardianOccupation}</strong></> : null}
+                    {draft.guardianMobile ? <> &nbsp;|&nbsp; Mobile: <strong>+91 {draft.guardianMobile}</strong></> : null}
+                  </td>
+                </tr>
+              ) : null}
               <tr>
                 <th>COMMUNITY</th>
                 <td>

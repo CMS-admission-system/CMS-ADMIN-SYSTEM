@@ -1,5 +1,6 @@
 import { Camera, Eye, FileUp, ImagePlus, RotateCw, Trash2, X } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import CameraCaptureModal from './CameraCaptureModal';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
@@ -23,7 +24,28 @@ export default function FileUploadField({
   const [error, setError] = useState('');
   const [isViewing, setIsViewing] = useState(false);
   const [isCropping, setIsCropping] = useState(false);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [cropSettings, setCropSettings] = useState({ zoom: 1, x: 0, y: 0 });
+
+  const isMobile = typeof navigator !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent || '');
+
+  const handleCameraCaptured = (photo) => {
+    const isDuplicate = existingFiles.some((existing) => {
+      if (!existing || !existing.dataUrl) return false;
+      if (value?.dataUrl && existing.dataUrl === value.dataUrl) return false;
+      return existing.dataUrl === photo.dataUrl;
+    });
+
+    if (isDuplicate) {
+      setError('Duplicate file detected. This document/file content has already been uploaded for this application.');
+      return;
+    }
+
+    onChange(photo);
+    setCropSettings({ zoom: 1, x: 0, y: 0 });
+    setIsCropping(false);
+    setError('');
+  };
 
   const handleFileChange = async (event) => {
     const file = event.target.files?.[0];
@@ -117,10 +139,21 @@ export default function FileUploadField({
     <div className="upload-field">
       <strong className="upload-title">{label}</strong>
       <div className="upload-actions">
-        <label className="upload-action">
-          <Camera size={17} /> Take photo
-          <input className="visually-hidden" type="file" accept="image/*" capture="environment" onChange={handleFileChange} />
-        </label>
+        {isMobile ? (
+          <label className="upload-action">
+            <Camera size={17} /> Take photo
+            <input className="visually-hidden" type="file" accept="image/*" capture="environment" onChange={handleFileChange} />
+          </label>
+        ) : (
+          <button
+            type="button"
+            className="upload-action"
+            onClick={() => setIsCameraOpen(true)}
+            style={{ cursor: 'pointer', background: 'transparent', font: 'inherit' }}
+          >
+            <Camera size={17} /> Take photo
+          </button>
+        )}
         <label className="upload-action">
           <ImagePlus size={17} /> Choose image
           <input className="visually-hidden" type="file" accept="image/*" onChange={handleFileChange} />
@@ -225,6 +258,13 @@ export default function FileUploadField({
           </div>
         </div>
       ) : null}
+
+      <CameraCaptureModal
+        isOpen={isCameraOpen}
+        onClose={() => setIsCameraOpen(false)}
+        onPhotoCaptured={handleCameraCaptured}
+        title={`Laptop Camera — ${label}`}
+      />
 
       {isViewing && value?.dataUrl ? (
         <div

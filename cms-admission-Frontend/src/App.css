@@ -190,7 +190,9 @@
 }
 
 .eyebrow.accent {
-  color: var(--orange);
+  color: #FF8A00;
+  font-weight: 800;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
 }
 
 .brand-block h1 {
@@ -327,12 +329,14 @@
 
 .qr-note {
   margin-top: 12px;
-  color: var(--text-soft);
+  color: #0f172a;
+  font-weight: 600;
   font-size: 0.9rem;
 }
 
 .qr-note strong {
-  color: var(--primary-deep);
+  color: #004D38;
+  font-weight: 800;
 }
 
 .inline-link {
@@ -370,7 +374,8 @@
 
 .metric-card span,
 .stat-card span {
-  color: var(--text-soft);
+  color: #0f172a;
+  font-weight: 700;
   display: block;
 }
 
@@ -397,20 +402,23 @@
 
 .admissions-portal-label {
   display: inline-block;
-  padding: 5px 9px;
+  padding: 5px 10px;
   border-radius: 7px;
-  background: rgba(243, 155, 101, 0.2);
-  color: var(--orange);
+  background: rgba(255, 122, 0, 0.18);
+  color: #EA580C;
+  font-weight: 800;
+  border: 1px solid rgba(234, 88, 12, 0.35);
 }
 
 .completion-count {
   display: inline-block;
   margin-left: 8px;
-  padding: 5px 9px;
-  border: 1px solid rgba(243, 155, 101, 0.35);
+  padding: 5px 10px;
+  border: 1px solid rgba(234, 88, 12, 0.4);
   border-radius: 7px;
-  background: rgba(255, 255, 255, 0.78);
-  color: var(--primary-deep);
+  background: rgba(255, 255, 255, 0.9);
+  color: #004D38;
+  font-weight: 800;
   letter-spacing: normal;
 }
 
@@ -481,7 +489,8 @@
 }
 
 .required-fields-note {
-  color: var(--text-soft);
+  color: #0f172a;
+  font-weight: 700;
   font-size: 0.88rem;
   margin: 12px 0 0;
 }
@@ -600,16 +609,18 @@
 
 .field-help {
   margin: 0;
-  color: var(--text-soft);
+  color: #334155;
   font-size: 0.9rem;
+  font-weight: 700;
 }
 
 .notice-box {
   padding: 16px;
-  border: 1px solid rgba(244, 177, 131, 0.8);
+  border: 1.5px solid #fb923c;
   border-radius: 14px;
   background: rgba(255, 248, 239, 0.95);
-  color: #68450f;
+  color: #9a3412;
+  font-weight: 700;
 }
 
 .notice-box code {
@@ -933,8 +944,10 @@
 }
 
 .badge-warning {
-  background: #fff2da;
-  color: #9b5d08;
+  background: #ffedd5;
+  color: #ea580c;
+  font-weight: 700;
+  border: 1px solid #fdba74;
 }
 
 .badge-success {
@@ -1245,16 +1258,18 @@
 
 .meta-block span {
   display: block;
-  color: var(--text-soft);
+  color: #0f172a;
+  font-weight: 700;
   margin-bottom: 6px;
 }
 
 .warning-box {
-  background: #fff8ef;
-  color: #7d4b11;
+  background: #ffedd5;
+  color: #9a3412;
+  font-weight: 700;
   border-radius: 14px;
   padding: 14px 16px;
-  border: 1px solid rgba(244, 177, 131, 0.7);
+  border: 1.5px solid #fb923c;
   margin-top: 24px;
   text-align: left;
 }
