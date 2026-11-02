@@ -13,13 +13,16 @@ export default function AdmissionPaymentPage() {
   const paymentQr = paymentSettings.paymentQrs?.[0] || paymentSettings.paymentQr || null;
 
   const handleConfirm = async () => {
+    const adminNum = draft.formNumber || draft.id;
     const application = await submitApplication({
       ...draft,
+      id: adminNum,
+      formNumber: adminNum,
       status: 'Confirmed',
       admissionFeeAmount: 5000,
       paymentStatus: 'Paid',
     });
-    navigate(`/application-success?id=${encodeURIComponent(application?.id || '')}`);
+    navigate(`/application-success?id=${encodeURIComponent(application?.id || adminNum || '')}`);
   };
 
   return (
@@ -34,7 +37,7 @@ export default function AdmissionPaymentPage() {
         </div>
 
         <div className="payment-meta">
-          <div style={{ background: 'rgba(255,255,255,0.38)' }}><span>Application reference</span><strong>{draft.formNumber || 'Not available'}</strong></div>
+          <div style={{ background: 'rgba(255,255,255,0.38)' }}><span>Admin / Form No</span><strong>{draft.formNumber || draft.id || 'Not available'}</strong></div>
           <div style={{ background: 'rgba(255,255,255,0.38)' }}><span>Admission fee</span><strong>{formatCurrency(5000)}</strong></div>
         </div>
 

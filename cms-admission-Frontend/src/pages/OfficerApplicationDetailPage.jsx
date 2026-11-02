@@ -128,7 +128,7 @@ export default function OfficerApplicationDetailPage() {
         <header className="admin-topbar">
           <div>
             <p className="eyebrow accent">Application review</p>
-            <h2>{application.id}</h2>
+            <h2>Admin No: {application.formNumber || application.id}</h2>
           </div>
           <div className="toolbar" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             <button
@@ -174,13 +174,13 @@ export default function OfficerApplicationDetailPage() {
             <div className="field-group full-width"><label>Communication Address</label><textarea value={draftApplication.communicationAddress || ''} onChange={(event) => setDraftApplication((prev) => ({ ...prev, communicationAddress: event.target.value }))} rows="2" /></div>
             <div className="field-group"><label>District / State / PIN</label><input value={`${draftApplication.district || ''}, ${draftApplication.state || ''} - ${draftApplication.pinCode || ''}`} readOnly /></div>
             <div className="field-group"><label>Accommodation / Transport</label><input value={`${draftApplication.accommodation || 'Not specified'}${draftApplication.busRoute ? ` (Route: ${draftApplication.busRoute})` : ''}`} readOnly /></div>
-            <div className="field-group"><label>Father Name / Mobile</label><input value={`${draftApplication.fatherName || '—'} / ${draftApplication.fatherMobile || draftApplication.parentMobile || '—'} (${draftApplication.fatherOccupation || '—'})`} readOnly /></div>
-            <div className="field-group"><label>Mother Name / Mobile</label><input value={`${draftApplication.motherName || '—'} / ${draftApplication.motherMobile || '—'} (${draftApplication.motherOccupation || '—'})`} readOnly /></div>
-            <div className="field-group"><label>Guardian Name / Mobile</label><input value={`${draftApplication.guardianName || '—'} / ${draftApplication.guardianMobile || '—'} (${draftApplication.guardianOccupation || '—'})`} readOnly /></div>
-            <div className="field-group"><label>School Name & Address</label><input value={`${draftApplication.schoolName || '—'}, ${draftApplication.schoolAddress || '—'}`} readOnly /></div>
-            <div className="field-group"><label>Class 12 / HSC Total Marks</label><input value={`${draftApplication.hscMarks ?? '—'} / 600`} readOnly /></div>
-            <div className="field-group"><label>PCM Marks (Maths / Physics / Chem)</label><input value={`M: ${draftApplication.mathematics ?? '—'}, P: ${draftApplication.physicsMarks ?? '—'}, C: ${draftApplication.chemistryMarks ?? '—'}`} readOnly /></div>
-            <div className="field-group"><label>Cutoff Marks</label><input value={`${draftApplication.cutOffMarks ? Number(draftApplication.cutOffMarks).toFixed(2) : '—'} / 200`} readOnly /></div>
+            <div className="field-group"><label>Father Name / Mobile</label><input value={`${draftApplication.fatherName || 'â€”'} / ${draftApplication.fatherMobile || draftApplication.parentMobile || 'â€”'} (${draftApplication.fatherOccupation || 'â€”'})`} readOnly /></div>
+            <div className="field-group"><label>Mother Name / Mobile</label><input value={`${draftApplication.motherName || 'â€”'} / ${draftApplication.motherMobile || 'â€”'} (${draftApplication.motherOccupation || 'â€”'})`} readOnly /></div>
+            <div className="field-group"><label>Guardian Name / Mobile</label><input value={`${draftApplication.guardianName || 'â€”'} / ${draftApplication.guardianMobile || 'â€”'} (${draftApplication.guardianOccupation || 'â€”'})`} readOnly /></div>
+            <div className="field-group"><label>School Name & Address</label><input value={`${draftApplication.schoolName || 'â€”'}, ${draftApplication.schoolAddress || 'â€”'}`} readOnly /></div>
+            <div className="field-group"><label>Class 12 / HSC Total Marks</label><input value={`${draftApplication.hscMarks ?? 'â€”'} / 600`} readOnly /></div>
+            <div className="field-group"><label>PCM Marks (Maths / Physics / Chem)</label><input value={`M: ${draftApplication.mathematics ?? 'â€”'}, P: ${draftApplication.physicsMarks ?? 'â€”'}, C: ${draftApplication.chemistryMarks ?? 'â€”'}`} readOnly /></div>
+            <div className="field-group"><label>Cutoff Marks</label><input value={`${draftApplication.cutOffMarks ? Number(draftApplication.cutOffMarks).toFixed(2) : 'â€”'} / 200`} readOnly /></div>
             <div className="field-group full-width"><label>Correction notes</label><textarea value={note} onChange={(event) => setNote(event.target.value)} rows="3" placeholder="Add officer corrections or notes" /></div>
             <div className="field-group full-width"><label>Student declaration</label><textarea value={draftApplication.declaration ? 'Accepted' : 'Not accepted'} readOnly /></div>
           </div>
@@ -196,7 +196,7 @@ export default function OfficerApplicationDetailPage() {
           />
 
           <section className="certificate-status-wrap">
-            <h3>Office use — documents received</h3>
+            <h3>Office use â€” documents received</h3>
             <p className="field-help">Tick Original or Xerox after the physical certificate has been received. Uploaded files are shown above for reference.</p>
             <div className="table-scroll">
               <table className="data-table certificate-table">

@@ -63,11 +63,11 @@ export default function VCDashboardPage() {
 
           <table className="data-table">
             <thead>
-              <tr><th>App ID</th><th>Student</th><th>EMIS ID</th><th>Course</th><th>Category</th><th>Confirmation Date</th><th>Status</th><th>Action</th></tr>
+              <tr><th>Admin No</th><th>Student</th><th>EMIS ID</th><th>Course</th><th>Category</th><th>Confirmation Date</th><th>Status</th><th>Action</th></tr>
             </thead>
             <tbody>
               {filteredSentToVC.length ? filteredSentToVC.map((app) => (
-                <tr key={app.id}><td>{app.id}</td><td>{app.studentName}</td><td>{app.emisId}</td><td>{app.coursePreference?.firstPreference || '—'}</td><td>{app.admissionCategory || '—'}</td><td>{formatDate(app.forwardedAt || app.confirmedAt || app.submittedAt)}</td><td><span className="badge badge-success">{app.status}</span></td><td><Link to={`/vc/confirmed/${app.id}`} className="btn-review">Review / Open</Link></td></tr>
+                <tr key={app.id}><td>{app.formNumber || app.id}</td><td>{app.studentName}</td><td>{app.emisId}</td><td>{app.coursePreference?.firstPreference || '—'}</td><td>{app.admissionCategory || '—'}</td><td>{formatDate(app.forwardedAt || app.confirmedAt || app.submittedAt)}</td><td><span className="badge badge-success">{app.status}</span></td><td><Link to={`/vc/confirmed/${app.id}`} className="btn-review">Review / Open</Link></td></tr>
               )) : <tr><td colSpan="8">{sentToVC.length ? 'No forwarded applications match your search.' : 'No applications have been sent to VC yet.'}</td></tr>}
             </tbody>
           </table>

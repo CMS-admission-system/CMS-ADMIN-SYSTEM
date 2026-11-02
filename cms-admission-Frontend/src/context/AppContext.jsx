@@ -212,7 +212,7 @@ export function AppProvider({ children }) {
     // Send update to central backend with expected_version
     const result = await updateApplicationApi(applicationId, updates, comment, actor, expectedVersion);
     if (result && result.ok === false && result.status === 409) {
-      alert(`⚠️ Concurrent Update Conflict: Application ${applicationId} was modified by another user. Reloading latest records from the server to prevent accidental overwrites.`);
+      alert(`âš ï¸ Concurrent Update Conflict: Application ${applicationId} was modified by another user. Reloading latest records from the server to prevent accidental overwrites.`);
       refreshFromDatabase();
       return { conflict: true };
     }
@@ -238,11 +238,12 @@ export function AppProvider({ children }) {
       console.warn('Backend API call fallback:', err);
     }
 
-    const officialId = serverResult?.id || rawData.id || `CMS-${Date.now()}`;
+    const officialId = serverResult?.id || rawData.formNumber || rawData.id || `CMS-${Date.now()}`;
     const appRecord = {
       ...rawData,
       ...(serverResult || {}),
       id: officialId,
+      formNumber: officialId,
     };
 
     setApplications((current) => {

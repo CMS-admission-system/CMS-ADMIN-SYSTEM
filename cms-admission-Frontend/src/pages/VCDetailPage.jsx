@@ -33,7 +33,7 @@ export default function VCDetailPage() {
             <p className="eyebrow accent">Admission office forwarded record</p>
             <h2>{application.studentName}</h2>
           </div>
-          <div className="preview-brand"><img src="/cms-logo.png" alt="CMS logo" className="brand-logo small" /> <span>{application.id}</span></div>
+          <div className="preview-brand"><img src="/cms-logo.png" alt="CMS logo" className="brand-logo small" /> <span>Admin No: {application.formNumber || application.id}</span></div>
         </div>
 
         <div className="preview-grid two-column">
@@ -41,16 +41,16 @@ export default function VCDetailPage() {
             <h3>Student & Personal details</h3>
             <ul>
               <li><span>Student name</span><strong>{application.studentName}</strong></li>
-              <li><span>Email ID</span><strong>{application.email || '—'}</strong></li>
-              <li><span>EMIS ID</span><strong>{application.emisId || '—'}</strong></li>
-              <li><span>Date of birth</span><strong>{application.dateOfBirth || '—'}</strong></li>
-              <li><span>Gender</span><strong>{application.gender || '—'}</strong></li>
-              <li><span>Aadhaar number</span><strong>{application.aadhaar || '—'}</strong></li>
-              <li><span>Blood group</span><strong>{application.bloodGroup || '—'}</strong></li>
-              <li><span>Community / Category</span><strong>{`${application.community || '—'} / ${application.category || '—'}`}</strong></li>
-              <li><span>Mobile number</span><strong>{application.studentMobile ? `+91 ${application.studentMobile}` : '—'}</strong></li>
-              <li><span>Address</span><strong>{application.communicationAddress || '—'}</strong></li>
-              <li><span>District / State / PIN</span><strong>{`${application.district || '—'}, ${application.state || '—'} - ${application.pinCode || '—'}`}</strong></li>
+              <li><span>Email ID</span><strong>{application.email || 'â€”'}</strong></li>
+              <li><span>EMIS ID</span><strong>{application.emisId || 'â€”'}</strong></li>
+              <li><span>Date of birth</span><strong>{application.dateOfBirth || 'â€”'}</strong></li>
+              <li><span>Gender</span><strong>{application.gender || 'â€”'}</strong></li>
+              <li><span>Aadhaar number</span><strong>{application.aadhaar || 'â€”'}</strong></li>
+              <li><span>Blood group</span><strong>{application.bloodGroup || 'â€”'}</strong></li>
+              <li><span>Community / Category</span><strong>{`${application.community || 'â€”'} / ${application.category || 'â€”'}`}</strong></li>
+              <li><span>Mobile number</span><strong>{application.studentMobile ? `+91 ${application.studentMobile}` : 'â€”'}</strong></li>
+              <li><span>Address</span><strong>{application.communicationAddress || 'â€”'}</strong></li>
+              <li><span>District / State / PIN</span><strong>{`${application.district || 'â€”'}, ${application.state || 'â€”'} - ${application.pinCode || 'â€”'}`}</strong></li>
             </ul>
           </div>
 
@@ -58,34 +58,34 @@ export default function VCDetailPage() {
             <h3>Programme & Academic details</h3>
             <ul>
               <li><span>Admission category</span><strong>{application.admissionCategory}</strong></li>
-              <li><span>Programme / Degree</span><strong>{`${application.programme || '—'} - ${application.degree || '—'}`}</strong></li>
-              <li><span>First preference course</span><strong>{application.coursePreference?.firstPreference || '—'}</strong></li>
-              <li><span>First Graduate (FG)</span><strong>{application.firstGraduate || '—'}</strong></li>
+              <li><span>Programme / Degree</span><strong>{`${application.programme || 'â€”'} - ${application.degree || 'â€”'}`}</strong></li>
+              <li><span>First preference course</span><strong>{application.coursePreference?.firstPreference || 'â€”'}</strong></li>
+              <li><span>First Graduate (FG)</span><strong>{application.firstGraduate || 'â€”'}</strong></li>
               <li><span>Status</span><strong>{application.status}</strong></li>
-              <li><span>School name & address</span><strong>{`${application.schoolName || '—'}, ${application.schoolAddress || '—'}`}</strong></li>
-              <li><span>Class 12 / HSC marks</span><strong>{`${application.hscMarks ?? '—'} / 600`}</strong></li>
-              <li><span>Mathematics</span><strong>{`${application.mathematics ?? '—'} / 100`}</strong></li>
-              <li><span>Physics</span><strong>{`${application.physicsMarks ?? application.physicsTheory ?? '—'} / 100`}</strong></li>
-              <li><span>Chemistry</span><strong>{`${application.chemistryMarks ?? application.chemistryTheory ?? '—'} / 100`}</strong></li>
-              <li><span>Cut-off marks</span><strong>{application.cutOffMarks ? Number(application.cutOffMarks).toFixed(2) : '—'} / 200</strong></li>
+              <li><span>School name & address</span><strong>{`${application.schoolName || 'â€”'}, ${application.schoolAddress || 'â€”'}`}</strong></li>
+              <li><span>Class 12 / HSC marks</span><strong>{`${application.hscMarks ?? 'â€”'} / 600`}</strong></li>
+              <li><span>Mathematics</span><strong>{`${application.mathematics ?? 'â€”'} / 100`}</strong></li>
+              <li><span>Physics</span><strong>{`${application.physicsMarks ?? application.physicsTheory ?? 'â€”'} / 100`}</strong></li>
+              <li><span>Chemistry</span><strong>{`${application.chemistryMarks ?? application.chemistryTheory ?? 'â€”'} / 100`}</strong></li>
+              <li><span>Cut-off marks</span><strong>{application.cutOffMarks ? Number(application.cutOffMarks).toFixed(2) : 'â€”'} / 200</strong></li>
             </ul>
           </div>
 
           <div className="preview-block">
             <h3>Parents & Guardian</h3>
             <ul>
-              <li><span>Father</span><strong>{`${application.fatherName || '—'} (${application.fatherOccupation || '—'}) · ${application.fatherMobile || application.parentMobile || '—'}`}</strong></li>
-              <li><span>Mother</span><strong>{`${application.motherName || '—'} (${application.motherOccupation || '—'}) · ${application.motherMobile || '—'}`}</strong></li>
-              <li><span>Guardian</span><strong>{`${application.guardianName || '—'} (${application.guardianOccupation || '—'}) · ${application.guardianMobile || '—'}`}</strong></li>
+              <li><span>Father</span><strong>{`${application.fatherName || 'â€”'} (${application.fatherOccupation || 'â€”'}) Â· ${application.fatherMobile || application.parentMobile || 'â€”'}`}</strong></li>
+              <li><span>Mother</span><strong>{`${application.motherName || 'â€”'} (${application.motherOccupation || 'â€”'}) Â· ${application.motherMobile || 'â€”'}`}</strong></li>
+              <li><span>Guardian</span><strong>{`${application.guardianName || 'â€”'} (${application.guardianOccupation || 'â€”'}) Â· ${application.guardianMobile || 'â€”'}`}</strong></li>
             </ul>
           </div>
 
           <div className="preview-block">
             <h3>Accommodation & Declarations</h3>
             <ul>
-              <li><span>Accommodation</span><strong>{application.accommodation || '—'}</strong></li>
-              <li><span>Bus route</span><strong>{application.busRoute || '—'}</strong></li>
-              <li><span>Transport requirements</span><strong>{application.transportRequirements || '—'}</strong></li>
+              <li><span>Accommodation</span><strong>{application.accommodation || 'â€”'}</strong></li>
+              <li><span>Bus route</span><strong>{application.busRoute || 'â€”'}</strong></li>
+              <li><span>Transport requirements</span><strong>{application.transportRequirements || 'â€”'}</strong></li>
               <li><span>Student declaration</span><strong>{application.declaration ? 'Accepted' : 'Not accepted'}</strong></li>
               <li><span>Parent declaration</span><strong>{application.parentDeclaration ? 'Accepted' : 'Not accepted'}</strong></li>
               <li><span>Cash receipt</span><strong>{application.cashReceipt?.name ? 'Uploaded' : 'Not uploaded'}</strong></li>

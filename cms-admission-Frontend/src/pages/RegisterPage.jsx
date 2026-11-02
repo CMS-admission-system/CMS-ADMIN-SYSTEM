@@ -7,9 +7,8 @@ import { fetchDemoStudent } from '../services/emisService';
 import { calculateCutoff, PROGRAMME_COURSES } from '../utils/helpers';
 
 const steps = [
-  'Admission category',
+  'Admission category & Quota',
   'Degree and course selection',
-  'FG (First Graduate)',
   'Personal information',
   'Parents and guardian',
   'Accommodation',
@@ -320,7 +319,7 @@ const hscGroupOptions = [
 ];
 
 function getIndianMobileError(value) {
-  return /^[6-9]\d{9}$/.test(value) ? '' : 'Enter a valid 10-digit Indian mobile number starting with 6–9.';
+  return /^[6-9]\d{9}$/.test(value) ? '' : 'Enter a valid 10-digit Indian mobile number starting with 6â€“9.';
 }
 
 function getLegacySubjectMarks(theory, practical) {
@@ -386,6 +385,7 @@ export default function RegisterPage() {
     bloodGroupOther: draft?.bloodGroupOther || '',
     consultantName: draft?.consultantName || '',
     organizationName: draft?.organizationName || '',
+    sportsCategory: draft?.sportsCategory || '',
     studentSignature: draft?.studentSignature || draft?.signature || null,
     parentSignature: draft?.parentSignature || null,
   }));
@@ -416,10 +416,13 @@ export default function RegisterPage() {
       && Number(formData.hscMarks) >= 0 && Number(formData.hscMarks) <= 600;
 
     const stepsComplete = [
-      Boolean(formData.admissionCategory),
+      Boolean(
+        formData.admissionCategory
+        && ['Yes', 'No'].includes(formData.firstGraduate)
+        && ['Yes', 'No'].includes(formData.sportsCategory)
+      ),
       Boolean(formData.programme && formData.degree
         && (!availableCourses.length || formData.coursePreference.firstPreference)),
-      ['Yes', 'No'].includes(formData.firstGraduate),
       Boolean(
         ['studentName', 'dateOfBirth', 'gender', 'aadhaar', 'bloodGroup', 'community', 'category',
           'studentMobile', 'communicationAddress', 'district', 'state', 'pinCode']
@@ -462,7 +465,7 @@ export default function RegisterPage() {
         && (formData.studentSignature?.dataUrl || formData.signature?.dataUrl)
         && formData.parentSignature?.dataUrl,
       ),
-      currentStep >= 9,
+      currentStep >= 8,
     ];
     let count = 0;
     for (const complete of stepsComplete) {
@@ -543,6 +546,8 @@ export default function RegisterPage() {
 
     if (currentStep === 1) {
       if (!formData.admissionCategory) nextErrors.admissionCategory = 'Choose Management or Counselling.';
+      if (!['Yes', 'No'].includes(formData.firstGraduate)) nextErrors.firstGraduate = 'Select Yes or No for First Graduate.';
+      if (!['Yes', 'No'].includes(formData.sportsCategory)) nextErrors.sportsCategory = 'Select Yes or No for Sports Category.';
     }
 
     if (currentStep === 2) {
@@ -553,11 +558,7 @@ export default function RegisterPage() {
       }
     }
 
-    if (currentStep === 3 && !['Yes', 'No'].includes(formData.firstGraduate)) {
-      nextErrors.firstGraduate = 'Select Yes or No.';
-    }
-
-    if (currentStep === 4) {
+    if (currentStep === 3) {
       [
         'studentName',
         'dateOfBirth',
@@ -597,7 +598,7 @@ export default function RegisterPage() {
       }
     }
 
-    if (currentStep === 5) {
+    if (currentStep === 4) {
       ['fatherName', 'fatherOccupation', 'motherName', 'motherOccupation', 'fatherMobile', 'motherMobile'].forEach((field) => {
         if (!String(formData[field] || '').trim()) nextErrors[field] = 'This field is required.';
       });
@@ -613,7 +614,7 @@ export default function RegisterPage() {
       }
     }
 
-    if (currentStep === 6) {
+    if (currentStep === 5) {
       if (!formData.accommodation) {
         nextErrors.accommodation = 'Choose Hostel or Day Scholar.';
       } else if (formData.accommodation === 'Day Scholar') {
@@ -625,7 +626,7 @@ export default function RegisterPage() {
       }
     }
 
-    if (currentStep === 7) {
+    if (currentStep === 6) {
       if (!formData.hscGroup) {
         nextErrors.hscGroup = 'Please select 12th standard group.';
       }
@@ -645,7 +646,7 @@ export default function RegisterPage() {
       });
     }
 
-    if (currentStep === 8) {
+    if (currentStep === 7) {
       if (!formData.declaration) nextErrors.declaration = 'You must agree to the declaration.';
       if (!formData.parentDeclaration) nextErrors.parentDeclaration = 'Parent declaration is required.';
       if (!formData.studentSignature?.dataUrl && !formData.signature?.dataUrl) {
@@ -745,8 +746,9 @@ export default function RegisterPage() {
   };
 
   const renderAdmissionCategoryStep = () => (
-    <div className="form-grid">
-      <fieldset className="field-group choice-fieldset">
+    <div className="form-grid" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      {/* 1. Admission Category */}
+      <fieldset className="field-group choice-fieldset full-width">
         <legend>Admission category <span className="required-indicator">*</span></legend>
         <div className="choice-grid two-choice-grid">
           {['Management', 'Counselling'].map((category) => (
@@ -755,13 +757,60 @@ export default function RegisterPage() {
               type="button"
               className={`choice-card ${formData.admissionCategory === category ? 'active' : ''}`}
               aria-pressed={formData.admissionCategory === category}
-              onClick={() => updateField('admissionCategory', category)}
+              onClick={() => {
+                updateField('admissionCategory', category);
+                if (errors.admissionCategory) setErrors((prev) => ({ ...prev, admissionCategory: '' }));
+              }}
             >
               {category}
             </button>
           ))}
         </div>
         {errors.admissionCategory ? <small className="error-text">{errors.admissionCategory}</small> : null}
+      </fieldset>
+
+      {/* 2. First Graduate (FG) */}
+      <fieldset className="field-group choice-fieldset full-width">
+        <legend>First Graduate (FG) <span className="required-indicator">*</span></legend>
+        <div className="choice-grid two-choice-grid">
+          {['Yes', 'No'].map((answer) => (
+            <button
+              key={answer}
+              type="button"
+              className={`choice-card ${formData.firstGraduate === answer ? 'active' : ''}`}
+              aria-pressed={formData.firstGraduate === answer}
+              onClick={() => {
+                updateField('firstGraduate', answer);
+                if (errors.firstGraduate) setErrors((prev) => ({ ...prev, firstGraduate: '' }));
+              }}
+            >
+              {answer}
+            </button>
+          ))}
+        </div>
+        {errors.firstGraduate ? <small className="error-text">{errors.firstGraduate}</small> : null}
+      </fieldset>
+
+      {/* 3. Sports Category */}
+      <fieldset className="field-group choice-fieldset full-width">
+        <legend>Sports Category <span className="required-indicator">*</span></legend>
+        <div className="choice-grid two-choice-grid">
+          {['Yes', 'No'].map((option) => (
+            <button
+              key={option}
+              type="button"
+              className={`choice-card ${formData.sportsCategory === option ? 'active' : ''}`}
+              aria-pressed={formData.sportsCategory === option}
+              onClick={() => {
+                updateField('sportsCategory', option);
+                if (errors.sportsCategory) setErrors((prev) => ({ ...prev, sportsCategory: '' }));
+              }}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+        {errors.sportsCategory ? <small className="error-text">{errors.sportsCategory}</small> : null}
       </fieldset>
     </div>
   );
@@ -825,28 +874,6 @@ export default function RegisterPage() {
           {errors.firstPreference ? <small className="error-text">{errors.firstPreference}</small> : null}
         </fieldset>
       ) : null}
-    </div>
-  );
-
-  const renderFirstGraduateStep = () => (
-    <div className="form-grid">
-      <fieldset className="field-group choice-fieldset">
-        <legend>First Graduate (FG) <span className="required-indicator">*</span></legend>
-        <div className="choice-grid two-choice-grid">
-          {['Yes', 'No'].map((answer) => (
-            <button
-              key={answer}
-              type="button"
-              className={`choice-card ${formData.firstGraduate === answer ? 'active' : ''}`}
-              aria-pressed={formData.firstGraduate === answer}
-              onClick={() => updateField('firstGraduate', answer)}
-            >
-              {answer}
-            </button>
-          ))}
-        </div>
-        {errors.firstGraduate ? <small className="error-text">{errors.firstGraduate}</small> : null}
-      </fieldset>
     </div>
   );
 
@@ -1470,7 +1497,7 @@ export default function RegisterPage() {
             </tbody>
           </table>
         </div>
-        <p className="fee-structure-note">This page is for viewing only. Amounts not listed on the supplied fee sheet are marked “Not specified”; please confirm those amounts with the college office.</p>
+        <p className="fee-structure-note">This page is for viewing only. Amounts not listed on the supplied fee sheet are marked “Not specifiedâ€; please confirm those amounts with the college office.</p>
       </section>
     );
   };
@@ -1478,7 +1505,6 @@ export default function RegisterPage() {
   const renderedSteps = [
     renderAdmissionCategoryStep,
     renderProgrammeStep,
-    renderFirstGraduateStep,
     renderPersonalStep,
     renderParentsStep,
     renderAccommodationStep,
@@ -1499,16 +1525,16 @@ export default function RegisterPage() {
           <div>
             <p className="eyebrow accent">
               <span className="admissions-portal-label">Admissions Portal</span>
-              <span className="completion-count">{completedStepCount}/9</span>
+              <span className="completion-count">{completedStepCount}/{steps.length}</span>
             </p>
             {currentStep !== 1 ? <h2>{steps[currentStep - 1]}</h2> : null}
           </div>
         </div>
 
-        <div className="progress-bar" aria-label={`${completedStepCount} of 9 pages completed`}>
+        <div className="progress-bar" aria-label={`${completedStepCount} of ${steps.length} pages completed`}>
           <span style={{ width: `${(completedStepCount / steps.length) * 100}%` }} />
         </div>
-        {currentStep !== 9 ? (
+        {currentStep !== steps.length ? (
           <p className="required-fields-note"><span className="required-indicator">*</span> Required fields. EMIS ID, Email ID, guardian details, and document uploads are optional; student and parent signatures are required.</p>
         ) : null}
 

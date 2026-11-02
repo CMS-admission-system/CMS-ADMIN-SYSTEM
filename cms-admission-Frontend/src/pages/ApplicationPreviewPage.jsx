@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, CreditCard, Eye, Printer, Send, X } from 'lucide-react';
+import { ArrowLeft, Camera, CreditCard, Eye, Printer, Send, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { calculateCutoff, formatDate } from '../utils/helpers';
@@ -43,33 +43,33 @@ function isCourseChosen(courseItem, selectedCourse) {
   const s = selectedCourse.toLowerCase().trim();
   const l = courseItem.label.toLowerCase();
   if (s === l) return true;
-  if (courseItem.id === 'cyber' && s.includes('cyber')) return true;
-  if (courseItem.id === 'aiml' && (s.includes('machine') || s.includes('aiml'))) return true;
-  if (courseItem.id === 'aids' && (s.includes('data') || s.includes('aids'))) return true;
-  if (courseItem.id === 'cse' && s.includes('computer') && !s.includes('cyber')) return true;
-  if (courseItem.id === 'ece' && s.includes('communication')) return true;
-  if (courseItem.id === 'eee' && s.includes('electrical')) return true;
-  if (courseItem.id === 'biomed' && s.includes('bio')) return true;
-  if (courseItem.id === 'mech' && s.includes('mech')) return true;
+  if (courseItem.id === 'cse' && (s === 'cse' || (s.includes('computer') && !s.includes('cyber') && !s.includes('electrical')))) return true;
+  if (courseItem.id === 'aids' && (s === 'ai&ds' || s === 'aids' || s.includes('data') || s.includes('aids') || s.includes('ai&ds'))) return true;
+  if (courseItem.id === 'aiml' && (s === 'aiml' || s.includes('aiml') || s.includes('machine'))) return true;
+  if (courseItem.id === 'cyber' && (s === 'cs' || s.includes('cyber') || s.includes('security'))) return true;
+  if (courseItem.id === 'biomed' && (s === 'bme' || s.includes('biomed') || s.includes('bio'))) return true;
+  if (courseItem.id === 'ece' && (s === 'ece' || s.includes('electronics') || s.includes('communication'))) return true;
+  if (courseItem.id === 'eee' && (s === 'eee' || (s.includes('electrical') && !s.includes('computer')))) return true;
+  if (courseItem.id === 'mech' && (s === 'mech' || s.includes('mechanical') || s.includes('mech'))) return true;
   return false;
 }
 
 const feeStructureRows = [
   { item: 'ADMISSION FEES (one time)', amount: '5000' },
   { item: 'CONSORTIUM FEES (one time)', amount: '550' },
-  { item: 'RRA AMOUNT – ONE TIME (ANNA UNIVERSITY)', amount: '2500' },
-  { item: 'SPORTS FEES– ONE TIME (ANNA UNIVERSITY) (Four Years)', amount: '625' },
-  { item: 'GROUP INSURANCE – ONE TIME', amount: '100' },
+  { item: 'RRA AMOUNT â€“ ONE TIME (ANNA UNIVERSITY)', amount: '2500' },
+  { item: 'SPORTS FEESâ€“ ONE TIME (ANNA UNIVERSITY) (Four Years)', amount: '625' },
+  { item: 'GROUP INSURANCE â€“ ONE TIME', amount: '100' },
   { item: 'SYLLABUS FEES ONE TIME (ANNA UNIVERSITY)', amount: '200' },
   { item: 'NSS FEES (ANNAUNIVERSITY)', amount: '25' },
   { item: 'LAB COAT', amount: '500' },
   { item: 'ID CARD', amount: '100' },
   { item: 'BOOK FEES & EXAM PAPER FEES (IN EVERY SEMESTER)', amount: '—' },
-  { item: 'TUTION FEES – FIRST GRADUATE (OC/BC/BC(M)/MBC & DNC)', amount: 'Category based' },
-  { item: 'TUITION FEES – NON-FIRST GRADUATE (OC/BC/BC(M)/MBC& DNC)', amount: 'Category based' },
-  { item: 'TUITION FEES – SC/SC(A)/ST/SCC', amount: 'Category based' },
-  { item: 'HOSTEL FEES – (OC/BC/BC(M)/MBC& DNC)', amount: 'Category based' },
-  { item: 'HOSTEL FEES – SC/SC(A)/ST/SCC', amount: 'Category based' },
+  { item: 'TUTION FEES â€“ FIRST GRADUATE (OC/BC/BC(M)/MBC & DNC)', amount: 'Category based' },
+  { item: 'TUITION FEES â€“ NON-FIRST GRADUATE (OC/BC/BC(M)/MBC& DNC)', amount: 'Category based' },
+  { item: 'TUITION FEES â€“ SC/SC(A)/ST/SCC', amount: 'Category based' },
+  { item: 'HOSTEL FEES â€“ (OC/BC/BC(M)/MBC& DNC)', amount: 'Category based' },
+  { item: 'HOSTEL FEES â€“ SC/SC(A)/ST/SCC', amount: 'Category based' },
   { item: 'HOSTEL / TRANSPORT APPLICATION FORM', amount: '50' },
   { item: 'TRANSPORT FEES (PER YEAR)', amount: '—' },
 ];
@@ -106,6 +106,8 @@ export default function ApplicationPreviewPage() {
   const isMQ = draft.admissionCategory === 'MQ' || draft.admissionCategory === 'Management' || draft.admissionCategory === 'Management Quota';
   const isFGYes = String(draft.firstGraduate).toLowerCase() === 'yes';
   const isFGNo = String(draft.firstGraduate).toLowerCase() === 'no';
+  const isSportsYes = String(draft.sportsCategory).toLowerCase() === 'yes';
+  const isSportsNo = String(draft.sportsCategory).toLowerCase() === 'no';
   const isMale = String(draft.gender).toLowerCase() === 'male';
   const isFemale = String(draft.gender).toLowerCase() === 'female';
   const isOther = Boolean(draft.gender && !isMale && !isFemale);
@@ -113,9 +115,14 @@ export default function ApplicationPreviewPage() {
   const isHostelNo = draft.accommodation === 'Day Scholar' || String(draft.transportRequired).toLowerCase() === 'yes';
 
   const selectedCourse = draft.coursePreference?.firstPreference || '';
+  const adminNumber = draft.formNumber || draft.id || 'CMS-2026-1001';
   const studentSig = (draft.studentSignature || draft.signature)?.dataUrl || null;
   const parentSig = draft.parentSignature?.dataUrl || null;
-  const studentPhoto = draft.documents?.PassportSizePhotographs?.dataUrl || null;
+  const studentPhoto = draft.documents?.PassportSizePhotographs?.dataUrl
+    || draft.documents?.StudentPhoto?.dataUrl
+    || draft.studentPhoto?.dataUrl
+    || draft.studentPhoto
+    || null;
 
   const docs = draft.documents || {};
   const docSSLC = docs.SSLC;
@@ -128,11 +135,30 @@ export default function ApplicationPreviewPage() {
   const docFG = docs.FirstGraduateCertificate || docs.FG;
   const docPhoto = docs.PassportSizePhotographs;
 
+  const validateStaffView = () => {
+    const nextErrors = {};
+    if (!String(staffViewName || '').trim()) {
+      nextErrors.name = 'Staff name is mandatory. Please enter staff name.';
+    }
+    if (!String(staffViewCategory || '').trim()) {
+      nextErrors.category = 'Staff category is mandatory. Please enter staff category.';
+    }
+    setStaffErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  };
+
   const handleEnquiring = async () => {
-    const sName = String(staffViewName || '').trim() || 'Admission Desk';
-    const sCat = String(staffViewCategory || '').trim() || 'General';
+    if (!validateStaffView()) {
+      const el = document.querySelector('.staff-view-section');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+    const sName = String(staffViewName || '').trim();
+    const sCat = String(staffViewCategory || '').trim();
     const application = await submitApplication({
       ...draft,
+      id: adminNumber,
+      formNumber: adminNumber,
       status: 'Enquiring',
       staffViewName: sName,
       staffViewCategory: sCat,
@@ -140,28 +166,21 @@ export default function ApplicationPreviewPage() {
       organizationName,
       cutOffMarks: cutoff ?? '',
     });
-    navigate(`/application-success?id=${encodeURIComponent(application?.id || '')}`);
-  };
-
-  const handleSaveDraft = () => {
-    const sName = String(staffViewName || '').trim() || 'Admission Desk';
-    const sCat = String(staffViewCategory || '').trim() || 'General';
-    saveDraft({
-      ...draft,
-      staffViewName: sName,
-      staffViewCategory: sCat,
-      consultantName,
-      organizationName,
-      cutOffMarks: cutoff ?? '',
-    });
-    window.alert('Application draft saved successfully.');
+    navigate(`/application-success?id=${encodeURIComponent(application?.id || adminNumber)}`);
   };
 
   const handleConfirmSeat = () => {
-    const sName = String(staffViewName || '').trim() || 'Admission Desk';
-    const sCat = String(staffViewCategory || '').trim() || 'General';
+    if (!validateStaffView()) {
+      const el = document.querySelector('.staff-view-section');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+    const sName = String(staffViewName || '').trim();
+    const sCat = String(staffViewCategory || '').trim();
     saveDraft({
       ...draft,
+      id: adminNumber,
+      formNumber: adminNumber,
       staffViewName: sName,
       staffViewCategory: sCat,
       consultantName,
@@ -190,13 +209,34 @@ export default function ApplicationPreviewPage() {
               </div>
 
               <div className="cms-header-right">
-                <div className="cms-photo-boxes" title="Affix recent passport size photographs">
-                  <div className="cms-photo-box">
-                    {studentPhoto ? <img src={studentPhoto} alt="Student" /> : <span>Affix Photo</span>}
-                  </div>
-                  <div className="cms-photo-box"><span>Affix Photo</span></div>
-                  <div className="cms-photo-box"><span>Affix Photo</span></div>
-                  <div className="cms-photo-box"><span>Affix Photo</span></div>
+                <div
+                  className="cms-photo-single"
+                  title="Student Photograph"
+                  style={{
+                    width: '95px',
+                    height: '115px',
+                    border: '1.5px solid #006747',
+                    borderRadius: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: '#f8fafc',
+                    overflow: 'hidden',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
+                  }}
+                >
+                  {studentPhoto ? (
+                    <img
+                      src={studentPhoto}
+                      alt="Student"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                    />
+                  ) : (
+                    <div style={{ textAlign: 'center', color: '#64748b', fontSize: '0.68rem', padding: '4px' }}>
+                      <Camera size={22} style={{ margin: '0 auto 4px', display: 'block', color: '#94a3b8' }} />
+                      <span>Affix Photo</span>
+                    </div>
+                  )}
                 </div>
                 <div className="cms-excellence-badge">
                   20 YEARS OF<br />EDUCATIONAL EXCELLENCE
@@ -239,7 +279,7 @@ export default function ApplicationPreviewPage() {
 
           {/* Form No, Admission Form Title & Date */}
           <div className="cms-form-title-bar">
-            <span>Form No: <strong># {draft.formNumber || '1888'}</strong></span>
+            <span>Admin / Form No: <strong># {adminNumber}</strong></span>
             <span className="cms-form-title">ADMISSION FORM</span>
             <span>Date: <strong>{formatDate(draft.applicationDate || new Date())}</strong></span>
           </div>
@@ -259,6 +299,20 @@ export default function ApplicationPreviewPage() {
                 <td>
                   <PaperOption selected={isFGYes} label="YES" />
                   <PaperOption selected={isFGNo} label="NO" />
+                </td>
+              </tr>
+              <tr>
+                <th>SPORTS CATEGORY</th>
+                <td>
+                  <PaperOption selected={isSportsYes} label="YES" />
+                  <PaperOption selected={isSportsNo} label="NO" />
+                </td>
+              </tr>
+              <tr>
+                <th>COURSE &amp; DEPARTMENT PREFERRED</th>
+                <td style={{ fontWeight: 700, color: '#16a34a' }}>
+                  {draft.degree ? `${draft.degree} — ` : ''}{selectedCourse || '—'}
+                  {draft.programme ? <span style={{ marginLeft: '8px', color: '#64748b', fontWeight: 500, fontSize: '0.78rem' }}>({draft.programme})</span> : null}
                 </td>
               </tr>
               <tr>
@@ -327,7 +381,7 @@ export default function ApplicationPreviewPage() {
                 </td>
               </tr>
               <tr>
-                <th>BOARDING PLACE – ROUTE</th>
+                <th>BOARDING PLACE â€“ ROUTE</th>
                 <td>
                   {draft.pickupPoint || draft.busRoute || (isHostelYes ? 'Hosteller (No Route)' : 'Day Scholar')}
                 </td>
@@ -372,7 +426,10 @@ export default function ApplicationPreviewPage() {
           </table>
 
           {/* Courses (B.E/B.TECH) Preferred matching Reference Image 2 */}
-          <div className="cms-section-header">COURSES (B.E/B.TECH) PREFERRED</div>
+          <div className="cms-section-header">
+            COURSES ({draft.degree || 'B.E/B.TECH'}) PREFERRED
+            {selectedCourse ? <span style={{ marginLeft: '10px', color: '#16a34a', fontWeight: 800 }}>— {draft.degree ? `${draft.degree} ` : ''}{selectedCourse}</span> : null}
+          </div>
           <div className="cms-courses-grid">
             <div>
               {LEFT_COURSES.map((course) => {
@@ -400,6 +457,14 @@ export default function ApplicationPreviewPage() {
               })}
             </div>
           </div>
+          {selectedCourse && !LEFT_COURSES.some((c) => isCourseChosen(c, selectedCourse)) && !RIGHT_COURSES.some((c) => isCourseChosen(c, selectedCourse)) ? (
+            <div style={{ marginTop: '6px' }}>
+              <div className="cms-course-item selected">
+                <span className="paper-checkbox" aria-hidden="true">✓</span>
+                <span>{selectedCourse.toUpperCase()} ({draft.degree || 'Course'})</span>
+              </div>
+            </div>
+          ) : null}
 
           {/* Fees Structure matching Reference Image 3 (wa_img_2.jpeg) */}
           <div className="cms-section-header" style={{ marginTop: '8px' }}>FEES STRUCTURE</div>
@@ -542,7 +607,7 @@ export default function ApplicationPreviewPage() {
                 }}
                 placeholder="Type staff name"
               />
-              {staffErrors.name ? <small className="error-text" style={{ color: '#7d4b11', fontWeight: 600 }}>{staffErrors.name}</small> : null}
+              {staffErrors.name ? <small className="error-text" style={{ color: '#dc2626', fontWeight: 600, display: 'block', marginTop: '4px' }}>{staffErrors.name}</small> : null}
             </div>
             <div className="field-group">
               <label htmlFor="staff-view-category">
@@ -559,24 +624,79 @@ export default function ApplicationPreviewPage() {
                 }}
                 placeholder="Type staff category"
               />
-              {staffErrors.category ? <small className="error-text" style={{ color: '#7d4b11', fontWeight: 600 }}>{staffErrors.category}</small> : null}
+              {staffErrors.category ? <small className="error-text" style={{ color: '#dc2626', fontWeight: 600, display: 'block', marginTop: '4px' }}>{staffErrors.category}</small> : null}
             </div>
           </div>
         </section>
 
-        {/* Action Buttons (Screen Only) */}
-        <div className="form-actions preview-actions screen-only" style={{ marginTop: '14px' }}>
-          <button type="button" className="secondary-btn" onClick={() => navigate('/register?step=9')}>
+        {/* Action Boxes (Screen Only) */}
+        <section className="preview-action-boxes screen-only" style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          {/* Enquiring Box (Above) */}
+          <div className="action-card-box enquiring-box" style={{
+            background: 'rgba(255, 255, 255, 0.95)',
+            border: '2px solid #2563eb',
+            borderRadius: '12px',
+            padding: '16px 20px',
+            boxShadow: '0 4px 12px rgba(37, 99, 235, 0.1)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '12px',
+          }}>
+            <div>
+              <h4 style={{ margin: 0, fontSize: '1rem', color: '#1e40af', fontWeight: 700 }}>Enquiry Submission</h4>
+              <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: '#475569' }}>
+                Submit student application to the admission office enquiry list for review and follow-up.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="primary-btn"
+              onClick={handleEnquiring}
+              style={{ minWidth: '160px', background: '#2563eb', borderColor: '#1d4ed8' }}
+            >
+              <Send size={16} /> Enquiring
+            </button>
+          </div>
+
+          {/* Confirm Box (At the bottom) */}
+          <div className="action-card-box confirm-box" style={{
+            background: 'rgba(255, 255, 255, 0.95)',
+            border: '2px solid #16a34a',
+            borderRadius: '12px',
+            padding: '16px 20px',
+            boxShadow: '0 4px 12px rgba(22, 163, 74, 0.12)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '12px',
+          }}>
+            <div>
+              <h4 style={{ margin: 0, fontSize: '1rem', color: '#166534', fontWeight: 700 }}>Confirm Seat</h4>
+              <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: '#475569' }}>
+                Confirm candidate's seat and proceed to admission fee payment.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="primary-btn"
+              onClick={handleConfirmSeat}
+              style={{ minWidth: '160px', background: '#16a34a', borderColor: '#15803d' }}
+            >
+              <CreditCard size={16} /> Confirm Seat
+            </button>
+          </div>
+        </section>
+
+        {/* Navigation & Print Actions (Screen Only) */}
+        <div className="form-actions preview-actions screen-only" style={{ marginTop: '16px' }}>
+          <button type="button" className="secondary-btn" onClick={() => navigate('/register?step=8')}>
             <ArrowLeft size={16} /> Previous
           </button>
           <button type="button" className="secondary-btn" onClick={() => window.print()}>
             <Printer size={16} /> Print Application
-          </button>
-          <button type="button" className="secondary-btn" onClick={handleConfirmSeat}>
-            <CreditCard size={16} /> Confirm Seat
-          </button>
-          <button type="button" className="primary-btn" onClick={handleEnquiring}>
-            <Send size={16} /> Enquiring
           </button>
         </div>
       </div>

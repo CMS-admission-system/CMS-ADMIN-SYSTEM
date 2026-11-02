@@ -131,12 +131,12 @@ export default function OfficerDashboardPage() {
 
             <table className="data-table">
               <thead>
-                <tr><th>App ID</th><th>Student</th><th>EMIS ID</th><th>Course</th><th>Date</th><th>Status</th><th>Action</th></tr>
+                <tr><th>Admin No</th><th>Student</th><th>EMIS ID</th><th>Course</th><th>Date</th><th>Status</th><th>Action</th></tr>
               </thead>
               <tbody>
                 {enquiring.length ? enquiring.slice(0, 8).map((app) => (
                   <tr key={app.id}>
-                    <td>{app.id}</td>
+                    <td>{app.formNumber || app.id}</td>
                     <td>{app.studentName}</td>
                     <td>{app.emisId}</td>
                     <td>{app.coursePreference?.firstPreference || '—'}</td>
@@ -169,12 +169,12 @@ export default function OfficerDashboardPage() {
             </div>
             <table className="data-table">
               <thead>
-                <tr><th>App ID</th><th>Student</th><th>Course</th><th>Date</th><th>Status</th><th>Action</th></tr>
+                <tr><th>Admin No</th><th>Student</th><th>Course</th><th>Date</th><th>Status</th><th>Action</th></tr>
               </thead>
               <tbody>
                 {confirmed.length ? confirmed.slice(0, 8).map((app) => (
                   <tr key={app.id}>
-                    <td>{app.id}</td>
+                    <td>{app.formNumber || app.id}</td>
                     <td>{app.studentName}</td>
                     <td>{app.coursePreference?.firstPreference || '—'}</td>
                     <td>{formatDate(app.confirmedAt || app.submittedAt)}</td>
@@ -207,12 +207,12 @@ export default function OfficerDashboardPage() {
           </div>
           <table className="data-table">
             <thead>
-              <tr><th>App ID</th><th>Student</th><th>EMIS ID</th><th>Course</th><th>Status</th><th>Date</th><th>Action</th></tr>
+              <tr><th>Admin No</th><th>Student</th><th>EMIS ID</th><th>Course</th><th>Status</th><th>Date</th><th>Action</th></tr>
             </thead>
             <tbody>
               {[...filteredApplications].sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt)).slice(0, 6).map((app) => (
                 <tr key={app.id}>
-                  <td>{app.id}</td>
+                  <td>{app.formNumber || app.id}</td>
                   <td>{app.studentName}</td>
                   <td>{app.emisId}</td>
                   <td>{app.coursePreference?.firstPreference || '—'}</td>
