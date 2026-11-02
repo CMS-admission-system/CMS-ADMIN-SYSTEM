@@ -3,6 +3,7 @@ import { ArrowLeft, Banknote, Check, QrCode } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { QRCodeSVG } from 'qrcode.react';
+import { sendApplicationStatusEmail } from '../services/api';
 
 const DEMO_PAYMENT_QR_VALUE = 'CMS ADMISSION PAYMENT DEMO ONLY - NO PAYMENT ADDRESS';
 
@@ -104,6 +105,18 @@ export default function AdmissionPaymentPage() {
         confirmedAt: nowIso,
         updatedAt: nowIso,
       };
+
+      const destEmail = targetApp?.email || draft?.email;
+      if (destEmail) {
+        sendApplicationStatusEmail({
+          to: destEmail,
+          studentName: targetApp?.studentName || draft?.studentName || 'Student',
+          applicationId: adminNum,
+          status: 'Confirmed',
+          course: targetApp?.course_name || draft?.coursePreference?.firstPreference,
+          applicationDetails: { ...(targetApp || draft), ...updatedFields, id: adminNum, status: 'Confirmed' },
+        }).catch((err) => console.warn('Email dispatch notice:', err));
+      }
 
       if (targetApp) {
         // Flow from Admin Dashboard (Enquiring -> Confirm)

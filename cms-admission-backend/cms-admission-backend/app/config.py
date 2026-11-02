@@ -1,8 +1,17 @@
+from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_env_candidates = [
+    Path.cwd() / ".env",
+    Path(__file__).resolve().parent.parent / ".env",
+    Path(__file__).resolve().parent.parent.parent / ".env",
+    Path(__file__).resolve().parent.parent.parent.parent / ".env",
+]
+_env_file = next((str(p) for p in _env_candidates if p.is_file()), ".env")
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=_env_file, extra="ignore")
 
     DATABASE_URL: str = ""
     CORS_ORIGINS: str = "http://localhost:5173,http://127.0.0.1:5173"
@@ -24,7 +33,7 @@ class Settings(BaseSettings):
     SMTP_PORT: int = 587
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
-    SMTP_FROM: str = "admissions@cms.edu.in"
+    SMTP_FROM: str = "cmsadsystem@gmail.com"
     SMTP_TLS: bool = True
     FRONTEND_BASE_URL: str = "http://localhost:5173"
 

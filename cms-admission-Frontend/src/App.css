@@ -2289,12 +2289,16 @@ input[type="number"] {
   .background-audio-control,
   .screen-only,
   .preview-actions,
-  .staff-view-section {
+  .staff-view-section,
+  .success-card,
+  .success-actions {
     display: none !important;
   }
-  .page-shell.preview-shell {
+  .page-shell.preview-shell,
+  .page-shell.success-shell {
     padding: 0 !important;
     min-height: 0 !important;
+    background: transparent !important;
   }
   .cms-paper-wrapper {
     max-width: none !important;

@@ -302,7 +302,7 @@ def create_portal_application(
     # 2. Automatically email registered email on status Enquiring / Confirmed, preventing duplicates
     current_status = record.status or "Enquiring"
     last_emailed = payload.get("last_emailed_status")
-    student_email = payload.get("email")
+    student_email = payload.get("email") or payload.get("studentEmail") or payload.get("parentEmail")
 
     if student_email and last_emailed != current_status and current_status in ["Enquiring", "Confirmed", "Confirm"]:
         payload["last_emailed_status"] = current_status
@@ -399,7 +399,7 @@ def update_portal_application(
 
     # 2. Automatically email student on status change, preventing duplicate emails
     last_emailed = data.get("last_emailed_status")
-    student_email = data.get("email")
+    student_email = data.get("email") or data.get("studentEmail") or data.get("parentEmail")
 
     if student_email and new_status in ["Enquiring", "Confirmed", "Confirm"]:
         if (new_status != old_status or last_emailed != new_status) and last_emailed != new_status:

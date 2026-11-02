@@ -385,7 +385,8 @@ export default function RegisterPage() {
         && (formData.bloodGroup !== 'Others' || String(formData.bloodGroupOther || '').trim())
         && formData.dateOfBirth <= todayDate
         && !getIndianMobileError(formData.studentMobile)
-        && (!formData.email || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(formData.email || '').trim()))
+        && formData.email
+        && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(formData.email || '').trim())
         && /^\d{12}$/.test(formData.aadhaar.replace(/\s/g, ''))
         && /^\d{6}$/.test(formData.pinCode),
       ),
@@ -564,8 +565,8 @@ export default function RegisterPage() {
         const mobileError = getIndianMobileError(formData.studentMobile);
         if (mobileError) nextErrors.studentMobile = mobileError;
       }
-      if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(formData.email || '').trim())) {
-        nextErrors.email = 'Enter a valid email address.';
+      if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(formData.email || '').trim())) {
+        nextErrors.email = 'Enter a valid email address to receive your admission application copy.';
       }
       if (formData.aadhaar && !/^\d{12}$/.test(formData.aadhaar.replace(/\s/g, ''))) {
         nextErrors.aadhaar = 'Aadhaar number must contain 12 digits.';
@@ -972,21 +973,24 @@ export default function RegisterPage() {
         {errors.studentMobile ? <small className="error-text">{errors.studentMobile}</small> : null}
       </div>
       <div className="field-group">
-        <label htmlFor="email">Email ID (optional)</label>
-        <div className="email-input-group">
-          <input
-            id="email"
-            type="text"
-            autoComplete="email"
-            placeholder="username"
-            value={(formData.email || '').replace(/@gmail\.com$/i, '')}
-            onChange={(event) => {
-              const username = event.target.value.replace(/@.*$/, '').trim();
-              updateField('email', username ? `${username}@gmail.com` : '');
-            }}
-          />
-          <span aria-hidden="true">@gmail.com</span>
-        </div>
+        <label htmlFor="email">
+          Email ID (For receiving Admission Form &amp; Updates) <span className="required-indicator">*</span>
+        </label>
+        <input
+          id="email"
+          type="email"
+          required
+          autoComplete="email"
+          placeholder="student@gmail.com"
+          value={formData.email || ''}
+          onChange={(event) => updateField('email', event.target.value.trim())}
+          onBlur={(event) => {
+            const val = event.target.value.trim();
+            if (val && !val.includes('@')) {
+              updateField('email', `${val}@gmail.com`);
+            }
+          }}
+        />
         {errors.email ? <small className="error-text">{errors.email}</small> : null}
       </div>
       <div className="field-group full-width">
@@ -1709,7 +1713,7 @@ export default function RegisterPage() {
           <span style={{ width: `${(completedStepCount / steps.length) * 100}%` }} />
         </div>
         {currentStep !== steps.length ? (
-          <p className="required-fields-note"><span className="required-indicator">*</span> Required fields. EMIS ID, Email ID, guardian details, and document uploads are optional; student and parent signatures are required.</p>
+          <p className="required-fields-note"><span className="required-indicator">*</span> Required fields. EMIS ID, guardian details, and document uploads are optional; Student Email ID and signatures are required.</p>
         ) : null}
 
         {renderedSteps[currentStep - 1]()}

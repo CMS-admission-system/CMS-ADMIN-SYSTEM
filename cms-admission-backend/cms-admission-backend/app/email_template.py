@@ -160,6 +160,13 @@ def render_full_admission_email_html(
     cutoff = details.get("cutOffMarks")
     cutoff_display = f"{float(cutoff):.2f}" if cutoff not in [None, "", "—"] else "—"
 
+    # Dynamic HSC subject labels
+    hsc_group_str = str(details.get("hscGroup") or "").lower()
+    is_vocational = "vocational" in hsc_group_str
+    subject_1_label = "RELATED MATHS" if is_vocational else "MATHS"
+    subject_2_label = "VOCATIONAL THEORY" if is_vocational else "PHYSICS"
+    subject_3_label = "VOCATIONAL PRACTICAL" if is_vocational else "CHEMISTRY"
+
     # Signatures
     student_sig = details.get("studentSignature") or details.get("signature")
     if isinstance(student_sig, dict):
@@ -447,9 +454,9 @@ def render_full_admission_email_html(
       </div>
       <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: center; margin-bottom: 14px; border: 1px solid #cbd5e1;">
         <tr style="background: #f8fafc; font-weight: 700; color: #334155;">
-          <th style="padding: 6px; border: 1px solid #cbd5e1; width: 20%;">MATHS</th>
-          <th style="padding: 6px; border: 1px solid #cbd5e1; width: 25%;">PHYSICS</th>
-          <th style="padding: 6px; border: 1px solid #cbd5e1; width: 25%;">CHEMISTRY</th>
+          <th style="padding: 6px; border: 1px solid #cbd5e1; width: 20%;">{subject_1_label}</th>
+          <th style="padding: 6px; border: 1px solid #cbd5e1; width: 25%;">{subject_2_label}</th>
+          <th style="padding: 6px; border: 1px solid #cbd5e1; width: 25%;">{subject_3_label}</th>
           <th style="padding: 6px; border: 1px solid #cbd5e1; width: 15%; color: #006747;">CUT-OFF</th>
           <th style="padding: 6px; border: 1px solid #cbd5e1; width: 15%;">TOTAL</th>
         </tr>
