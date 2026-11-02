@@ -146,7 +146,17 @@ def render_full_admission_email_html(
     is_day_scholar = "day" in accom.lower() or not is_hostel
 
     # Route / pickup
-    route = details.get("pickupPoint") or details.get("busRoute") or ("Hosteller" if is_hostel else "Day Scholar")
+    if is_hostel:
+        route = "Hosteller (No Route)"
+    elif details.get("transportRequired") == "Yes" or details.get("busNumber") or details.get("pickupPoint"):
+        stop = details.get("boardingStop") or details.get("pickupPoint") or ""
+        bus_no = details.get("busNumber") or details.get("busRoute") or ""
+        pt = details.get("pickupPoint") or ""
+        route = f"{stop} (Bus {bus_no})" if bus_no else stop
+        if pt and pt != stop:
+            route = f"{route} — Route: {pt}"
+    else:
+        route = details.get("pickupPoint") or details.get("busRoute") or "Day Scholar (Self Transport)"
 
     # Dates
     app_date = _format_date(details.get("applicationDate") or details.get("submittedAt"))

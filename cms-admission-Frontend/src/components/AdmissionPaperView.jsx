@@ -334,7 +334,17 @@ export default function AdmissionPaperView({
           <tr>
             <th>BOARDING PLACE – ROUTE</th>
             <td>
-              {draft.pickupPoint || draft.busRoute || (isHostelYes ? 'Hosteller (No Route)' : 'Day Scholar')}
+              {isHostelYes ? (
+                'Hosteller (No Route)'
+              ) : draft.transportRequired === 'Yes' || draft.busNumber || draft.pickupPoint ? (
+                <span>
+                  <strong>{draft.boardingStop || draft.pickupPoint || 'Boarding Stage'}</strong>
+                  {draft.busNumber ? ` (Bus: ${draft.busNumber})` : (draft.busRoute ? ` (Route: ${draft.busRoute})` : '')}
+                  {draft.pickupPoint && draft.pickupPoint !== draft.boardingStop ? ` — Route: ${draft.pickupPoint}` : ''}
+                </span>
+              ) : (
+                'Day Scholar (Self Transport)'
+              )}
             </td>
           </tr>
           <tr>

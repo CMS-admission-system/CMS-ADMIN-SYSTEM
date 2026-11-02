@@ -83,9 +83,20 @@ export default function VCDetailPage() {
           <div className="preview-block">
             <h3>Accommodation & Declarations</h3>
             <ul>
-              <li><span>Accommodation</span><strong>{application.accommodation || 'â€”'}</strong></li>
-              <li><span>Bus route</span><strong>{application.busRoute || 'â€”'}</strong></li>
-              <li><span>Transport requirements</span><strong>{application.transportRequirements || 'â€”'}</strong></li>
+              <li><span>Accommodation</span><strong>{application.accommodation || '—'}</strong></li>
+              <li>
+                <span>Transport</span>
+                <strong>
+                  {application.accommodation === 'Hostel'
+                    ? 'Hosteller (No Bus)'
+                    : application.transportRequired === 'Yes' || application.busNumber || application.pickupPoint
+                    ? 'College Bus Transport'
+                    : 'Day Scholar (Self Transport)'}
+                </strong>
+              </li>
+              <li><span>Bus Number</span><strong>{application.busNumber || application.busRoute || '—'}</strong></li>
+              <li><span>Pickup Point</span><strong>{application.pickupPoint || '—'}</strong></li>
+              <li><span>Boarding Stop</span><strong>{application.boardingStop || application.pickupPoint || '—'}</strong></li>
               <li><span>Student declaration</span><strong>{application.declaration ? 'Accepted' : 'Not accepted'}</strong></li>
               <li><span>Parent declaration</span><strong>{application.parentDeclaration ? 'Accepted' : 'Not accepted'}</strong></li>
               <li><span>Cash receipt</span><strong>{application.cashReceipt?.name ? 'Uploaded' : 'Not uploaded'}</strong></li>

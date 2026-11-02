@@ -175,7 +175,19 @@ export default function OfficerApplicationDetailPage() {
             <div className="field-group"><label>Status</label><input value={draftApplication.status || ''} readOnly /></div>
             <div className="field-group full-width"><label>Communication Address</label><textarea value={draftApplication.communicationAddress || ''} onChange={(event) => setDraftApplication((prev) => ({ ...prev, communicationAddress: event.target.value }))} rows="2" /></div>
             <div className="field-group"><label>District / State / PIN</label><input value={`${draftApplication.district || ''}, ${draftApplication.state || ''} - ${draftApplication.pinCode || ''}`} readOnly /></div>
-            <div className="field-group"><label>Accommodation / Transport</label><input value={`${draftApplication.accommodation || 'Not specified'}${draftApplication.busRoute ? ` (Route: ${draftApplication.busRoute})` : ''}`} readOnly /></div>
+            <div className="field-group">
+              <label>Accommodation / Transport</label>
+              <input
+                value={
+                  draftApplication.accommodation === 'Hostel'
+                    ? 'Hostel (Campus Accommodation)'
+                    : draftApplication.transportRequired === 'Yes' || draftApplication.busNumber || draftApplication.pickupPoint
+                    ? `Day Scholar — Bus: ${draftApplication.busNumber || draftApplication.busRoute || 'Assigned'}, Stop: ${draftApplication.boardingStop || draftApplication.pickupPoint}`
+                    : 'Day Scholar (Self Transport)'
+                }
+                readOnly
+              />
+            </div>
             <div className="field-group"><label>Father Name / Mobile</label><input value={`${draftApplication.fatherName || 'â€”'} / ${draftApplication.fatherMobile || draftApplication.parentMobile || 'â€”'} (${draftApplication.fatherOccupation || 'â€”'})`} readOnly /></div>
             <div className="field-group"><label>Mother Name / Mobile</label><input value={`${draftApplication.motherName || 'â€”'} / ${draftApplication.motherMobile || 'â€”'} (${draftApplication.motherOccupation || 'â€”'})`} readOnly /></div>
             <div className="field-group"><label>Guardian Name / Mobile</label><input value={`${draftApplication.guardianName || 'â€”'} / ${draftApplication.guardianMobile || 'â€”'} (${draftApplication.guardianOccupation || 'â€”'})`} readOnly /></div>

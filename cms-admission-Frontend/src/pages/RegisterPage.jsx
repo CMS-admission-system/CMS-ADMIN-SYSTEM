@@ -30,6 +30,46 @@ const certificateLabels = {
   PassportSizePhotographs: 'Student Photo',
 };
 
+export const PICKUP_POINTS = [
+  { id: 'R1', label: 'Eragudi (R1)', busNumber: 'R1', startingPoint: 'Eragudi', endingPoint: 'CMS College' },
+  { id: 'R2', label: 'RVR Bunk (R2)', busNumber: 'R2', startingPoint: 'RVR Bunk', endingPoint: 'CMS College' },
+  { id: 'R3', label: 'Arangur (R3)', busNumber: 'R3', startingPoint: 'Arangur', endingPoint: 'CMS College' },
+  { id: 'R4', label: 'Anaikkalpatty (R4)', busNumber: 'R4', startingPoint: 'Anaikkalpatty', endingPoint: 'CMS College' },
+  { id: 'R5', label: 'Anangur (R5)', busNumber: 'R5', startingPoint: 'Anangur', endingPoint: 'CMS College' },
+  { id: 'R6', label: 'Palayampirivu Road (R6)', busNumber: 'R6', startingPoint: 'Palayampirivu Road', endingPoint: 'CMS College' },
+  { id: 'R7', label: 'Vengamoodu (R7)', busNumber: 'R7', startingPoint: 'Vengamoodu', endingPoint: 'CMS College' },
+  { id: 'R8', label: 'Mullukurichi (R8)', busNumber: 'R8', startingPoint: 'Mullukurichi', endingPoint: 'CMS College' },
+  { id: 'R9', label: 'Kamatchipatti (R9)', busNumber: 'R9', startingPoint: 'Kamatchipatti', endingPoint: 'CMS College' },
+  { id: 'R10', label: 'Salem (R10)', busNumber: 'R10', startingPoint: 'Salem', endingPoint: 'CMS College' },
+  { id: 'R11', label: 'Thuraiyur (R11)', busNumber: 'R11', startingPoint: 'Thuraiyur', endingPoint: 'CMS College' },
+];
+
+export const BUS_STOPS = [
+  'Eragudi',
+  'Vadakkupatti',
+  'Siru Navalur',
+  'Alathudaiyanpatti',
+  'Karikali',
+  'Kottupalayam',
+  'Konangipatti',
+  'Pillaiyar Palayam',
+  'Muthu Nasa Palayam',
+  'Vempatti',
+  'Ambayipalayam',
+  'Navaladipatti',
+  'Pavithum',
+  'Vagur',
+  'Chellipalayam',
+  'Devalayapuram',
+  'Erumaipatti',
+  'Ponneri Kaikattadi',
+  'Alanganatham Pirivu',
+  'Thosur',
+  'Koolipatti',
+  'Kokkoombetti',
+  'Namakkal',
+];
+
 const stateDistrictsMap = {
   'Tamil Nadu': [
     'Ariyalur', 'Chengalpattu', 'Chennai', 'Coimbatore', 'Cuddalore', 'Dharmapuri',
@@ -335,7 +375,12 @@ export default function RegisterPage() {
     fees: draft?.fees || {},
     accommodation: draft?.accommodation || '',
     transportRequired: draft?.transportRequired || (draft?.transportApplication === 'Yes' ? 'Yes' : (draft?.accommodation === 'Day Scholar' ? 'Yes' : (draft?.accommodation === 'Hostel' ? 'No' : ''))),
-    pickupPoint: draft?.pickupPoint || draft?.busRoute || '',
+    pickupPoint: draft?.pickupPoint || '',
+    busNumber: draft?.busNumber || '',
+    busRoute: draft?.busRoute || '',
+    boardingStop: draft?.boardingStop || '',
+    startingPoint: draft?.startingPoint || '',
+    endingPoint: draft?.endingPoint || 'CMS College',
     hscGroup: draft?.hscGroup || '',
     bloodGroupOther: draft?.bloodGroupOther || '',
     consultantName: draft?.consultantName || '',
@@ -410,7 +455,13 @@ export default function RegisterPage() {
           formData.accommodation === 'Hostel'
           || (
             formData.transportRequired
-            && (formData.transportRequired === 'No' || String(formData.pickupPoint || formData.busRoute || '').trim())
+            && (
+              formData.transportRequired === 'No'
+              || (
+                String(formData.pickupPoint || '').trim()
+                && String(formData.boardingStop || '').trim()
+              )
+            )
           )
         )
       ),
@@ -612,8 +663,13 @@ export default function RegisterPage() {
       } else if (formData.accommodation === 'Day Scholar') {
         if (!formData.transportRequired) {
           nextErrors.transportRequired = 'Please select Yes or No for Transport Requirement.';
-        } else if (formData.transportRequired === 'Yes' && !String(formData.pickupPoint || formData.busRoute || '').trim()) {
-          nextErrors.pickupPoint = 'Pickup point is required when transport is needed.';
+        } else if (formData.transportRequired === 'Yes') {
+          if (!String(formData.pickupPoint || '').trim()) {
+            nextErrors.pickupPoint = 'Please select a pickup point from the dropdown.';
+          }
+          if (!String(formData.boardingStop || '').trim()) {
+            nextErrors.boardingStop = 'Please select your exact boarding stop.';
+          }
         }
       }
     }
@@ -1267,84 +1323,341 @@ export default function RegisterPage() {
     </div>
   );
 
-  const renderAccommodationStep = () => (
-    <div className="form-grid">
-      <fieldset className="field-group choice-fieldset full-width">
-        <legend>Accommodation Type <span className="required-indicator">*</span></legend>
-        <div className="choice-grid two-choice-grid">
-          {['Hostel', 'Day Scholar'].map((accommodation) => (
-            <button
-              key={accommodation}
-              type="button"
-              className={`choice-card ${formData.accommodation === accommodation ? 'active' : ''}`}
-              aria-pressed={formData.accommodation === accommodation}
-              onClick={() => {
-                setFormData((previous) => ({
-                  ...previous,
-                  accommodation,
-                  hostelAccommodation: accommodation === 'Hostel' ? 'Yes' : 'No',
-                  hostelApplication: accommodation === 'Hostel' ? 'Yes' : 'No',
-                  ...(accommodation === 'Hostel' ? { transportRequired: 'No', transportApplication: 'No', pickupPoint: '', busRoute: '' } : {}),
-                }));
-                setErrors((previous) => ({ ...previous, accommodation: '', transportRequired: '', pickupPoint: '' }));
-              }}
-            >
-              {accommodation}
-            </button>
-          ))}
-        </div>
-        {errors.accommodation ? <small className="error-text">{errors.accommodation}</small> : null}
-      </fieldset>
+  const renderAccommodationStep = () => {
+    const selectedPointInfo = PICKUP_POINTS.find((p) => p.label === formData.pickupPoint);
 
-      {formData.accommodation === 'Day Scholar' ? (
-        <div className="form-grid two-column full-width">
-          <fieldset className="field-group choice-fieldset">
-            <legend>Transport Requirement <span className="required-indicator">*</span></legend>
-            <div className="choice-grid two-choice-grid">
-              {['Yes', 'No'].map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  className={`choice-card ${formData.transportRequired === option ? 'active' : ''}`}
-                  aria-pressed={formData.transportRequired === option}
-                  onClick={() => {
-                    setFormData((previous) => ({
-                      ...previous,
-                      transportRequired: option,
-                      transportApplication: option === 'Yes' ? 'Yes' : 'No',
-                      ...(option === 'No' ? { pickupPoint: '', busRoute: '' } : {}),
-                    }));
-                    setErrors((previous) => ({ ...previous, transportRequired: '', pickupPoint: '' }));
-                  }}
-                >
-                  {option === 'Yes' ? 'Yes' : 'No'}
-                </button>
-              ))}
-            </div>
-            {errors.transportRequired ? <small className="error-text">{errors.transportRequired}</small> : null}
-          </fieldset>
-
-          {formData.transportRequired === 'Yes' ? (
-            <div className="field-group">
-              <label htmlFor="pickupPoint">Pickup Point <span className="required-indicator">*</span></label>
-              <input
-                id="pickupPoint"
-                type="text"
-                required
-                placeholder="Enter boarding / pickup stage (e.g., Gandhipuram, Hope College)"
-                value={formData.pickupPoint || formData.busRoute || ''}
-                onChange={(event) => {
-                  updateField('pickupPoint', event.target.value);
-                  updateField('busRoute', event.target.value);
+    return (
+      <div className="form-grid">
+        <fieldset className="field-group choice-fieldset full-width">
+          <legend>Accommodation Type <span className="required-indicator">*</span></legend>
+          <div className="choice-grid two-choice-grid">
+            {['Hostel', 'Day Scholar'].map((accommodation) => (
+              <button
+                key={accommodation}
+                type="button"
+                className={`choice-card ${formData.accommodation === accommodation ? 'active' : ''}`}
+                aria-pressed={formData.accommodation === accommodation}
+                onClick={() => {
+                  setFormData((previous) => ({
+                    ...previous,
+                    accommodation,
+                    hostelAccommodation: accommodation === 'Hostel' ? 'Yes' : 'No',
+                    hostelApplication: accommodation === 'Hostel' ? 'Yes' : 'No',
+                    ...(accommodation === 'Hostel' ? {
+                      transportRequired: 'No',
+                      transportApplication: 'No',
+                      pickupPoint: '',
+                      busNumber: '',
+                      busRoute: '',
+                      boardingStop: '',
+                      startingPoint: '',
+                      endingPoint: '',
+                    } : {}),
+                  }));
+                  setErrors((previous) => ({ ...previous, accommodation: '', transportRequired: '', pickupPoint: '', boardingStop: '' }));
                 }}
-              />
-              {errors.pickupPoint ? <small className="error-text">{errors.pickupPoint}</small> : null}
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-    </div>
-  );
+              >
+                {accommodation}
+              </button>
+            ))}
+          </div>
+          {errors.accommodation ? <small className="error-text">{errors.accommodation}</small> : null}
+        </fieldset>
+
+        {formData.accommodation === 'Day Scholar' ? (
+          <div className="form-grid full-width" style={{ marginTop: '4px' }}>
+            {/* Transport Requirement Selection */}
+            <fieldset className="field-group choice-fieldset full-width">
+              <legend>Transport Requirement <span className="required-indicator">*</span></legend>
+              <div className="choice-grid two-choice-grid">
+                {['Yes', 'No'].map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    className={`choice-card ${formData.transportRequired === option ? 'active' : ''}`}
+                    aria-pressed={formData.transportRequired === option}
+                    onClick={() => {
+                      setFormData((previous) => ({
+                        ...previous,
+                        transportRequired: option,
+                        transportApplication: option === 'Yes' ? 'Yes' : 'No',
+                        ...(option === 'No' ? {
+                          pickupPoint: '',
+                          busNumber: '',
+                          busRoute: '',
+                          boardingStop: '',
+                          startingPoint: '',
+                          endingPoint: '',
+                        } : {}),
+                      }));
+                      setErrors((previous) => ({ ...previous, transportRequired: '', pickupPoint: '', boardingStop: '' }));
+                    }}
+                  >
+                    {option === 'Yes' ? 'Yes (College Bus Needed)' : 'No (Self Transport)'}
+                  </button>
+                ))}
+              </div>
+              {errors.transportRequired ? <small className="error-text">{errors.transportRequired}</small> : null}
+            </fieldset>
+
+            {formData.transportRequired === 'Yes' ? (
+              <div className="full-width" style={{ marginTop: '10px' }}>
+                {/* 1. Pickup Point Dropdown */}
+                <div className="field-group full-width">
+                  <label htmlFor="pickupPoint" style={{ fontWeight: 800, color: '#0f172a' }}>
+                    Select Pickup Point <span className="required-indicator">*</span>
+                  </label>
+                  <select
+                    id="pickupPoint"
+                    required
+                    value={formData.pickupPoint || ''}
+                    onChange={(event) => {
+                      const val = event.target.value;
+                      const matched = PICKUP_POINTS.find((p) => p.label === val);
+                      if (matched) {
+                        setFormData((prev) => ({
+                          ...prev,
+                          pickupPoint: matched.label,
+                          busNumber: matched.busNumber,
+                          busRoute: matched.busNumber,
+                          startingPoint: matched.startingPoint,
+                          endingPoint: matched.endingPoint,
+                          boardingStop: prev.boardingStop || (BUS_STOPS.includes(matched.startingPoint) ? matched.startingPoint : ''),
+                        }));
+                      } else {
+                        setFormData((prev) => ({
+                          ...prev,
+                          pickupPoint: '',
+                          busNumber: '',
+                          busRoute: '',
+                          startingPoint: '',
+                          endingPoint: '',
+                          boardingStop: '',
+                        }));
+                      }
+                      setErrors((prev) => ({ ...prev, pickupPoint: '', boardingStop: '' }));
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      borderRadius: '10px',
+                      border: '1.5px solid #cbd5e1',
+                      fontSize: '0.95rem',
+                      fontWeight: 600,
+                      background: '#ffffff',
+                    }}
+                  >
+                    <option value="">-- Select Pickup Point (1 to 11) --</option>
+                    {PICKUP_POINTS.map((pt, idx) => (
+                      <option key={pt.id} value={pt.label}>
+                        {idx + 1}. {pt.label}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.pickupPoint ? <small className="error-text">{errors.pickupPoint}</small> : null}
+                </div>
+
+                {/* 2 & 3. Bus Route Display & Selectable Stops */}
+                {formData.pickupPoint ? (
+                  <div
+                    className="bus-route-display-card"
+                    style={{
+                      marginTop: '16px',
+                      background: 'rgba(255, 255, 255, 0.95)',
+                      border: '2px solid #166534',
+                      borderRadius: '16px',
+                      padding: '20px',
+                      boxShadow: '0 4px 16px rgba(22, 101, 52, 0.08)',
+                    }}
+                  >
+                    {/* Route Info: Left Side Bus Number | Right Side Starting & Ending Points */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        flexWrap: 'wrap',
+                        gap: '16px',
+                        paddingBottom: '16px',
+                        borderBottom: '1.5px solid #e2e8f0',
+                      }}
+                    >
+                      {/* LEFT SIDE: Bus Number (R1–R11) */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                        <div
+                          style={{
+                            background: '#dcfce7',
+                            border: '2px solid #166534',
+                            borderRadius: '12px',
+                            padding: '8px 18px',
+                            textAlign: 'center',
+                            minWidth: '95px',
+                          }}
+                        >
+                          <span style={{ display: 'block', fontSize: '0.72rem', fontWeight: 800, color: '#166534', letterSpacing: '0.5px' }}>
+                            BUS NUMBER
+                          </span>
+                          <strong style={{ display: 'block', fontSize: '1.75rem', fontWeight: 900, color: '#166534', lineHeight: 1.1 }}>
+                            {selectedPointInfo?.busNumber || formData.busNumber || 'R1'}
+                          </strong>
+                        </div>
+                        <div>
+                          <span style={{ display: 'block', fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>Assigned Bus Route</span>
+                          <strong style={{ fontSize: '1.05rem', color: '#0f172a', fontWeight: 800 }}>
+                            {formData.pickupPoint}
+                          </strong>
+                        </div>
+                      </div>
+
+                      {/* RIGHT SIDE: Starting Point & Ending Point */}
+                      <div
+                        style={{
+                          background: '#f8fafc',
+                          border: '1.5px solid #cbd5e1',
+                          borderRadius: '12px',
+                          padding: '12px 20px',
+                          minWidth: '240px',
+                        }}
+                      >
+                        <div style={{ fontSize: '0.92rem', marginBottom: '6px' }}>
+                          <span style={{ color: '#64748b', fontWeight: 600 }}>Starting Point: </span>
+                          <strong style={{ color: '#0f172a', fontWeight: 800 }}>
+                            {selectedPointInfo?.startingPoint || formData.startingPoint || 'Eragudi'}
+                          </strong>
+                        </div>
+                        <div style={{ fontSize: '0.92rem' }}>
+                          <span style={{ color: '#64748b', fontWeight: 600 }}>Ending Point: </span>
+                          <strong style={{ color: '#166534', fontWeight: 800 }}>
+                            CMS College
+                          </strong>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Below this: Display Selectable Stops (1 to 23) */}
+                    <div style={{ marginTop: '18px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
+                        <div>
+                          <label style={{ display: 'block', fontWeight: 800, color: '#0f172a', fontSize: '0.98rem' }}>
+                            Select Exact Boarding Stop <span className="required-indicator">*</span>
+                          </label>
+                          <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                            Choose from the standard 23 route boarding stops below:
+                          </span>
+                        </div>
+                        {formData.boardingStop ? (
+                          <span style={{ fontSize: '0.82rem', background: '#dcfce7', color: '#166534', padding: '4px 12px', borderRadius: '20px', fontWeight: 700, border: '1px solid #166534' }}>
+                            ✓ Selected Stop: {formData.boardingStop}
+                          </span>
+                        ) : null}
+                      </div>
+
+                      {/* Standard Dropdown for quick selection */}
+                      <div style={{ marginBottom: '12px', maxWidth: '360px' }}>
+                        <select
+                          id="boardingStop"
+                          required
+                          value={formData.boardingStop || ''}
+                          onChange={(e) => {
+                            updateField('boardingStop', e.target.value);
+                            if (errors.boardingStop) setErrors((prev) => ({ ...prev, boardingStop: '' }));
+                          }}
+                          style={{
+                            width: '100%',
+                            padding: '9px 12px',
+                            borderRadius: '8px',
+                            border: '1.5px solid #cbd5e1',
+                            fontWeight: 600,
+                            background: '#ffffff',
+                          }}
+                        >
+                          <option value="">-- Choose Boarding Stop (1 to 23) --</option>
+                          {BUS_STOPS.map((stop, idx) => (
+                            <option key={stop} value={stop}>
+                              {idx + 1}. {stop}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Interactive 23 Selectable Stops Grid */}
+                      <div
+                        className="bus-stops-grid"
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+                          gap: '8px',
+                          maxHeight: '260px',
+                          overflowY: 'auto',
+                          padding: '6px',
+                          border: '1.5px solid #e2e8f0',
+                          borderRadius: '12px',
+                          background: '#f8fafc',
+                        }}
+                      >
+                        {BUS_STOPS.map((stop, index) => {
+                          const isSelected = formData.boardingStop === stop;
+                          return (
+                            <button
+                              key={stop}
+                              type="button"
+                              onClick={() => {
+                                updateField('boardingStop', stop);
+                                if (errors.boardingStop) setErrors((prev) => ({ ...prev, boardingStop: '' }));
+                              }}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '8px 12px',
+                                borderRadius: '8px',
+                                border: isSelected ? '2px solid #14532d' : '1px solid #cbd5e1',
+                                background: isSelected ? '#166534' : '#ffffff',
+                                color: isSelected ? '#ffffff' : '#1e293b',
+                                fontWeight: isSelected ? 700 : 500,
+                                fontSize: '0.84rem',
+                                cursor: 'pointer',
+                                textAlign: 'left',
+                                transition: 'all 0.15s ease',
+                                boxShadow: isSelected ? '0 2px 6px rgba(22, 101, 52, 0.25)' : 'none',
+                              }}
+                            >
+                              <span
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  width: '20px',
+                                  height: '20px',
+                                  borderRadius: '50%',
+                                  background: isSelected ? '#ffffff' : '#e2e8f0',
+                                  color: isSelected ? '#166534' : '#475569',
+                                  fontSize: '0.72rem',
+                                  fontWeight: 800,
+                                  flexShrink: 0,
+                                }}
+                              >
+                                {index + 1}
+                              </span>
+                              <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {stop}
+                              </span>
+                              {isSelected ? <span style={{ fontWeight: 800 }}>✓</span> : null}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {errors.boardingStop ? <small className="error-text" style={{ display: 'block', marginTop: '6px' }}>{errors.boardingStop}</small> : null}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+    );
+  };
 
   const renderEducationStep = () => (
     <div className="form-grid two-column">
