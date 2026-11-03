@@ -117,20 +117,48 @@ input,
 select,
 textarea {
   width: 100%;
-  border: 1px solid rgba(0, 77, 56, 0.2);
+  border: 1.5px solid rgba(0, 77, 56, 0.2);
   background: var(--white);
   color: var(--text);
   border-radius: 14px;
   padding: 0.8rem 0.9rem;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
+/* GO Green Active & Focus Highlights when filling forms */
 input:focus,
 select:focus,
-textarea:focus {
+textarea:focus,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
   outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 4px rgba(0, 103, 71, 0.08);
+  border-color: #16a34a !important;
+  background-color: #f0fdf4 !important;
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.28), 0 2px 6px rgba(22, 163, 74, 0.12) !important;
+  caret-color: #16a34a;
+}
+
+input:active,
+select:active,
+textarea:active {
+  border-color: #15803d !important;
+  box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.35) !important;
+}
+
+/* Native Checkbox and Radio styling with GO Green */
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: #16a34a !important;
+  cursor: pointer;
+}
+
+input[type="checkbox"]:focus-visible,
+input[type="radio"]:focus-visible,
+input[type="checkbox"]:focus,
+input[type="radio"]:focus {
+  outline: none;
+  box-shadow: 0 0 0 3.5px rgba(34, 197, 94, 0.38) !important;
 }
 
 /* Suppress number input spinners */

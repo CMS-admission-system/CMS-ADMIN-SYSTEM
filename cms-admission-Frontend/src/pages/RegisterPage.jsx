@@ -944,7 +944,7 @@ export default function RegisterPage() {
                     textAlign: 'center',
                   }}
                 >
-                  <span style={{ fontWeight: 700, fontSize: '1.05rem', color: isSelected ? '#166534' : 'inherit' }}>
+                  <span style={{ fontWeight: 700, fontSize: '1.05rem', color: isSelected ? '#ffffff' : 'inherit' }}>
                     {course}
                   </span>
                   <div
@@ -956,9 +956,9 @@ export default function RegisterPage() {
                       fontWeight: 600,
                       padding: '2px 8px',
                       borderRadius: '999px',
-                      background: isFull ? '#fee2e2' : (isSelected ? '#dcfce7' : '#f0fdf4'),
-                      color: isFull ? '#991b1b' : '#166534',
-                      border: `1px solid ${isFull ? '#fecaca' : '#86efac'}`,
+                      background: isFull ? '#fee2e2' : (isSelected ? 'rgba(255, 255, 255, 0.22)' : '#f0fdf4'),
+                      color: isFull ? '#991b1b' : (isSelected ? '#ffffff' : '#166534'),
+                      border: `1px solid ${isFull ? '#fecaca' : (isSelected ? 'rgba(255, 255, 255, 0.4)' : '#86efac')}`,
                     }}
                   >
                     <span>Total: {seatInfo.total} seats</span>
