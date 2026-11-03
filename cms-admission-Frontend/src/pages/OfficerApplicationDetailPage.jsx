@@ -1,8 +1,20 @@
-import { useMemo, useState } from 'react';
-import { CheckCheck, Save, Trash2 } from 'lucide-react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  ArrowLeft,
+  CheckCheck,
+  Eye,
+  FileEdit,
+  FileText,
+  Home,
+  LogOut,
+  Save,
+  Trash2,
+  Upload,
+  X,
+} from 'lucide-react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
-import ApplicationDocuments from '../components/ApplicationDocuments';
+import AdmissionPaperView from '../components/AdmissionPaperView';
 import { formatDate } from '../utils/helpers';
 
 const officeDocuments = [
@@ -23,21 +35,30 @@ export default function OfficerApplicationDetailPage() {
   const {
     applications,
     updateApplication,
-    confirmApplication,
     forwardApplicationToVC,
     deleteApplication,
+    logoutDemoUser,
     correctionHistory,
   } = useAppContext();
-  const application = useMemo(() => applications.find((item) => item.id === id), [applications, id]);
+
+  const application = useMemo(() => applications.find((item) => (
+    String(item.id) === String(id) || String(item.formNumber) === String(id)
+  )), [applications, id]);
+
   const [draftApplication, setDraftApplication] = useState(() => application || {});
   const [note, setNote] = useState('');
+  const [selectedFilePreview, setSelectedFilePreview] = useState(null);
+  const [saveSuccessMsg, setSaveSuccessMsg] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Synchronize draft when another user updates the record in real-time
+  // Synchronize draft when application updates
   useEffect(() => {
     if (application) {
       setDraftApplication((prev) => ({
         ...application,
         ...prev,
+        documents: prev.documents || application.documents || {},
+        documentChecklist: prev.documentChecklist || application.documentChecklist || {},
         status: application.status,
         paymentStatus: application.paymentStatus,
         version: application.version,
@@ -53,7 +74,9 @@ export default function OfficerApplicationDetailPage() {
         <div className="content-panel empty-panel">
           <h2>Application not found</h2>
           <p>The requested student record could not be located in central records.</p>
-          <button type="button" className="primary-btn" onClick={() => navigate('/officer/dashboard')}>Back to dashboard</button>
+          <button type="button" className="primary-btn" onClick={() => navigate('/officer/dashboard')}>
+            Back to Home
+          </button>
         </div>
       </main>
     );
@@ -61,32 +84,86 @@ export default function OfficerApplicationDetailPage() {
 
   const history = correctionHistory.filter((entry) => entry.applicationId === id);
 
-  const handleSave = async () => {
-    const res = await updateApplication(id, draftApplication, note, 'Admission Officer');
-    setNote('');
-    if (!res?.conflict) {
-      alert('Changes saved to central database and synchronized in real time.');
-    }
+  const handleLogout = () => {
+    logoutDemoUser();
+    navigate('/login/officer', { replace: true });
   };
 
-  const saveCurrentChanges = () => {
-    updateApplication(id, draftApplication, note, 'Admission Officer');
-    setNote('');
+  const handleSave = async () => {
+    setIsSaving(true);
+    setSaveSuccessMsg('');
+    try {
+      const res = await updateApplication(id, draftApplication, note, 'Admission Officer');
+      setNote('');
+      if (!res?.conflict) {
+        setSaveSuccessMsg('All application details, document changes, and checklist updates saved successfully!');
+        setTimeout(() => setSaveSuccessMsg(''), 5000);
+      }
+    } catch (err) {
+      console.error('Error saving application:', err);
+      alert('Unable to save changes. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleConfirm = () => {
     if (application.status !== 'Enquiring') return;
-    saveCurrentChanges();
+    updateApplication(id, draftApplication, note, 'Admission Officer');
     navigate(`/payment?id=${encodeURIComponent(id)}&from=admin`);
   };
 
   const handleForwardToVC = () => {
     if (application.status !== 'Confirmed') return;
-    const confirmed = window.confirm('Send this confirmed application to the VC list?');
+    const confirmed = window.confirm(`Forward application #${application.formNumber || application.id} (${application.studentName}) to Vice-Chairman?`);
     if (!confirmed) return;
-    saveCurrentChanges();
+    updateApplication(id, draftApplication, note, 'Admission Officer');
     forwardApplicationToVC(id, 'Admission Officer');
     navigate('/officer/dashboard', { replace: true });
+  };
+
+  const handleFileUpload = (docKey, event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const fileData = {
+        name: file.name,
+        size: file.size,
+        mimeType: file.type || 'application/octet-stream',
+        dataUrl: String(reader.result || ''),
+        uploadedAt: new Date().toISOString(),
+      };
+
+      setDraftApplication((prev) => ({
+        ...prev,
+        documents: {
+          ...(prev.documents || {}),
+          [docKey]: fileData,
+          ...(docKey === 'CommunityCertificate' ? { CC: fileData } : {}),
+        },
+      }));
+      setSaveSuccessMsg(`Uploaded ${docKey}. Click "Save Changes" to save.`);
+    };
+    reader.readAsDataURL(file);
+    event.target.value = '';
+  };
+
+  const handleRemoveDoc = (docKey) => {
+    const confirmed = window.confirm(`Remove ${docKey} document?`);
+    if (!confirmed) return;
+
+    setDraftApplication((prev) => {
+      const nextDocs = { ...(prev.documents || {}) };
+      delete nextDocs[docKey];
+      if (docKey === 'CommunityCertificate') delete nextDocs.CC;
+      return {
+        ...prev,
+        documents: nextDocs,
+      };
+    });
+    setSaveSuccessMsg(`Removed ${docKey}. Click "Save Changes" to save.`);
   };
 
   const updateDocumentCheck = (documentKey, type, checked) => {
@@ -102,159 +179,467 @@ export default function OfficerApplicationDetailPage() {
     }));
   };
 
+  // Uploaded documents list
+  const uploadedDocumentList = Object.entries(draftApplication.documents || {})
+    .filter(([, file]) => file?.dataUrl)
+    .map(([key, file]) => {
+      const match = officeDocuments.find(([k]) => k === key);
+      return {
+        key,
+        label: match ? match[1] : key.replace(/([A-Z])/g, ' $1').trim(),
+        file,
+      };
+    });
+
   const actionLabel = application.status === 'Enquiring'
     ? 'Confirm Application'
     : application.status === 'Confirmed'
       ? 'Send to VC'
-      : 'Already sent to VC';
-  const handleWorkflowAction = application.status === 'Enquiring' ? handleConfirm : handleForwardToVC;
+      : 'Already Sent to VC';
 
   return (
     <main className="page-shell admin-shell officer-shell">
+      {/* 1. Admin Green Navigation Box */}
       <aside className="admin-sidebar officer-top-header">
         <div className="sidebar-brand">
           <img src="/cms-logo.png" alt="CMS logo" className="brand-logo small" />
           <div>
-            <p className="eyebrow accent">Officer View</p>
-            <strong>{application.studentName}</strong>
+            <p className="eyebrow accent" style={{ margin: 0 }}>Officer Portal</p>
+            <strong style={{ fontSize: '1.1rem' }}>{application.studentName}</strong>
           </div>
         </div>
 
-        <nav className="admin-nav">
-          <Link to="/officer/dashboard" className="nav-item">Dashboard</Link>
-          <Link to={`/officer/documents?id=${encodeURIComponent(application.id)}`} className="nav-item">Edit Settings</Link>
-        </nav>
+        {/* RIGHT SIDE: Home, Edit, Logout */}
+        <div className="header-right-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginLeft: 'auto' }}>
+          <nav className="admin-nav" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Link to="/officer/dashboard" className="nav-item" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              <Home size={15} /> Home
+            </Link>
+            <Link to={`/officer/documents?id=${encodeURIComponent(application.id)}`} className="nav-item" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              <FileEdit size={15} /> Edit
+            </Link>
+            <button
+              type="button"
+              className="nav-item button-link"
+              onClick={handleLogout}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            >
+              <LogOut size={15} /> Logout
+            </button>
+          </nav>
+        </div>
       </aside>
 
       <section className="admin-content" style={{ width: '100%' }}>
+        {/* Action Header Bar */}
         <header className="admin-topbar">
           <div>
-            <p className="eyebrow accent">Application review</p>
-            <h2>Admin No: {application.formNumber || application.id}</h2>
+            <p className="eyebrow accent">Complete Application Preview &amp; Review</p>
+            <h2>Admin No: #{application.formNumber || application.id}</h2>
           </div>
-          <div className="toolbar" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <div className="toolbar" style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className="secondary-btn compact"
+              onClick={() => navigate('/officer/dashboard')}
+            >
+              <ArrowLeft size={16} /> Back to Home
+            </button>
             <button
               type="button"
               className="secondary-btn compact"
               onClick={() => {
-                const confirmed = window.confirm(`Are you sure you want to delete application "${application.id}" (${application.studentName || 'Student'})? This action cannot be undone.`);
+                const confirmed = window.confirm(`Are you sure you want to delete application "${application.id}" (${application.studentName})? This action cannot be undone.`);
                 if (confirmed) {
                   deleteApplication(application.id);
                   navigate('/officer/dashboard', { replace: true });
                 }
               }}
-              style={{ color: '#4b5563', borderColor: '#d1d5db' }}
+              style={{ color: '#dc2626', borderColor: '#fca5a5' }}
             >
-              <Trash2 size={16} /> Delete Application
+              <Trash2 size={16} /> Delete
             </button>
-            {application.status !== 'Sent to VC' ? (
-              <button type="button" className="primary-btn compact" onClick={handleWorkflowAction}>
-                <CheckCheck size={16} /> {actionLabel}
+            <button
+              type="button"
+              className="primary-btn compact"
+              onClick={handleSave}
+              disabled={isSaving}
+              style={{ background: '#166534', borderColor: '#14532d' }}
+            >
+              <Save size={16} /> {isSaving ? 'Saving...' : 'Save Changes'}
+            </button>
+            {application.status === 'Enquiring' ? (
+              <button
+                type="button"
+                className="primary-btn compact"
+                onClick={handleConfirm}
+                style={{ background: '#0284c7', borderColor: '#0369a1' }}
+              >
+                <CheckCheck size={16} /> Confirm Application
               </button>
-            ) : <span className="badge badge-success">{actionLabel}</span>}
+            ) : application.status === 'Confirmed' ? (
+              <button
+                type="button"
+                className="primary-btn compact"
+                onClick={handleForwardToVC}
+                style={{ background: '#0284c7', borderColor: '#0369a1' }}
+              >
+                <CheckCheck size={16} /> Send to VC
+              </button>
+            ) : (
+              <span className="badge badge-success" style={{ padding: '6px 14px', fontSize: '0.85rem' }}>
+                ✓ Sent to VC
+              </span>
+            )}
           </div>
         </header>
 
-        <div className="content-panel form-panel detail-panel">
-          <div className="preview-grid two-column">
-            <div className="field-group"><label>Student name</label><input value={draftApplication.studentName || ''} onChange={(event) => setDraftApplication((prev) => ({ ...prev, studentName: event.target.value }))} /></div>
-            <div className="field-group"><label>Email ID</label><input value={draftApplication.email || ''} onChange={(event) => setDraftApplication((prev) => ({ ...prev, email: event.target.value }))} /></div>
-            <div className="field-group"><label>EMIS ID</label><input value={draftApplication.emisId || ''} onChange={(event) => setDraftApplication((prev) => ({ ...prev, emisId: event.target.value }))} /></div>
-            <div className="field-group"><label>Application date</label><input type="date" value={draftApplication.applicationDate || ''} onChange={(event) => setDraftApplication((prev) => ({ ...prev, applicationDate: event.target.value }))} /></div>
-            <div className="field-group"><label>Date of Birth</label><input type="date" value={draftApplication.dateOfBirth || ''} onChange={(event) => setDraftApplication((prev) => ({ ...prev, dateOfBirth: event.target.value }))} /></div>
-            <div className="field-group"><label>Gender</label><input value={draftApplication.gender || ''} onChange={(event) => setDraftApplication((prev) => ({ ...prev, gender: event.target.value }))} /></div>
-            <div className="field-group"><label>Aadhaar Number</label><input value={draftApplication.aadhaar || ''} onChange={(event) => setDraftApplication((prev) => ({ ...prev, aadhaar: event.target.value }))} /></div>
-            <div className="field-group"><label>Blood Group</label><input value={draftApplication.bloodGroup || ''} onChange={(event) => setDraftApplication((prev) => ({ ...prev, bloodGroup: event.target.value }))} /></div>
-            <div className="field-group"><label>Community</label><input value={draftApplication.community || ''} onChange={(event) => setDraftApplication((prev) => ({ ...prev, community: event.target.value }))} /></div>
-            <div className="field-group"><label>Category</label><input value={draftApplication.category || ''} onChange={(event) => setDraftApplication((prev) => ({ ...prev, category: event.target.value }))} /></div>
-            <div className="field-group"><label>Student Mobile</label><input value={draftApplication.studentMobile || ''} onChange={(event) => setDraftApplication((prev) => ({ ...prev, studentMobile: event.target.value }))} /></div>
-            <div className="field-group"><label>Admission Category</label><input value={draftApplication.admissionCategory || ''} onChange={(event) => setDraftApplication((prev) => ({ ...prev, admissionCategory: event.target.value }))} /></div>
-            <div className="field-group"><label>Programme / Degree</label><input value={`${draftApplication.programme || ''} ${draftApplication.degree ? `- ${draftApplication.degree}` : ''}`} readOnly /></div>
-            <div className="field-group"><label>Selected Course</label><input value={draftApplication.coursePreference?.firstPreference || ''} onChange={(event) => setDraftApplication((prev) => ({ ...prev, coursePreference: { ...prev.coursePreference, firstPreference: event.target.value } }))} /></div>
-            <div className="field-group"><label>First Graduate (FG)</label><input value={draftApplication.firstGraduate || ''} readOnly /></div>
-            <div className="field-group"><label>Status</label><input value={draftApplication.status || ''} readOnly /></div>
-            <div className="field-group full-width"><label>Communication Address</label><textarea value={draftApplication.communicationAddress || ''} onChange={(event) => setDraftApplication((prev) => ({ ...prev, communicationAddress: event.target.value }))} rows="2" /></div>
-            <div className="field-group"><label>District / State / PIN</label><input value={`${draftApplication.district || ''}, ${draftApplication.state || ''} - ${draftApplication.pinCode || ''}`} readOnly /></div>
-            <div className="field-group">
-              <label>Accommodation / Transport</label>
-              <input
-                value={
-                  draftApplication.accommodation === 'Hostel'
-                    ? 'Hostel (Campus Accommodation)'
-                    : draftApplication.transportRequired === 'Yes' || draftApplication.busNumber || draftApplication.pickupPoint
-                    ? `Day Scholar — Bus: ${draftApplication.busNumber || draftApplication.busRoute || 'Assigned'}, Stop: ${draftApplication.boardingStop || draftApplication.pickupPoint}`
-                    : 'Day Scholar (Self Transport)'
-                }
-                readOnly
-              />
-            </div>
-            <div className="field-group"><label>Father Name / Mobile</label><input value={`${draftApplication.fatherName || 'â€”'} / ${draftApplication.fatherMobile || draftApplication.parentMobile || 'â€”'} (${draftApplication.fatherOccupation || 'â€”'})`} readOnly /></div>
-            <div className="field-group"><label>Mother Name / Mobile</label><input value={`${draftApplication.motherName || 'â€”'} / ${draftApplication.motherMobile || 'â€”'} (${draftApplication.motherOccupation || 'â€”'})`} readOnly /></div>
-            <div className="field-group"><label>Guardian Name / Mobile</label><input value={`${draftApplication.guardianName || 'â€”'} / ${draftApplication.guardianMobile || 'â€”'} (${draftApplication.guardianOccupation || 'â€”'})`} readOnly /></div>
-            <div className="field-group"><label>School Name & Address</label><input value={`${draftApplication.schoolName || 'â€”'}, ${draftApplication.schoolAddress || 'â€”'}`} readOnly /></div>
-            <div className="field-group"><label>Class 12 / HSC Total Marks</label><input value={`${draftApplication.hscMarks ?? 'â€”'} / 600`} readOnly /></div>
-            <div className="field-group"><label>PCM Marks (Maths / Physics / Chem)</label><input value={`M: ${draftApplication.mathematics ?? 'â€”'}, P: ${draftApplication.physicsMarks ?? 'â€”'}, C: ${draftApplication.chemistryMarks ?? 'â€”'}`} readOnly /></div>
-            <div className="field-group"><label>Cutoff Marks</label><input value={`${draftApplication.cutOffMarks ? Number(draftApplication.cutOffMarks).toFixed(2) : 'â€”'} / 200`} readOnly /></div>
-            <div className="field-group full-width"><label>Correction notes</label><textarea value={note} onChange={(event) => setNote(event.target.value)} rows="3" placeholder="Add officer corrections or notes" /></div>
-            <div className="field-group full-width"><label>Student declaration</label><textarea value={draftApplication.declaration ? 'Accepted' : 'Not accepted'} readOnly /></div>
+        {saveSuccessMsg ? (
+          <div style={{ background: '#dcfce7', border: '1.5px solid #86efac', color: '#166534', padding: '12px 18px', borderRadius: '12px', fontWeight: 700 }}>
+            ✓ {saveSuccessMsg}
+          </div>
+        ) : null}
+
+        {/* =========================================================================
+            1. COMPLETE STUDENT PREVIEW PAGE (Institutional Paper View)
+           ========================================================================= */}
+        <div className="content-panel" style={{ background: '#ffffff', borderRadius: '20px', padding: '16px 12px', marginBottom: '24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 8px 12px', borderBottom: '1px solid #e2e8f0', marginBottom: '14px' }}>
+            <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#004d38', fontWeight: 800 }}>
+              Institutional Student Admission Form Preview
+            </h3>
+            <span style={{ fontSize: '0.82rem', color: '#64748b' }}>
+              Status: <strong style={{ color: '#166534' }}>{application.status}</strong>
+            </span>
           </div>
 
-          <ApplicationDocuments
-            documents={{
-              ...(draftApplication.documents || {}),
-              ...(draftApplication.cashReceipt?.dataUrl ? { cashReceipt: draftApplication.cashReceipt } : {}),
-            }}
-            signature={draftApplication.signature}
-            studentSignature={draftApplication.studentSignature}
-            parentSignature={draftApplication.parentSignature}
+          <AdmissionPaperView
+            draft={draftApplication}
+            adminNumber={draftApplication.formNumber || draftApplication.id}
+            isEditableConsultant={true}
+            onConsultantChange={(val) => setDraftApplication((prev) => ({ ...prev, consultantName: val }))}
+            onOrganizationChange={(val) => setDraftApplication((prev) => ({ ...prev, organizationName: val }))}
           />
+        </div>
 
-          <section className="certificate-status-wrap">
-            <h3>Office use â€” documents received</h3>
-            <p className="field-help">Tick Original or Xerox after the physical certificate has been received. Uploaded files are shown above for reference.</p>
+        {/* =========================================================================
+            2. UNDER PREVIEW: DISPLAY DOCUMENT VERIFICATION
+           ========================================================================= */}
+        <div className="content-panel form-panel" style={{ marginTop: '0', marginBottom: '24px' }}>
+          <div className="section-header space-between" style={{ borderBottom: '1.5px solid #e2e8f0', paddingBottom: '12px' }}>
+            <div>
+              <p className="eyebrow accent" style={{ margin: 0 }}>Verification &amp; Checklist</p>
+              <h2 style={{ margin: '4px 0 0', fontSize: '1.35rem', color: '#004d38', fontWeight: 800 }}>
+                Document Verification &amp; Office Checklist
+              </h2>
+            </div>
+            <button type="button" className="primary-btn compact" onClick={handleSave} disabled={isSaving}>
+              <Save size={14} /> Save Verification
+            </button>
+          </div>
+
+          {/* Uploaded Documents Grid */}
+          <div style={{ marginTop: '18px' }}>
+            <h3 style={{ fontSize: '1.05rem', color: '#0f172a', fontWeight: 800, marginBottom: '8px' }}>
+              Uploaded Certificates &amp; Documents ({uploadedDocumentList.length})
+            </h3>
+            <p className="field-help" style={{ marginBottom: '14px' }}>
+              Click View to inspect the certificate in full preview, or Replace/Upload as needed.
+            </p>
+
+            {uploadedDocumentList.length ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '16px' }}>
+                {uploadedDocumentList.map(({ key, label, file }) => (
+                  <div
+                    key={key}
+                    style={{
+                      background: '#ffffff',
+                      border: '1.5px solid #cbd5e1',
+                      borderRadius: '12px',
+                      padding: '12px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                        <strong style={{ fontSize: '0.9rem', color: '#1e293b' }}>{label}</strong>
+                        <span style={{ fontSize: '0.7rem', color: '#16a34a', background: '#dcfce7', padding: '2px 8px', borderRadius: '999px', fontWeight: 700 }}>
+                          ✓ Uploaded
+                        </span>
+                      </div>
+                      <p style={{ fontSize: '0.78rem', color: '#64748b', margin: '0 0 8px', wordBreak: 'break-all' }}>
+                        {file.name}
+                      </p>
+                      <div style={{ height: '120px', background: '#f8fafc', borderRadius: '8px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {file.mimeType?.includes('pdf') ? (
+                          <div style={{ textAlign: 'center', color: '#475569' }}>
+                            <FileText size={32} color="#006747" style={{ margin: '0 auto 4px', display: 'block' }} />
+                            <span style={{ fontSize: '0.78rem', fontWeight: 600 }}>PDF Document</span>
+                          </div>
+                        ) : (
+                          <img src={file.dataUrl} alt={label} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                        )}
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '6px', marginTop: '10px' }}>
+                      <button
+                        type="button"
+                        className="secondary-btn compact"
+                        onClick={() => setSelectedFilePreview({ title: label, file })}
+                        style={{ flex: 1, justifyContent: 'center', fontSize: '0.78rem' }}
+                      >
+                        <Eye size={13} /> View
+                      </button>
+                      <label className="secondary-btn compact" style={{ flex: 1, justifyContent: 'center', cursor: 'pointer', margin: 0, fontSize: '0.78rem' }}>
+                        <Upload size={13} /> Replace
+                        <input type="file" style={{ display: 'none' }} accept="image/*,application/pdf" onChange={(e) => handleFileUpload(key, e)} />
+                      </label>
+                      <button
+                        type="button"
+                        className="secondary-btn compact"
+                        onClick={() => handleRemoveDoc(key)}
+                        title="Remove document"
+                        style={{ color: '#ef4444', padding: '4px 6px' }}
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p style={{ color: '#64748b', fontSize: '0.9rem' }}>No documents uploaded by this student yet.</p>
+            )}
+          </div>
+
+          {/* Office Verification Checklist Table */}
+          <section className="certificate-status-wrap" style={{ marginTop: '24px' }}>
+            <h3 style={{ fontSize: '1.05rem', color: '#0f172a', fontWeight: 800, marginBottom: '6px' }}>
+              Office Verification Checklist
+            </h3>
+            <p className="field-help">
+              Tick Original or Xerox after physical verification of the certificate.
+            </p>
             <div className="table-scroll">
               <table className="data-table certificate-table">
-                <thead><tr><th>Document</th><th>Student upload</th><th>Original received</th><th>Xerox received</th></tr></thead>
+                <thead>
+                  <tr>
+                    <th>Document</th>
+                    <th>Student Upload</th>
+                    <th style={{ textAlign: 'center' }}>Original Received</th>
+                    <th style={{ textAlign: 'center' }}>Xerox Received</th>
+                    <th style={{ textAlign: 'center' }}>Action</th>
+                  </tr>
+                </thead>
                 <tbody>
-                  {officeDocuments.map(([key, label]) => (
-                    <tr key={key}>
-                      <td>{label}</td>
-                      <td>{draftApplication.documents?.[key]?.dataUrl ? 'Uploaded' : 'Not uploaded'}</td>
-                      {['original', 'xerox'].map((type) => (
-                        <td key={type}>
-                          <input
-                            type="checkbox"
-                            className="office-document-checkbox"
-                            aria-label={`${label} ${type} received`}
-                            checked={Boolean(draftApplication.documentChecklist?.[key]?.[type])}
-                            onChange={(event) => updateDocumentCheck(key, type, event.target.checked)}
-                          />
+                  {officeDocuments.map(([key, label]) => {
+                    const isUploaded = Boolean(draftApplication.documents?.[key]?.dataUrl);
+                    return (
+                      <tr key={key}>
+                        <td><strong>{label}</strong></td>
+                        <td>
+                          <span className={`badge ${isUploaded ? 'badge-success' : ''}`} style={!isUploaded ? { background: '#f1f5f9', color: '#64748b' } : {}}>
+                            {isUploaded ? '✓ Uploaded' : 'Not uploaded'}
+                          </span>
                         </td>
-                      ))}
-                    </tr>
-                  ))}
+                        {['original', 'xerox'].map((type) => (
+                          <td key={type} style={{ textAlign: 'center' }}>
+                            <input
+                              type="checkbox"
+                              className="office-document-checkbox"
+                              aria-label={`${label} ${type} received`}
+                              checked={Boolean(draftApplication.documentChecklist?.[key]?.[type])}
+                              onChange={(event) => updateDocumentCheck(key, type, event.target.checked)}
+                              style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                            />
+                          </td>
+                        ))}
+                        <td style={{ textAlign: 'center' }}>
+                          <label className="secondary-btn compact" style={{ cursor: 'pointer', margin: 0, display: 'inline-flex', padding: '3px 8px', fontSize: '0.76rem' }}>
+                            <Upload size={12} /> {isUploaded ? 'Replace' : 'Upload'}
+                            <input type="file" style={{ display: 'none' }} accept="image/*,application/pdf" onChange={(e) => handleFileUpload(key, e)} />
+                          </label>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
           </section>
 
-          <div className="detail-history">
-            <h3>History</h3>
+          {/* Authorized Staff Corrections Form */}
+          <div style={{ marginTop: '28px', borderTop: '1.5px solid #e2e8f0', paddingTop: '18px' }}>
+            <h3 style={{ fontSize: '1.05rem', color: '#0f172a', fontWeight: 800, marginBottom: '6px' }}>
+              Authorized Staff Corrections
+            </h3>
+            <p className="field-help" style={{ marginBottom: '14px' }}>
+              Admission officers can correct student data if required.
+            </p>
+            <div className="preview-grid two-column">
+              <div className="field-group">
+                <label>Student Name</label>
+                <input
+                  value={draftApplication.studentName || ''}
+                  onChange={(event) => setDraftApplication((prev) => ({ ...prev, studentName: event.target.value }))}
+                />
+              </div>
+              <div className="field-group">
+                <label>Email ID</label>
+                <input
+                  value={draftApplication.email || ''}
+                  onChange={(event) => setDraftApplication((prev) => ({ ...prev, email: event.target.value }))}
+                />
+              </div>
+              <div className="field-group">
+                <label>EMIS ID</label>
+                <input
+                  value={draftApplication.emisId || ''}
+                  onChange={(event) => setDraftApplication((prev) => ({ ...prev, emisId: event.target.value }))}
+                />
+              </div>
+              <div className="field-group">
+                <label>Student Mobile</label>
+                <input
+                  value={draftApplication.studentMobile || ''}
+                  onChange={(event) => setDraftApplication((prev) => ({ ...prev, studentMobile: event.target.value }))}
+                />
+              </div>
+              <div className="field-group">
+                <label>Selected Course</label>
+                <input
+                  value={draftApplication.coursePreference?.firstPreference || ''}
+                  onChange={(event) => setDraftApplication((prev) => ({
+                    ...prev,
+                    coursePreference: { ...prev.coursePreference, firstPreference: event.target.value }
+                  }))}
+                />
+              </div>
+              <div className="field-group">
+                <label>Admission Category</label>
+                <input
+                  value={draftApplication.admissionCategory || ''}
+                  onChange={(event) => setDraftApplication((prev) => ({ ...prev, admissionCategory: event.target.value }))}
+                />
+              </div>
+              <div className="field-group full-width">
+                <label>Communication Address</label>
+                <textarea
+                  value={draftApplication.communicationAddress || ''}
+                  onChange={(event) => setDraftApplication((prev) => ({ ...prev, communicationAddress: event.target.value }))}
+                  rows="2"
+                />
+              </div>
+              <div className="field-group full-width">
+                <label>Officer Correction Notes</label>
+                <textarea
+                  value={note}
+                  onChange={(event) => setNote(event.target.value)}
+                  rows="3"
+                  placeholder="Add officer verification remarks or audit notes..."
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* History */}
+          <div className="detail-history" style={{ marginTop: '20px' }}>
+            <h3 style={{ fontSize: '1rem', color: '#0f172a', fontWeight: 800 }}>Audit &amp; Change History</h3>
             {history.length ? history.map((entry) => (
-              <div className="history-item" key={entry.id}><strong>{entry.actor}</strong><span>{formatDate(entry.createdAt)}</span><p>{entry.note}</p></div>
-            )) : <p>No correction history exists yet.</p>}
+              <div className="history-item" key={entry.id}>
+                <strong>{entry.actor}</strong>
+                <span>{formatDate(entry.createdAt)}</span>
+                <p>{entry.note}</p>
+              </div>
+            )) : <p style={{ color: '#64748b', fontSize: '0.85rem' }}>No prior correction history logged for this record.</p>}
+          </div>
+
+          <div className="form-actions" style={{ marginTop: '24px' }}>
+            <button type="button" className="secondary-btn" onClick={() => navigate('/officer/dashboard')}>
+              <ArrowLeft size={16} /> Back to Home
+            </button>
+            <button type="button" className="primary-btn" onClick={handleSave} disabled={isSaving} style={{ background: '#166534', borderColor: '#14532d' }}>
+              <Save size={16} /> {isSaving ? 'Saving...' : 'Save All Changes'}
+            </button>
           </div>
         </div>
-
-        <div className="form-actions">
-          <button type="button" className="secondary-btn" onClick={() => navigate('/officer/dashboard')}>
-            Back to dashboard
-          </button>
-          <button type="button" className="primary-btn" onClick={handleSave}>
-            <Save size={16} /> Save Changes
-          </button>
-        </div>
       </section>
+
+      {/* Document View Preview Modal */}
+      {selectedFilePreview ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.75)',
+            zIndex: 99999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+          }}
+          onClick={() => setSelectedFilePreview(null)}
+        >
+          <div
+            style={{
+              background: '#ffffff',
+              borderRadius: '12px',
+              maxWidth: '900px',
+              width: '100%',
+              maxHeight: '90vh',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '12px 18px',
+                borderBottom: '1px solid #e2e8f0',
+                background: '#f8fafc',
+              }}
+            >
+              <div>
+                <strong style={{ fontSize: '1rem', color: '#1e293b' }}>{selectedFilePreview.title}</strong>
+                <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>{selectedFilePreview.file.name}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedFilePreview(null)}
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '6px' }}
+              >
+                <X size={20} color="#334155" />
+              </button>
+            </div>
+            <div style={{ flex: 1, overflow: 'auto', padding: '16px', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#f1f5f9' }}>
+              {selectedFilePreview.file.mimeType?.includes('pdf') ? (
+                <iframe
+                  src={selectedFilePreview.file.dataUrl}
+                  title={selectedFilePreview.title}
+                  style={{ width: '100%', height: '70vh', border: 'none', borderRadius: '6px' }}
+                />
+              ) : (
+                <img
+                  src={selectedFilePreview.file.dataUrl}
+                  alt={selectedFilePreview.title}
+                  style={{ maxWidth: '100%', maxHeight: '70vh', objectFit: 'contain', borderRadius: '6px' }}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }

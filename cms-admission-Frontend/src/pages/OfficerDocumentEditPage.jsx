@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, Check, Download, Eye, FileText, Image, LogOut, Save, Trash2, Upload, X } from 'lucide-react';
+import { ArrowLeft, Check, Download, Eye, FileEdit, FileText, Home, Image, LogOut, Save, Trash2, Upload, X } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 
@@ -146,16 +146,29 @@ export default function OfficerDocumentEditPage() {
         <div className="sidebar-brand">
           <img src="/cms-logo.png" alt="CMS logo" className="brand-logo small" />
           <div>
-            <p className="eyebrow accent">Officer Portal</p>
-            <strong>Admission Office — Document Settings</strong>
+            <p className="eyebrow accent" style={{ margin: 0 }}>Officer Portal</p>
+            <strong style={{ fontSize: '1.1rem' }}>Admission Office — Document Settings</strong>
           </div>
         </div>
 
-        <nav className="admin-nav">
-          <Link to="/officer/dashboard" className="nav-item">Dashboard</Link>
-          <Link to="/officer/documents" className="nav-item active">Edit Settings</Link>
-          <button type="button" className="nav-item button-link" onClick={handleLogout}><LogOut size={16} /> Logout</button>
-        </nav>
+        <div className="header-right-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginLeft: 'auto' }}>
+          <nav className="admin-nav" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Link to="/officer/dashboard" className="nav-item" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              <Home size={15} /> Home
+            </Link>
+            <Link to="/officer/documents" className="nav-item active" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              <FileEdit size={15} /> Edit
+            </Link>
+            <button
+              type="button"
+              className="nav-item button-link"
+              onClick={handleLogout}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            >
+              <LogOut size={15} /> Logout
+            </button>
+          </nav>
+        </div>
       </aside>
 
       <section className="admin-content" style={{ width: '100%' }}>
