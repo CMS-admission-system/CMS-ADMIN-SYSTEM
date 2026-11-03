@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft,
   Building2,
   Bus,
+  CheckCircle2,
   Download,
   Eye,
   FileEdit,
@@ -12,6 +13,7 @@ import {
   LayoutGrid,
   LogOut,
   Printer,
+  Save,
   Search,
   Trophy,
   X,
@@ -20,13 +22,50 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import AdmissionPaperView from '../components/AdmissionPaperView';
 import ApplicationDocuments from '../components/ApplicationDocuments';
-import { downloadApplicationsCsv, downloadElementAsPdf, formatDate } from '../utils/helpers';
+import { downloadApplicationsCsv, downloadElementAsPdf, formatDate, DEFAULT_COURSE_SEAT_QUOTAS, normalizeCourseName } from '../utils/helpers';
+
+const COURSE_GROUPS = [
+  {
+    groupTitle: 'Undergraduate (UG) — B.Tech Programmes',
+    degree: 'B.Tech',
+    level: 'UG',
+    courses: [
+      { code: 'AI&DS', fullName: 'Artificial Intelligence & Data Science', defaultSeats: 120 },
+    ],
+  },
+  {
+    groupTitle: 'Undergraduate (UG) — B.E Programmes',
+    degree: 'B.E',
+    level: 'UG',
+    courses: [
+      { code: 'CSE', fullName: 'Computer Science & Engineering', defaultSeats: 120 },
+      { code: 'CS', fullName: 'CSE - Cyber Security', defaultSeats: 60 },
+      { code: 'AIML', fullName: 'Artificial Intelligence & Machine Learning', defaultSeats: 60 },
+      { code: 'BME', fullName: 'Bio-Medical Engineering', defaultSeats: 60 },
+      { code: 'ECE', fullName: 'Electronics & Communication Engineering', defaultSeats: 60 },
+      { code: 'EEE (Electrical and Electronics Engineering)', fullName: 'Electrical & Electronics Engineering', defaultSeats: 60 },
+      { code: 'MECH', fullName: 'Mechanical Engineering', defaultSeats: 60 },
+      { code: 'Electrical and Computer Engineering', fullName: 'Electrical and Computer Engineering', defaultSeats: 60 },
+    ],
+  },
+  {
+    groupTitle: 'Postgraduate (PG) — M.E Programmes',
+    degree: 'M.E',
+    level: 'PG',
+    courses: [
+      { code: 'VLSI', fullName: 'M.E - VLSI Design', defaultSeats: 18 },
+      { code: 'ISE', fullName: 'M.E - Industrial Safety Engineering', defaultSeats: 18 },
+      { code: 'M.E - CSE', fullName: 'M.E - Computer Science & Engineering', defaultSeats: 18 },
+      { code: 'M.E - BME', fullName: 'M.E - Bio-Medical Engineering', defaultSeats: 18 },
+    ],
+  },
+];
 
 export default function VCDashboardPage() {
   const navigate = useNavigate();
-  const { applications, logoutDemoUser } = useAppContext();
+  const { applications, logoutDemoUser, courseSeats, updateCourseSeats } = useAppContext();
 
-  // Navigation tab state: 'overview' (Category Overview) or 'edit' (Applications from Admission Office)
+  // Navigation tab state: 'overview' (Category Overview), 'seats' (Course Seats Quotas), or 'edit' (Applications from Admission Office)
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedCategory, setSelectedCategory] = useState('Transport');
   const [searchTerm, setSearchTerm] = useState('');
@@ -34,6 +73,47 @@ export default function VCDashboardPage() {
   const [selectedStudentPreview, setSelectedStudentPreview] = useState(null);
   const [selectedFileModal, setSelectedFileModal] = useState(null);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+
+  // Exclusive VC Course Seat Editor state
+  const [editableSeats, setEditableSeats] = useState({});
+  const [isSavingSeats, setIsSavingSeats] = useState(false);
+  const [saveSuccessMsg, setSaveSuccessMsg] = useState('');
+
+  // Sync draft seat quotas from context state
+  useEffect(() => {
+    if (courseSeats) {
+      const draft = {};
+      for (const [k, v] of Object.entries(courseSeats)) {
+        draft[k] = typeof v === 'object' && v !== null && v.total !== undefined ? v.total : Number(v);
+      }
+      setEditableSeats((prev) => ({ ...draft, ...prev }));
+    }
+  }, [courseSeats]);
+
+  const handleSeatChange = (courseName, newTotal) => {
+    const parsed = newTotal === '' ? '' : Math.max(0, parseInt(newTotal, 10) || 0);
+    setEditableSeats((prev) => ({
+      ...prev,
+      [courseName]: parsed,
+    }));
+  };
+
+  const handleSaveSeats = async () => {
+    setIsSavingSeats(true);
+    setSaveSuccessMsg('');
+    const payload = {};
+    for (const [k, v] of Object.entries(editableSeats)) {
+      payload[k] = v === '' ? 60 : Number(v);
+    }
+    const res = await updateCourseSeats(payload);
+    setIsSavingSeats(false);
+    if (res.ok) {
+      setSaveSuccessMsg('Course seat quotas updated successfully in TiDB database!');
+      setTimeout(() => setSaveSuccessMsg(''), 4000);
+    } else {
+      window.alert(res.error || 'Failed to update course seats.');
+    }
+  };
 
   // Ensure VC can view all applications forwarded by Admin/AO
   const sentToVC = applications.filter((app) => (
@@ -52,6 +132,37 @@ export default function VCDashboardPage() {
     app.coursePreference?.firstPreference,
     app.admissionCategory,
   ].some((field) => String(field || '').toLocaleLowerCase().includes(normalizedSearch)));
+
+  const allSeatStats = useMemo(() => {
+    let totalCap = 0;
+    let totalFilled = 0;
+    let totalBal = 0;
+    let aidsBal = 120;
+
+    for (const group of COURSE_GROUPS) {
+      for (const course of group.courses) {
+        const configuredTotal = editableSeats[course.code] !== undefined && editableSeats[course.code] !== ''
+          ? Number(editableSeats[course.code])
+          : (courseSeats?.[course.code]?.total ?? course.defaultSeats);
+
+        const filled = applications.filter((app) => {
+          const c = app.coursePreference?.firstPreference || app.courseName || '';
+          return normalizeCourseName(c) === normalizeCourseName(course.code);
+        }).length;
+
+        const balance = Math.max(0, configuredTotal - filled);
+        totalCap += configuredTotal;
+        totalFilled += filled;
+        totalBal += balance;
+
+        if (course.code === 'AI&DS') {
+          aidsBal = balance;
+        }
+      }
+    }
+
+    return { totalCap, totalFilled, totalBal, aidsBal };
+  }, [editableSeats, courseSeats, applications]);
 
   // Category counts calculated exclusively from confirmed & paid student records from the database
   const confirmedStudents = applications.filter(
@@ -154,6 +265,18 @@ export default function VCDashboardPage() {
               title="View Confirmed Category Overview (Transport, Hostel, FG, Sports)"
             >
               <LayoutGrid size={15} /> Category Overview
+            </button>
+            <button
+              type="button"
+              className={`nav-item ${activeTab === 'seats' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveTab('seats');
+                setSelectedStudentPreview(null);
+              }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+              title="Manage Course Intake Seats & Quotas (VC Exclusive)"
+            >
+              <GraduationCap size={15} /> Course Seats
             </button>
             <button
               type="button"
@@ -567,6 +690,238 @@ export default function VCDashboardPage() {
                 </div>
               </>
             )}
+          </div>
+        ) : activeTab === 'seats' ? (
+          /* =========================================================================
+             TAB 3: COURSE SEATS MANAGEMENT (Vice Chairman Exclusive Authorization)
+             ========================================================================= */
+          <div className="content-panel table-card">
+            <div className="section-header space-between" style={{ flexWrap: 'wrap', gap: '14px', borderBottom: '1px solid #e2e8f0', paddingBottom: '16px' }}>
+              <div>
+                <p className="eyebrow accent" style={{ margin: 0 }}>Vice Chairman View</p>
+                <h3 style={{ margin: '4px 0 0', fontSize: '1.4rem', color: '#004d38', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <GraduationCap size={24} color="#006747" /> Course Seats Management & Quota Configuration
+                </h3>
+                <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: '#64748b' }}>
+                  Exclusive Vice Chairman seat quota authorization. Balance seats update dynamically in real time as students submit admission forms.
+                </p>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <button
+                  type="button"
+                  className="primary-btn"
+                  onClick={handleSaveSeats}
+                  disabled={isSavingSeats}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    backgroundColor: '#166534',
+                    color: '#ffffff',
+                    fontWeight: 700,
+                    padding: '9px 18px',
+                    borderRadius: '8px',
+                    cursor: isSavingSeats ? 'not-allowed' : 'pointer',
+                    boxShadow: '0 2px 4px rgba(22, 101, 52, 0.25)',
+                    border: 'none',
+                  }}
+                  title="Save configured total seat quotas to the database"
+                >
+                  <Save size={16} /> {isSavingSeats ? 'Saving to Database...' : 'Save Seat Quotas'}
+                </button>
+              </div>
+            </div>
+
+            {saveSuccessMsg ? (
+              <div style={{
+                margin: '14px 0',
+                padding: '12px 18px',
+                background: '#dcfce7',
+                border: '1px solid #86efac',
+                color: '#166534',
+                borderRadius: '8px',
+                fontWeight: 600,
+                fontSize: '0.92rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}>
+                <CheckCircle2 size={18} /> {saveSuccessMsg}
+              </div>
+            ) : null}
+
+            {/* Overall Quick Metrics Bar */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
+              gap: '14px',
+              margin: '18px 0',
+            }}>
+              <div style={{ background: '#f8fafc', padding: '14px 18px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Total College Intake</span>
+                <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#0f172a', marginTop: '3px' }}>
+                  {allSeatStats.totalCap} <span style={{ fontSize: '0.88rem', fontWeight: 500, color: '#64748b' }}>Seats</span>
+                </div>
+              </div>
+              <div style={{ background: '#eff6ff', padding: '14px 18px', borderRadius: '10px', border: '1px solid #bfdbfe' }}>
+                <span style={{ fontSize: '0.78rem', color: '#1d4ed8', fontWeight: 600, textTransform: 'uppercase' }}>Total Submitted Applications</span>
+                <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#1e40af', marginTop: '3px' }}>
+                  {allSeatStats.totalFilled} <span style={{ fontSize: '0.88rem', fontWeight: 500, color: '#3b82f6' }}>Students</span>
+                </div>
+              </div>
+              <div style={{ background: '#f0fdf4', padding: '14px 18px', borderRadius: '10px', border: '1px solid #bbf7d0' }}>
+                <span style={{ fontSize: '0.78rem', color: '#166534', fontWeight: 600, textTransform: 'uppercase' }}>Total Balance Remaining</span>
+                <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#15803d', marginTop: '3px' }}>
+                  {allSeatStats.totalBal} <span style={{ fontSize: '0.88rem', fontWeight: 500, color: '#16a34a' }}>Seats</span>
+                </div>
+              </div>
+              <div style={{ background: '#ecfdf5', padding: '14px 18px', borderRadius: '10px', border: '1px solid #a7f3d0' }}>
+                <span style={{ fontSize: '0.78rem', color: '#065f46', fontWeight: 600, textTransform: 'uppercase' }}>AI&DS Course Status</span>
+                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#047857', marginTop: '4px' }}>
+                  {editableSeats['AI&DS'] ?? 120} Total | {allSeatStats.aidsBal} Balance
+                </div>
+              </div>
+            </div>
+
+            {/* Grouped Courses Tables */}
+            {COURSE_GROUPS.map((group) => (
+              <div key={group.groupTitle} style={{ marginTop: '24px', marginBottom: '16px' }}>
+                <div style={{
+                  padding: '10px 14px',
+                  background: '#f1f5f9',
+                  borderRadius: '8px 8px 0 0',
+                  fontWeight: 700,
+                  fontSize: '0.98rem',
+                  color: '#1e293b',
+                  border: '1px solid #e2e8f0',
+                  borderBottom: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}>
+                  <span>{group.groupTitle}</span>
+                  <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#006747', background: '#dcfce7', padding: '2px 8px', borderRadius: '12px' }}>
+                    {group.degree} · {group.level}
+                  </span>
+                </div>
+
+                <div className="table-responsive" style={{ border: '1px solid #e2e8f0', borderRadius: '0 0 8px 8px' }}>
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th style={{ width: '50px' }}>#</th>
+                        <th style={{ minWidth: '220px' }}>Course / Programme</th>
+                        <th style={{ minWidth: '150px' }}>Total Seats Quota (VC Edit)</th>
+                        <th style={{ minWidth: '120px' }}>Filled Applications</th>
+                        <th style={{ minWidth: '130px' }}>Balance Available</th>
+                        <th style={{ minWidth: '160px' }}>Occupancy</th>
+                        <th style={{ minWidth: '120px' }}>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {group.courses.map((course, idx) => {
+                        const totalVal = editableSeats[course.code] !== undefined && editableSeats[course.code] !== ''
+                          ? Number(editableSeats[course.code])
+                          : (courseSeats?.[course.code]?.total ?? course.defaultSeats);
+
+                        const filled = applications.filter((app) => {
+                          const c = app.coursePreference?.firstPreference || app.courseName || '';
+                          return normalizeCourseName(c) === normalizeCourseName(course.code);
+                        }).length;
+
+                        const balance = Math.max(0, totalVal - filled);
+                        const pct = Math.min(100, Math.round((filled / Math.max(1, totalVal)) * 100));
+
+                        return (
+                          <tr key={course.code}>
+                            <td><strong>{idx + 1}</strong></td>
+                            <td>
+                              <div>
+                                <strong style={{ color: '#0f172a', fontSize: '0.96rem' }}>{course.code}</strong>
+                                <div style={{ fontSize: '0.82rem', color: '#64748b' }}>{course.fullName}</div>
+                              </div>
+                            </td>
+                            <td>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={editableSeats[course.code] ?? totalVal}
+                                  onChange={(e) => handleSeatChange(course.code, e.target.value)}
+                                  style={{
+                                    width: '90px',
+                                    padding: '6px 10px',
+                                    border: '2px solid #006747',
+                                    borderRadius: '6px',
+                                    fontWeight: 700,
+                                    fontSize: '0.98rem',
+                                    color: '#004d38',
+                                    background: '#ffffff',
+                                    textAlign: 'center',
+                                  }}
+                                  title="Edit total intake seat quota for this course"
+                                />
+                                <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>seats</span>
+                              </div>
+                            </td>
+                            <td>
+                              <span style={{ fontWeight: 700, fontSize: '0.95rem', color: filled > 0 ? '#1e40af' : '#64748b' }}>
+                                {filled} {filled === 1 ? 'student' : 'students'}
+                              </span>
+                            </td>
+                            <td>
+                              <span style={{
+                                fontWeight: 800,
+                                fontSize: '0.96rem',
+                                color: balance > 0 ? '#15803d' : '#991b1b',
+                                background: balance > 0 ? '#dcfce7' : '#fee2e2',
+                                padding: '3px 10px',
+                                borderRadius: '12px',
+                                border: `1px solid ${balance > 0 ? '#86efac' : '#fecaca'}`,
+                                display: 'inline-block',
+                              }}>
+                                {balance} seats
+                              </span>
+                            </td>
+                            <td>
+                              <div style={{ width: '100%', maxWidth: '140px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 600, color: '#475569', marginBottom: '2px' }}>
+                                  <span>{pct}%</span>
+                                  <span>{filled}/{totalVal}</span>
+                                </div>
+                                <div style={{ width: '100%', height: '6px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
+                                  <div style={{
+                                    width: `${pct}%`,
+                                    height: '100%',
+                                    background: pct >= 90 ? '#dc2626' : (pct >= 70 ? '#f59e0b' : '#166534'),
+                                    borderRadius: '4px',
+                                  }} />
+                                </div>
+                              </div>
+                            </td>
+                            <td>
+                              {balance <= 0 ? (
+                                <span className="badge badge-danger" style={{ background: '#fee2e2', color: '#991b1b', padding: '3px 8px', borderRadius: '8px', fontWeight: 700, fontSize: '0.8rem' }}>
+                                  Full
+                                </span>
+                              ) : balance <= 10 ? (
+                                <span className="badge badge-warning" style={{ background: '#fef3c7', color: '#92400e', padding: '3px 8px', borderRadius: '8px', fontWeight: 700, fontSize: '0.8rem' }}>
+                                  Filling Fast
+                                </span>
+                              ) : (
+                                <span className="badge badge-success" style={{ background: '#dcfce7', color: '#166534', padding: '3px 8px', borderRadius: '8px', fontWeight: 700, fontSize: '0.8rem' }}>
+                                  Available
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
           /* =========================================================================

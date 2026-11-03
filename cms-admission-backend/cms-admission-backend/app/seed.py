@@ -25,8 +25,14 @@ COURSES: list[tuple[str, str, Level]] = [
 def seed_courses(db: Session) -> None:
     existing = {c.code for c in db.query(models.Course).all()}
     for code, name, level in COURSES:
+        seats = 120 if code in ("AIDS", "CSE") else 60
         if code not in existing:
-            db.add(models.Course(code=code, name=name, level=level))
+            db.add(models.Course(code=code, name=name, level=level, seats=seats))
+        else:
+            # Ensure default minimum 120 seats for AIDS and CSE
+            course_obj = db.query(models.Course).filter(models.Course.code == code).first()
+            if course_obj and code in ("AIDS", "CSE") and course_obj.seats < 120:
+                course_obj.seats = 120
     db.commit()
 
 

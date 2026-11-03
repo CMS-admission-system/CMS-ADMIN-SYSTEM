@@ -331,7 +331,7 @@ function formatAadhaar(value) {
 
 export default function RegisterPage() {
   const navigate = useNavigate();
-  const { draft, saveDraft } = useAppContext();
+  const { draft, saveDraft, getSeatInfo, courseSeats } = useAppContext();
   const savedProgramme = draft?.programme || '';
   const savedDegree = PROGRAMME_COURSES[savedProgramme]?.[draft?.degree] ? draft.degree : '';
   const savedCourses = PROGRAMME_COURSES[savedProgramme]?.[savedDegree] || [];
@@ -922,17 +922,52 @@ export default function RegisterPage() {
         <fieldset className="field-group choice-fieldset full-width">
           <legend>Course selection <span className="required-indicator">*</span></legend>
           <div className="choice-grid">
-            {availableCourses.map((course) => (
-              <button
-                key={course}
-                type="button"
-                className={`choice-card ${formData.coursePreference?.firstPreference === course ? 'active' : ''}`}
-                aria-pressed={formData.coursePreference?.firstPreference === course}
-                onClick={() => updateCoursePreference(course)}
-              >
-                {course}
-              </button>
-            ))}
+            {availableCourses.map((course) => {
+              const seatInfo = getSeatInfo ? getSeatInfo(course) : { total: 120, balance: 120, filled: 0 };
+              const isSelected = formData.coursePreference?.firstPreference === course;
+              const isFull = seatInfo.balance <= 0;
+
+              return (
+                <button
+                  key={course}
+                  type="button"
+                  className={`choice-card ${isSelected ? 'active' : ''}`}
+                  aria-pressed={isSelected}
+                  onClick={() => updateCoursePreference(course)}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    padding: '12px 14px',
+                    textAlign: 'center',
+                  }}
+                >
+                  <span style={{ fontWeight: 700, fontSize: '1.05rem', color: isSelected ? '#166534' : 'inherit' }}>
+                    {course}
+                  </span>
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      fontSize: '0.82rem',
+                      fontWeight: 600,
+                      padding: '2px 8px',
+                      borderRadius: '999px',
+                      background: isFull ? '#fee2e2' : (isSelected ? '#dcfce7' : '#f0fdf4'),
+                      color: isFull ? '#991b1b' : '#166534',
+                      border: `1px solid ${isFull ? '#fecaca' : '#86efac'}`,
+                    }}
+                  >
+                    <span>Total: {seatInfo.total} seats</span>
+                    <span>|</span>
+                    <span>Balance: <strong>{seatInfo.balance}</strong> seats</span>
+                  </div>
+                </button>
+              );
+            })}
           </div>
           {errors.firstPreference ? <small className="error-text">{errors.firstPreference}</small> : null}
         </fieldset>

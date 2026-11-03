@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { getInitialDraft } from '../utils/helpers';
+import { getInitialDraft, DEFAULT_COURSE_SEAT_QUOTAS, normalizeCourseName } from '../utils/helpers';
 import { readStorage, writeStorage, resetStorage, STORAGE_KEYS } from '../services/storage';
 import {
   fetchApplicationsApi,
@@ -8,6 +8,8 @@ import {
   deleteApplicationApi,
   fetchSettingApi,
   saveSettingApi,
+  fetchCourseSeatsApi,
+  updateCourseSeatsApi,
   sendApplicationStatusEmail,
 } from '../services/api';
 import { getSocket, subscribeToRealtimeEvents } from '../services/socket';
@@ -40,10 +42,42 @@ export function AppProvider({ children }) {
   });
   const [correctionHistory, setCorrectionHistory] = useState(() => readStorage(STORAGE_KEYS.cmsCorrectionHistory, []));
   const [lastSubmitted, setLastSubmitted] = useState(() => readStorage(STORAGE_KEYS.cmsLastSubmittedApplication, null));
+  const [courseSeats, setCourseSeats] = useState(() => {
+    const initial = {};
+    for (const [k, v] of Object.entries(DEFAULT_COURSE_SEAT_QUOTAS)) {
+      initial[k] = { total: v, filled: 0, balance: v };
+    }
+    return initial;
+  });
+
+  // Calculate live filled and balance counts given seat quotas and current applications
+  const computeSeatBalances = useCallback((seatMap, appsList) => {
+    const filledCounts = {};
+    for (const app of appsList) {
+      const cname = app.coursePreference?.firstPreference || app.courseName || app.firstPreference || '';
+      const norm = normalizeCourseName(cname);
+      if (norm) {
+        filledCounts[norm] = (filledCounts[norm] || 0) + 1;
+      }
+    }
+
+    const merged = {};
+    const baseQuotas = { ...DEFAULT_COURSE_SEAT_QUOTAS, ...(seatMap || {}) };
+    for (const [cName, seatData] of Object.entries(baseQuotas)) {
+      const total = typeof seatData === 'object' && seatData !== null && seatData.total !== undefined
+        ? Number(seatData.total)
+        : Number(seatData || 60);
+      const filled = filledCounts[cName] || 0;
+      const balance = Math.max(0, total - filled);
+      merged[cName] = { total, filled, balance };
+    }
+    return merged;
+  }, []);
 
   // 1. Centralized Data System: Fetch latest authoritative state from central backend on mount & auth change
   const refreshFromDatabase = useCallback(async () => {
     const serverApps = await fetchApplicationsApi();
+    const activeApps = Array.isArray(serverApps) ? serverApps : applications;
     if (Array.isArray(serverApps)) {
       setApplications(serverApps);
     }
@@ -53,11 +87,23 @@ export function AppProvider({ children }) {
 
     const bgVal = await fetchSettingApi('backgroundSettings');
     if (bgVal) setBackgroundSettings(bgVal);
-  }, []);
+
+    const serverSeats = await fetchCourseSeatsApi();
+    if (serverSeats && typeof serverSeats === 'object') {
+      setCourseSeats(serverSeats);
+    } else {
+      setCourseSeats((prev) => computeSeatBalances(prev, activeApps));
+    }
+  }, [applications, computeSeatBalances]);
 
   useEffect(() => {
     refreshFromDatabase();
   }, [refreshFromDatabase, auth.role]);
+
+  // Recalculate seat balances whenever applications change locally
+  useEffect(() => {
+    setCourseSeats((prev) => computeSeatBalances(prev, applications));
+  }, [applications, computeSeatBalances]);
 
   // 2. Real-Time Multi-User Synchronization via Socket.IO
   useEffect(() => {
@@ -68,7 +114,6 @@ export function AppProvider({ children }) {
         setIsLiveConnected(connected);
       },
       onReconnect: () => {
-        // Automatically reconcile with central DB after internet reconnect
         console.log('[Socket.IO] Reconnected. Reconciling with central database...');
         refreshFromDatabase();
       },
@@ -99,12 +144,22 @@ export function AppProvider({ children }) {
         console.log('[Socket.IO] Real-time: Application deleted:', id);
         setApplications((current) => current.filter((a) => a.id !== id));
       },
+      onCourseSeatsUpdated: (newSeatsSummary) => {
+        console.log('[Socket.IO] Real-time: Course seats updated:', newSeatsSummary);
+        if (newSeatsSummary && typeof newSeatsSummary === 'object') {
+          setCourseSeats(newSeatsSummary);
+        }
+      },
       onSettingUpdated: ({ key, value }) => {
         console.log('[Socket.IO] Real-time: Setting updated:', key);
         if (key === 'paymentSettings' && value) {
           setPaymentSettings(value);
         } else if (key === 'backgroundSettings' && value) {
           setBackgroundSettings(value);
+        } else if (key === 'course_seats') {
+          fetchCourseSeatsApi().then((seats) => {
+            if (seats) setCourseSeats(seats);
+          });
         }
       },
     });
@@ -219,13 +274,52 @@ export function AppProvider({ children }) {
     return result;
   };
 
+  const getNowIstIso = () => {
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const istOffset = 5.5 * 60 * 60 * 1000;
+    const istTime = new Date(d.getTime() + (d.getTimezoneOffset() * 60 * 1000) + istOffset);
+    return `${istTime.getFullYear()}-${pad(istTime.getMonth() + 1)}-${pad(istTime.getDate())}T${pad(istTime.getHours())}:${pad(istTime.getMinutes())}:${pad(istTime.getSeconds())}+05:30`;
+  };
+
+  const getSeatInfo = useCallback((courseName) => {
+    const norm = normalizeCourseName(courseName);
+    if (courseSeats && courseSeats[norm]) {
+      return courseSeats[norm];
+    }
+    const defaultTotal = DEFAULT_COURSE_SEAT_QUOTAS[norm] || 60;
+    const filled = applications.filter((app) => {
+      const c = app.coursePreference?.firstPreference || app.courseName || '';
+      return normalizeCourseName(c) === norm;
+    }).length;
+    return {
+      total: defaultTotal,
+      filled,
+      balance: Math.max(0, defaultTotal - filled),
+    };
+  }, [courseSeats, applications]);
+
+  const updateCourseSeats = async (newQuotas) => {
+    try {
+      const res = await updateCourseSeatsApi(newQuotas, auth.role || 'vc');
+      if (res.ok && res.data?.seats) {
+        setCourseSeats(res.data.seats);
+        return { ok: true, seats: res.data.seats };
+      }
+      return { ok: false, error: res.error || 'Failed to update course seats' };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
+  };
+
   const submitApplication = async (formData) => {
+    const istNow = getNowIstIso();
     const rawData = {
       ...formData,
       status: formData.status || 'Enquiring',
-      submittedAt: formData.submittedAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      confirmationDate: formData.status === 'Confirmed' ? new Date().toISOString() : null,
+      submittedAt: formData.submittedAt || istNow,
+      updatedAt: istNow,
+      confirmationDate: formData.status === 'Confirmed' ? istNow : null,
       correctionNotes: formData.correctionNotes || '',
       coursePreference: formData.coursePreference || { firstPreference: '', additionalPreferences: [] },
     };
@@ -259,6 +353,7 @@ export function AppProvider({ children }) {
   };
 
   const confirmApplication = async (applicationId, actor = 'Admission Officer') => {
+    const istNow = getNowIstIso();
     const note = 'Application confirmed by admission office.';
     const currentItem = applications.find((item) => item.id === applicationId);
     const expectedVersion = currentItem?.version || 1;
@@ -268,8 +363,8 @@ export function AppProvider({ children }) {
       return {
         ...item,
         status: 'Confirmed',
-        confirmedAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        confirmedAt: istNow,
+        updatedAt: istNow,
       };
     }));
     addHistoryEntry(applicationId, note, actor);
@@ -283,6 +378,7 @@ export function AppProvider({ children }) {
   };
 
   const forwardApplicationToVC = async (applicationId, actor = 'Admission Officer') => {
+    const istNow = getNowIstIso();
     const note = 'Application forwarded to the VC list by the admission office.';
     const currentItem = applications.find((item) => item.id === applicationId);
     const expectedVersion = currentItem?.version || 1;
@@ -292,8 +388,8 @@ export function AppProvider({ children }) {
       return {
         ...item,
         status: 'Sent to VC',
-        forwardedAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        forwardedAt: istNow,
+        updatedAt: istNow,
       };
     }));
     addHistoryEntry(applicationId, note, actor);
@@ -318,6 +414,9 @@ export function AppProvider({ children }) {
     isLiveConnected,
     backgroundSettings,
     paymentSettings,
+    courseSeats,
+    getSeatInfo,
+    updateCourseSeats,
     correctionHistory,
     lastSubmitted,
     saveDraft,
@@ -335,7 +434,7 @@ export function AppProvider({ children }) {
     setDraft,
     setBackgroundSettings: updateBackgroundSettings,
     setPaymentSettings: updatePaymentSettings,
-  }), [auth, draft, applications, isLiveConnected, backgroundSettings, paymentSettings, correctionHistory, lastSubmitted, saveDraft, refreshFromDatabase]);
+  }), [auth, draft, applications, isLiveConnected, backgroundSettings, paymentSettings, courseSeats, getSeatInfo, correctionHistory, lastSubmitted, saveDraft, refreshFromDatabase]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

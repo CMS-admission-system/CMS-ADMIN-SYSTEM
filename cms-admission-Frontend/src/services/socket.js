@@ -70,6 +70,7 @@ export function subscribeToRealtimeEvents({
   onApplicationUpdated,
   onApplicationDeleted,
   onSettingUpdated,
+  onCourseSeatsUpdated,
   onReconnect,
   onConnectionStatus,
 }) {
@@ -96,6 +97,10 @@ export function subscribeToRealtimeEvents({
     if (onSettingUpdated) onSettingUpdated(data);
   };
 
+  const handleCourseSeats = (data) => {
+    if (onCourseSeatsUpdated) onCourseSeatsUpdated(data);
+  };
+
   const handleConnect = () => {
     if (onReconnect) onReconnect();
   };
@@ -104,6 +109,7 @@ export function subscribeToRealtimeEvents({
   socket.on('application_updated', handleUpdated);
   socket.on('application_deleted', handleDeleted);
   socket.on('setting_updated', handleSetting);
+  socket.on('course_seats_updated', handleCourseSeats);
   socket.on('connect', handleConnect);
 
   return () => {
@@ -114,6 +120,7 @@ export function subscribeToRealtimeEvents({
     socket.off('application_updated', handleUpdated);
     socket.off('application_deleted', handleDeleted);
     socket.off('setting_updated', handleSetting);
+    socket.off('course_seats_updated', handleCourseSeats);
     socket.off('connect', handleConnect);
   };
 }

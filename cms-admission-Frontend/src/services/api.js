@@ -92,6 +92,22 @@ export async function deleteApplicationApi(applicationId) {
   return result.ok;
 }
 
+export async function fetchCourseSeatsApi() {
+  const result = await safeFetch('/portal/course-seats');
+  if (result.ok && result.data?.seats) {
+    return result.data.seats;
+  }
+  return null;
+}
+
+export async function updateCourseSeatsApi(seatQuotas, role = 'vc') {
+  const result = await safeFetch('/portal/course-seats', {
+    method: 'PUT',
+    body: JSON.stringify({ seats: seatQuotas, role }),
+  });
+  return result;
+}
+
 export const DEFAULT_ENQUIRING_EMAIL = 'admissions@cms.edu.in';
 
 export async function sendApplicationStatusEmail({

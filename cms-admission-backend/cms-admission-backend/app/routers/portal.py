@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Any
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
@@ -12,6 +12,9 @@ from ..database import get_db
 from ..email_template import render_full_admission_email_html
 from ..realtime import emit_realtime_event
 from ..security import create_staff_token, verify_password
+
+# Indian Standard Time (IST) UTC+5:30
+IST = timezone(timedelta(hours=5, minutes=30), name="IST")
 
 router = APIRouter(prefix="/portal", tags=["portal"])
 
@@ -70,15 +73,15 @@ def list_portal_applications(
             data = json.loads(r.data_json)
         except Exception:
             data = {}
-        # Ensure latest state from indexed columns is synced
+        # Ensure latest state from indexed columns is synced with reliable IST timestamps
         data["id"] = r.id
         data["status"] = r.status
         if r.confirmed_at:
-            data["confirmedAt"] = r.confirmed_at.isoformat()
+            data["confirmedAt"] = r.confirmed_at.strftime("%Y-%m-%dT%H:%M:%S+05:30")
         if r.forwarded_at:
-            data["forwardedAt"] = r.forwarded_at.isoformat()
-        if r.submitted_at and not data.get("submittedAt"):
-            data["submittedAt"] = r.submitted_at.isoformat()
+            data["forwardedAt"] = r.forwarded_at.strftime("%Y-%m-%dT%H:%M:%S+05:30")
+        if r.submitted_at:
+            data["submittedAt"] = r.submitted_at.strftime("%Y-%m-%dT%H:%M:%S+05:30")
         data["version"] = int(data.get("version") or 1)
         results.append(data)
     return results
@@ -260,12 +263,17 @@ def create_portal_application(
         app_id = str(app_id)
         payload["id"] = app_id
 
+    # Authoritative current local time in Indian Standard Time (IST)
+    now_ist = datetime.now(IST)
+    ist_naive = now_ist.replace(tzinfo=None)
+    ist_iso = now_ist.strftime("%Y-%m-%dT%H:%M:%S+05:30")
+
     if not payload.get("status"):
         payload["status"] = "Enquiring"
     if not payload.get("submittedAt"):
-        payload["submittedAt"] = datetime.now(timezone.utc).isoformat()
+        payload["submittedAt"] = ist_iso
     if not payload.get("updatedAt"):
-        payload["updatedAt"] = datetime.now(timezone.utc).isoformat()
+        payload["updatedAt"] = ist_iso
     if not payload.get("version"):
         payload["version"] = 1
 
@@ -281,6 +289,9 @@ def create_portal_application(
         existing.admission_category = category
         existing.course_name = course_name
         existing.status = payload.get("status", "Enquiring")
+        existing.updated_at = ist_naive
+        if not existing.submitted_at:
+            existing.submitted_at = ist_naive
         existing.data_json = json.dumps(payload)
         record = existing
     else:
@@ -291,6 +302,8 @@ def create_portal_application(
             admission_category=category,
             course_name=course_name,
             status=payload.get("status", "Enquiring"),
+            submitted_at=ist_naive,
+            updated_at=ist_naive,
             data_json=json.dumps(payload),
         )
         db.add(record)
@@ -307,6 +320,7 @@ def create_portal_application(
     if student_email and last_emailed != current_status and current_status in ["Enquiring", "Confirmed", "Confirm"]:
         payload["last_emailed_status"] = current_status
         record.data_json = json.dumps(payload)
+        record.updated_at = ist_naive
         db.commit()
         background_tasks.add_task(
             dispatch_status_email,
@@ -368,26 +382,29 @@ def update_portal_application(
         cp = updates["coursePreference"]
         record.course_name = cp.get("firstPreference") if isinstance(cp, dict) else str(cp or "")
 
-    now_iso = datetime.now(timezone.utc).isoformat()
-    data["updatedAt"] = now_iso
+    now_ist = datetime.now(IST)
+    ist_naive = now_ist.replace(tzinfo=None)
+    ist_iso = now_ist.strftime("%Y-%m-%dT%H:%M:%S+05:30")
+    record.updated_at = ist_naive
+    data["updatedAt"] = ist_iso
 
     new_status = updates.get("status", old_status)
     if "status" in updates:
         record.status = new_status
         if new_status in ["Confirmed", "Confirm"]:
-            record.confirmed_at = datetime.now(timezone.utc)
-            data["confirmedAt"] = now_iso
+            record.confirmed_at = ist_naive
+            data["confirmedAt"] = ist_iso
         elif new_status == "Sent to VC":
-            record.forwarded_at = datetime.now(timezone.utc)
-            data["forwardedAt"] = now_iso
+            record.forwarded_at = ist_naive
+            data["forwardedAt"] = ist_iso
 
     if payload.comment:
         history_entry = {
-            "id": f"{app_id}-{int(datetime.now(timezone.utc).timestamp() * 1000)}",
+            "id": f"{app_id}-{int(now_ist.timestamp() * 1000)}",
             "applicationId": app_id,
             "note": payload.comment,
             "actor": payload.actor or "Admission Officer",
-            "createdAt": now_iso,
+            "createdAt": ist_iso,
         }
         history = data.get("correctionHistory", [])
         data["correctionHistory"] = [history_entry] + history
@@ -495,3 +512,176 @@ def save_portal_setting(key: str, payload: dict[str, Any], db: Session = Depends
     db.commit()
     emit_realtime_event("setting_updated", {"key": key, "value": payload.get("value")})
     return {"key": key, "ok": True}
+
+
+# ---------------------------------------------------------------------------
+# Course Seat Management (Real-time tracking & VC exclusive quota updates)
+# ---------------------------------------------------------------------------
+DEFAULT_COURSE_SEAT_QUOTAS: dict[str, int] = {
+    "AI&DS": 120,   # explicitly 120 seats
+    "CSE": 120,
+    "BME": 60,
+    "CS": 60,
+    "ECE": 60,
+    "MECH": 60,
+    "AIML": 60,
+    "Electrical and Computer Engineering": 60,
+    "EEE (Electrical and Electronics Engineering)": 60,
+    "VLSI": 18,
+    "ISE": 18,
+    "M.E - CSE": 18,
+    "M.E - BME": 18,
+}
+
+
+def normalize_course_name(name: str) -> str:
+    if not name:
+        return ""
+    n = name.strip().lower()
+    if "ai&ds" in n or "aids" in n or "data science" in n:
+        return "AI&DS"
+    if "cyber" in n or "cse-cs" in n or n == "cs":
+        return "CS"
+    if "ai&ml" in n or "aiml" in n or "machine learning" in n:
+        return "AIML"
+    if "bio" in n or "bme" in n:
+        return "BME"
+    if "computer" in n and "engineering" in n and "electrical" in n:
+        return "Electrical and Computer Engineering"
+    if "electrical" in n or "eee" in n:
+        return "EEE (Electrical and Electronics Engineering)"
+    if "electronics" in n or "ece" in n or "communication" in n:
+        return "ECE"
+    if "mech" in n:
+        return "MECH"
+    if "cse" in n or "computer science" in n:
+        return "CSE"
+    if "vlsi" in n:
+        return "VLSI"
+    if "ise" in n:
+        return "ISE"
+    return name.strip()
+
+
+def get_course_seats_summary(db: Session) -> dict[str, Any]:
+    quotas = dict(DEFAULT_COURSE_SEAT_QUOTAS)
+    setting = db.get(models.PortalSetting, "course_seats")
+    if setting and setting.value_json:
+        try:
+            saved = json.loads(setting.value_json)
+            if isinstance(saved, dict):
+                quotas.update({k: int(v) for k, v in saved.items()})
+        except Exception:
+            pass
+
+    # Synchronize from courses table in TiDB
+    try:
+        db_courses = db.scalars(select(models.Course)).all()
+        code_to_name = {
+            "AIDS": "AI&DS",
+            "CSE": "CSE",
+            "CSE-CS": "CS",
+            "BME": "BME",
+            "EEE": "EEE (Electrical and Electronics Engineering)",
+            "ECE": "ECE",
+            "MECH": "MECH",
+            "AIML": "AIML",
+        }
+        for c in db_courses:
+            mapped_name = code_to_name.get(c.code)
+            if mapped_name and c.seats:
+                quotas[mapped_name] = max(quotas.get(mapped_name, 0), c.seats)
+    except Exception:
+        pass
+
+    # Count filled applications
+    records = db.scalars(select(models.PortalApplication)).all()
+    filled_counts: dict[str, int] = {}
+    for r in records:
+        cname = r.course_name or ""
+        if not cname:
+            try:
+                d = json.loads(r.data_json)
+                cname = d.get("coursePreference", {}).get("firstPreference", "")
+            except Exception:
+                cname = ""
+        norm = normalize_course_name(cname)
+        if norm:
+            filled_counts[norm] = filled_counts.get(norm, 0) + 1
+
+    summary = {}
+    for course, total in quotas.items():
+        filled = filled_counts.get(course, 0)
+        balance = max(0, total - filled)
+        summary[course] = {
+            "total": total,
+            "filled": filled,
+            "balance": balance,
+        }
+    return summary
+
+
+class UpdateSeatsRequest(BaseModel):
+    seats: dict[str, int]
+    role: str | None = None
+
+
+@router.get("/course-seats")
+def get_course_seats(db: Session = Depends(get_db)):
+    summary = get_course_seats_summary(db)
+    return {"ok": True, "seats": summary}
+
+
+@router.put("/course-seats")
+def update_course_seats(payload: UpdateSeatsRequest, db: Session = Depends(get_db)):
+    if payload.role and payload.role.lower() not in ["vc", "vice chairman", "vice_chairman"]:
+        raise HTTPException(403, "Only the Vice Chairman (VC) is authorized to update course seats.")
+
+    setting = db.get(models.PortalSetting, "course_seats")
+    current_seats = dict(DEFAULT_COURSE_SEAT_QUOTAS)
+    if setting and setting.value_json:
+        try:
+            saved = json.loads(setting.value_json)
+            if isinstance(saved, dict):
+                current_seats.update(saved)
+        except Exception:
+            pass
+
+    for k, v in payload.seats.items():
+        try:
+            current_seats[k] = max(0, int(v))
+        except (ValueError, TypeError):
+            pass
+
+    val_str = json.dumps(current_seats)
+    if setting:
+        setting.value_json = val_str
+    else:
+        setting = models.PortalSetting(key="course_seats", value_json=val_str)
+        db.add(setting)
+
+    # Synchronize with courses table in TiDB
+    code_map = {
+        "AI&DS": "AIDS",
+        "CSE": "CSE",
+        "CS": "CSE-CS",
+        "BME": "BME",
+        "EEE (Electrical and Electronics Engineering)": "EEE",
+        "ECE": "ECE",
+        "MECH": "MECH",
+        "AIML": "AIML",
+    }
+    for c_name, c_code in code_map.items():
+        if c_name in current_seats:
+            try:
+                course_record = db.scalar(select(models.Course).where(models.Course.code == c_code))
+                if course_record:
+                    course_record.seats = current_seats[c_name]
+            except Exception:
+                pass
+
+    db.commit()
+
+    summary = get_course_seats_summary(db)
+    emit_realtime_event("course_seats_updated", summary)
+    return {"ok": True, "seats": summary}
