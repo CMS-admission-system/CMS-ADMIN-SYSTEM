@@ -1,9 +1,11 @@
 import { io } from 'socket.io-client';
 
+const CLOUD_BACKEND_URL = 'https://cms-admin-system-nvoj.onrender.com';
+
 const SOCKET_URL = import.meta.env.VITE_API_BASE_URL
-  || (typeof window !== 'undefined' && window.location.port === '5173'
-      ? `http://${window.location.hostname || 'localhost'}:8000`
-      : '');
+  || (typeof window !== 'undefined' && window.location.origin.includes('onrender.com')
+      ? ''
+      : CLOUD_BACKEND_URL);
 
 let socketInstance = null;
 const statusListeners = new Set();

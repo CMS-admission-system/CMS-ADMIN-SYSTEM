@@ -215,23 +215,25 @@ def dispatch_status_email(
     msg.attach(MIMEText(body_html, "html"))
 
     try:
+        clean_pwd = active_settings.SMTP_PASSWORD.replace(" ", "") if active_settings.SMTP_PASSWORD else ""
         if active_settings.SMTP_TLS:
-            with smtplib.SMTP(active_settings.SMTP_HOST, active_settings.SMTP_PORT, timeout=10) as server:
+            with smtplib.SMTP(active_settings.SMTP_HOST, active_settings.SMTP_PORT, timeout=12) as server:
                 server.starttls()
-                if active_settings.SMTP_USER and active_settings.SMTP_PASSWORD:
-                    server.login(active_settings.SMTP_USER, active_settings.SMTP_PASSWORD)
+                if active_settings.SMTP_USER and clean_pwd:
+                    server.login(active_settings.SMTP_USER, clean_pwd)
                 recipients = [to_email]
-                if not is_confirmed and enquiring_email:
+                if not is_confirmed and enquiring_email and enquiring_email != to_email:
                     recipients.append(enquiring_email)
                 server.sendmail(active_settings.SMTP_FROM, recipients, msg.as_string())
         else:
-            with smtplib.SMTP(active_settings.SMTP_HOST, active_settings.SMTP_PORT, timeout=10) as server:
-                if active_settings.SMTP_USER and active_settings.SMTP_PASSWORD:
-                    server.login(active_settings.SMTP_USER, active_settings.SMTP_PASSWORD)
+            with smtplib.SMTP(active_settings.SMTP_HOST, active_settings.SMTP_PORT, timeout=12) as server:
+                if active_settings.SMTP_USER and clean_pwd:
+                    server.login(active_settings.SMTP_USER, clean_pwd)
                 recipients = [to_email]
-                if not is_confirmed and enquiring_email:
+                if not is_confirmed and enquiring_email and enquiring_email != to_email:
                     recipients.append(enquiring_email)
                 server.sendmail(active_settings.SMTP_FROM, recipients, msg.as_string())
+        logger.info(f"Admission email successfully delivered to {to_email} (app: {application_id}, status: {norm_status})")
         return True, f"Email delivered to {to_email}"
     except Exception as e:
         logger.error(f"Failed to send email to {to_email} via SMTP: {e}")
@@ -245,35 +247,29 @@ def create_portal_application(
     db: Session = Depends(get_db),
 ):
     app_id = payload.get("id")
-    existing = db.get(models.PortalApplication, str(app_id)) if app_id else None
-
-    # Check if app_id is in official YYNNNN format (6-digit numeric)
     is_valid_yearly_id = bool(app_id and len(str(app_id)) == 6 and str(app_id).isdigit())
 
-    # Generate new atomic YYNNNN ID if:
-    # 1. New application without existing record in DB, AND
-    # 2. app_id is missing, starts with 'CMS-', or not in valid YYNNNN format
-    if not existing and (not app_id or str(app_id).startswith("CMS-") or not is_valid_yearly_id):
+    # Every fresh submission that lacks an official 6-digit numeric ID or has a temporary CMS- ID gets a new atomic ID
+    if not app_id or str(app_id).startswith("CMS-") or not is_valid_yearly_id:
         app_id = generate_yearly_application_id(db)
+        existing = None
         payload["id"] = app_id
-    elif not app_id:
-        app_id = generate_yearly_application_id(db)
-        payload["id"] = app_id
+        payload["formNumber"] = app_id
     else:
         app_id = str(app_id)
+        existing = db.get(models.PortalApplication, app_id)
         payload["id"] = app_id
+        payload["formNumber"] = app_id
 
-    # Authoritative current local time in Indian Standard Time (IST)
+    # Authoritative current local time in Indian Standard Time (IST) - timestamped on submission!
     now_ist = datetime.now(IST)
     ist_naive = now_ist.replace(tzinfo=None)
     ist_iso = now_ist.strftime("%Y-%m-%dT%H:%M:%S+05:30")
 
     if not payload.get("status"):
         payload["status"] = "Enquiring"
-    if not payload.get("submittedAt"):
-        payload["submittedAt"] = ist_iso
-    if not payload.get("updatedAt"):
-        payload["updatedAt"] = ist_iso
+    payload["submittedAt"] = ist_iso
+    payload["updatedAt"] = ist_iso
     if not payload.get("version"):
         payload["version"] = 1
 
@@ -308,16 +304,20 @@ def create_portal_application(
         )
         db.add(record)
 
-    # 1. Database update is committed successfully first
+    # 1. Database update is committed successfully first to TiDB
     db.commit()
     db.refresh(record)
 
-    # 2. Automatically email registered email on status Enquiring / Confirmed, preventing duplicates
+    # 2. Automatically email registered student email on status Enquiring / Confirmed
     current_status = record.status or "Enquiring"
-    last_emailed = payload.get("last_emailed_status")
-    student_email = payload.get("email") or payload.get("studentEmail") or payload.get("parentEmail")
+    student_email = (
+        payload.get("email")
+        or payload.get("studentEmail")
+        or payload.get("parentEmail")
+        or ""
+    ).strip()
 
-    if student_email and last_emailed != current_status and current_status in ["Enquiring", "Confirmed", "Confirm"]:
+    if student_email and current_status in ["Enquiring", "Confirmed", "Confirm"]:
         payload["last_emailed_status"] = current_status
         record.data_json = json.dumps(payload)
         record.updated_at = ist_naive

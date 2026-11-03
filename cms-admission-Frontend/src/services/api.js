@@ -1,11 +1,16 @@
+const CLOUD_BACKEND_URL = 'https://cms-admin-system-nvoj.onrender.com';
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL
-  || (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port !== '8000'
-      ? `http://${window.location.hostname || 'localhost'}:8000`
-      : '');
+  || (typeof window !== 'undefined' && window.location.origin.includes('onrender.com')
+      ? ''
+      : (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port !== '8000'
+          ? `http://${window.location.hostname || 'localhost'}:8000`
+          : CLOUD_BACKEND_URL));
 
 async function safeFetch(url, options = {}) {
+  const primaryBase = API_BASE;
   try {
-    const res = await fetch(`${API_BASE}${url}`, {
+    const res = await fetch(`${primaryBase}${url}`, {
       headers: {
         'Content-Type': 'application/json',
         ...options.headers,
@@ -19,6 +24,26 @@ async function safeFetch(url, options = {}) {
     const data = await res.json().catch(() => ({}));
     return { ok: true, data };
   } catch (err) {
+    // If local localhost:8000 is not running, seamlessly fallback to live Cloud backend on Render!
+    if (primaryBase && primaryBase.includes('localhost:8000')) {
+      try {
+        const fallbackRes = await fetch(`${CLOUD_BACKEND_URL}${url}`, {
+          headers: {
+            'Content-Type': 'application/json',
+            ...options.headers,
+          },
+          ...options,
+        });
+        if (!fallbackRes.ok) {
+          const errData = await fallbackRes.json().catch(() => ({}));
+          return { ok: false, status: fallbackRes.status, error: errData.detail || 'Request failed' };
+        }
+        const data = await fallbackRes.json().catch(() => ({}));
+        return { ok: true, data };
+      } catch (fallbackErr) {
+        return { ok: false, error: fallbackErr.message || 'Network error / server offline' };
+      }
+    }
     return { ok: false, error: err.message || 'Network error / server offline' };
   }
 }

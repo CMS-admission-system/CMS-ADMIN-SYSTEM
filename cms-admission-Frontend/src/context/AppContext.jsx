@@ -317,7 +317,7 @@ export function AppProvider({ children }) {
     const rawData = {
       ...formData,
       status: formData.status || 'Enquiring',
-      submittedAt: formData.submittedAt || istNow,
+      submittedAt: istNow,
       updatedAt: istNow,
       confirmationDate: formData.status === 'Confirmed' ? istNow : null,
       correctionNotes: formData.correctionNotes || '',
