@@ -31,7 +31,7 @@ export default function AdmissionPaymentPage() {
 
   const adminNum = currentRecord?.formNumber || currentRecord?.id || 'CMS-2026-1001';
   const initialAmount = String(currentRecord?.admissionFeeAmount || 5000);
-  const initialStaff = currentRecord?.staffViewName || auth.username || '';
+  const initialStaff = currentRecord?.staffViewName || currentRecord?.verifiedByStaff || '';
 
   // Which payment method is actively selected: 'Cash' or 'GPay'
   const [selectedMethod, setSelectedMethod] = useState(() => (
@@ -46,7 +46,7 @@ export default function AdmissionPaymentPage() {
     currentRecord?.paymentMethod === 'Cash' && currentRecord?.paymentStatus === 'Paid' ? 'Paid' : 'Unpaid'
   ));
   const [cashStaffName, setCashStaffName] = useState(() => (
-    currentRecord?.paymentMethod === 'Cash' ? initialStaff : (auth.username || '')
+    currentRecord?.paymentMethod === 'Cash' ? initialStaff : ''
   ));
 
   // Box B: GPay Payment State
@@ -57,7 +57,7 @@ export default function AdmissionPaymentPage() {
     currentRecord?.paymentMethod === 'GPay' && currentRecord?.paymentStatus === 'Paid' ? 'Paid' : 'Unpaid'
   ));
   const [gpayStaffName, setGpayStaffName] = useState(() => (
-    currentRecord?.paymentMethod === 'GPay' ? initialStaff : (auth.username || '')
+    currentRecord?.paymentMethod === 'GPay' ? initialStaff : ''
   ));
 
   const [paymentError, setPaymentError] = useState('');
@@ -67,6 +67,12 @@ export default function AdmissionPaymentPage() {
 
   const handleConfirm = async () => {
     setPaymentError('');
+
+    // Prevent duplicate confirmation
+    if (targetApp && (targetApp.status === 'Confirmed' || targetApp.paymentStatus === 'Paid')) {
+      setPaymentError(`Application #${adminNum} has already been confirmed and marked as Paid. Duplicate confirmation is prevented.`);
+      return;
+    }
 
     const activeAmountStr = selectedMethod === 'Cash' ? cashAmount : gpayAmount;
     const activeStatus = selectedMethod === 'Cash' ? cashStatus : gpayStatus;
@@ -159,8 +165,30 @@ export default function AdmissionPaymentPage() {
   };
 
   return (
-    <main className="page-shell payment-shell" style={{ background: 'transparent' }}>
-      <section className="content-panel payment-panel" style={{ background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(4px)', border: '1px solid rgba(0,77,56,0.15)', boxShadow: '0 8px 32px rgba(0,0,0,0.06)' }}>
+    <main
+      className="page-shell payment-shell"
+      style={{
+        background: 'transparent',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+        padding: '24px 16px',
+        boxSizing: 'border-box',
+      }}
+    >
+      <section
+        className="content-panel payment-panel"
+        style={{
+          width: 'min(920px, 100%)',
+          margin: 'auto',
+          background: 'rgba(255,255,255,0.95)',
+          backdropFilter: 'blur(10px)',
+          border: '1.5px solid rgba(0,77,56,0.18)',
+          boxShadow: '0 16px 40px rgba(0,0,0,0.12)',
+          borderRadius: '24px',
+        }}
+      >
         <div className="section-header">
           <div>
             <p className="eyebrow accent">Admission Payment</p>
@@ -297,14 +325,14 @@ export default function AdmissionPaymentPage() {
                 id="cashAmount"
                 type="number"
                 min="1"
-                step="100"
                 required
                 value={cashAmount}
+                onWheel={(e) => e.target.blur()}
                 onChange={(e) => {
                   setCashAmount(e.target.value);
                   if (paymentError) setPaymentError('');
                 }}
-                placeholder="Enter cash amount (e.g. 5000)"
+                placeholder="Enter cash amount"
                 style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', fontWeight: 700 }}
               />
               <small style={{ color: '#64748b', fontSize: '0.78rem', marginTop: '4px' }}>
@@ -456,14 +484,14 @@ export default function AdmissionPaymentPage() {
                 id="gpayAmount"
                 type="number"
                 min="1"
-                step="100"
                 required
                 value={gpayAmount}
+                onWheel={(e) => e.target.blur()}
                 onChange={(e) => {
                   setGpayAmount(e.target.value);
                   if (paymentError) setPaymentError('');
                 }}
-                placeholder="Enter GPay amount (e.g. 5000)"
+                placeholder="Enter GPay amount"
                 style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', fontWeight: 700 }}
               />
               <small style={{ color: '#64748b', fontSize: '0.78rem', marginTop: '4px' }}>

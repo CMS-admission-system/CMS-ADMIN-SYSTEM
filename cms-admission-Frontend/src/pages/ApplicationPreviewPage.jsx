@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ArrowLeft, CreditCard, Download, Eye, Printer, Send, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
-import { calculateCutoff } from '../utils/helpers';
+import { calculateCutoff, downloadElementAsPdf } from '../utils/helpers';
 import { sendApplicationStatusEmail } from '../services/api';
 import AdmissionPaperView from '../components/AdmissionPaperView';
 
@@ -85,6 +85,7 @@ export default function ApplicationPreviewPage() {
   const [organizationName, setOrganizationName] = useState(draft?.organizationName || '');
   const [selectedFilePreview, setSelectedFilePreview] = useState(null);
   const [staffErrors, setStaffErrors] = useState({});
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
 
   const cutoff = calculateCutoff({
     mathematics: draft?.mathematics,
@@ -149,7 +150,40 @@ export default function ApplicationPreviewPage() {
     return Object.keys(nextErrors).length === 0;
   };
 
-  const handleSavePdf = () => {
+  const validateMandatoryDocs = () => {
+    const hasAadhaar = Boolean(draft?.documents?.AadhaarCard?.dataUrl);
+    const hasHsc = Boolean(draft?.documents?.HSC?.dataUrl);
+    const hasPhoto = Boolean(draft?.documents?.PassportSizePhotographs?.dataUrl || draft?.studentPhoto?.dataUrl || draft?.photoUrl);
+    if (!hasAadhaar || !hasHsc || !hasPhoto) {
+      const missing = [];
+      if (!hasAadhaar) missing.push('Aadhaar Card');
+      if (!hasHsc) missing.push('HSC Certificate');
+      if (!hasPhoto) missing.push('Student Photograph');
+      window.alert(`Cannot submit application: The following compulsory document(s) are missing:\n- ${missing.join('\n- ')}\n\nPlease click Previous and upload them in the Documents step.`);
+      return false;
+    }
+    return true;
+  };
+
+  const handleSavePdf = async () => {
+    const cleanName = String(draft.studentName || 'Student').trim().replace(/[^a-zA-Z0-9_-]/g, '_');
+    const filename = `CMS_Admission_Form_${adminNumber}_${cleanName}.pdf`;
+    const targetElement = document.querySelector('.admission-paper-sheet');
+    if (!targetElement) {
+      window.alert('Application form document not found.');
+      return;
+    }
+    setIsDownloadingPdf(true);
+    try {
+      await downloadElementAsPdf(targetElement, filename);
+    } catch (err) {
+      console.error('Error saving PDF:', err);
+    } finally {
+      setIsDownloadingPdf(false);
+    }
+  };
+
+  const handlePrint = () => {
     const originalTitle = document.title;
     const cleanName = String(draft.studentName || 'Student').trim().replace(/[^a-zA-Z0-9_-]/g, '_');
     document.title = `CMS_Admission_Form_${adminNumber}_${cleanName}`;
@@ -160,6 +194,7 @@ export default function ApplicationPreviewPage() {
   };
 
   const handleEnquiring = async () => {
+    if (!validateMandatoryDocs()) return;
     if (!validateStaffView()) {
       const el = document.querySelector('.staff-view-section');
       if (el) el.scrollIntoView({ behavior: 'smooth' });
@@ -194,6 +229,7 @@ export default function ApplicationPreviewPage() {
   };
 
   const handleConfirmSeat = () => {
+    if (!validateMandatoryDocs()) return;
     if (!validateStaffView()) {
       const el = document.querySelector('.staff-view-section');
       if (el) el.scrollIntoView({ behavior: 'smooth' });
@@ -341,10 +377,10 @@ export default function ApplicationPreviewPage() {
           <button type="button" className="secondary-btn" onClick={() => navigate('/register?step=8')}>
             <ArrowLeft size={16} /> Previous
           </button>
-          <button type="button" className="secondary-btn" onClick={handleSavePdf}>
-            <Download size={16} /> Save as PDF
+          <button type="button" className="secondary-btn" onClick={handleSavePdf} disabled={isDownloadingPdf}>
+            <Download size={16} /> {isDownloadingPdf ? 'Downloading PDF...' : 'Save as PDF'}
           </button>
-          <button type="button" className="secondary-btn" onClick={handleSavePdf}>
+          <button type="button" className="secondary-btn" onClick={handlePrint}>
             <Printer size={16} /> Print Application
           </button>
         </div>

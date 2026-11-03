@@ -305,7 +305,6 @@ export function getHscGroupSubjects(groupValue) {
 const hscGroupOptions = [
   'HSC Academic: Mathematics, Physics, Chemistry & Computer Science',
   'HSC Academic: Mathematics, Physics, Chemistry & Biology',
-  'HSC Academic: Mathematics, Physics, Chemistry & Other Elective',
   'HSC Vocational Stream: Related Mathematics & Vocational Subjects (Theory & Practical)',
 ];
 
@@ -477,7 +476,10 @@ export default function RegisterPage() {
         formData.declaration
         && formData.parentDeclaration
         && (formData.studentSignature?.dataUrl || formData.signature?.dataUrl)
-        && formData.parentSignature?.dataUrl,
+        && formData.parentSignature?.dataUrl
+        && formData.documents?.AadhaarCard?.dataUrl
+        && formData.documents?.HSC?.dataUrl
+        && (formData.documents?.PassportSizePhotographs?.dataUrl || formData.studentPhoto?.dataUrl || formData.photoUrl),
       ),
       currentStep >= 8,
     ];
@@ -695,6 +697,19 @@ export default function RegisterPage() {
     }
 
     if (currentStep === 7) {
+      const hasAadhaar = Boolean(formData.documents?.AadhaarCard?.dataUrl);
+      const hasHsc = Boolean(formData.documents?.HSC?.dataUrl);
+      const hasPhoto = Boolean(formData.documents?.PassportSizePhotographs?.dataUrl || formData.studentPhoto?.dataUrl || formData.photoUrl);
+
+      if (!hasAadhaar) {
+        nextErrors.AadhaarCard = 'Aadhaar Card is compulsory. Please upload or capture photo.';
+      }
+      if (!hasHsc) {
+        nextErrors.HSC = 'HSC Certificate is compulsory. Please upload or capture photo.';
+      }
+      if (!hasPhoto) {
+        nextErrors.PassportSizePhotographs = 'Student Photograph is compulsory. Please take photo or upload.';
+      }
       if (!formData.declaration) nextErrors.declaration = 'You must agree to the declaration.';
       if (!formData.parentDeclaration) nextErrors.parentDeclaration = 'Parent declaration is required.';
       if (!formData.studentSignature?.dataUrl && !formData.signature?.dataUrl) {
@@ -1788,9 +1803,9 @@ export default function RegisterPage() {
   const renderDocumentsStep = () => {
     return (
       <div className="card-list">
-        <h3>Upload Documents (Optional)</h3>
+        <h3>Upload Documents</h3>
         <p className="field-help" style={{ marginBottom: '8px' }}>
-          Upload certificates via photo capture or select files. All documents in this table are optional.
+          Upload certificates via photo capture or select files. <strong>Aadhaar Card, HSC Certificate, and Student Photograph are compulsory.</strong> Other certificates are optional.
         </p>
 
         <div className="documents-table-wrapper">
@@ -1809,12 +1824,21 @@ export default function RegisterPage() {
                 const file = formData.documents?.[key] || (key === 'CommunityCertificate' ? formData.documents?.CC : null);
                 const isUploaded = Boolean(file?.dataUrl);
 
+                const isCompulsory = key === 'AadhaarCard' || key === 'HSC' || key === 'PassportSizePhotographs';
+
                 return (
-                  <tr key={key}>
+                  <tr key={key} style={errors[key] ? { background: '#fef2f2' } : {}}>
                     <td style={{ textAlign: 'center', fontWeight: 600, color: '#64748b' }}>{index + 1}</td>
                     <td>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                        <span style={{ fontWeight: 600, color: '#0f172a' }}>{label}</span>
+                        <span style={{ fontWeight: 600, color: '#0f172a' }}>
+                          {label} {isCompulsory ? <span className="required-indicator" style={{ color: '#dc2626', fontWeight: 800 }}>* (Compulsory)</span> : null}
+                        </span>
+                        {errors[key] ? (
+                          <small className="error-text" style={{ color: '#dc2626', fontWeight: 700, margin: 0 }}>
+                            {errors[key]}
+                          </small>
+                        ) : null}
                         {file?.name ? (
                           <small style={{ color: '#006747', fontSize: '0.78rem' }}>{file.name}</small>
                         ) : null}
@@ -2005,6 +2029,18 @@ export default function RegisterPage() {
   ];
 
   const goToPreview = () => {
+    const hasAadhaar = Boolean(formData.documents?.AadhaarCard?.dataUrl);
+    const hasHsc = Boolean(formData.documents?.HSC?.dataUrl);
+    const hasPhoto = Boolean(formData.documents?.PassportSizePhotographs?.dataUrl || formData.studentPhoto?.dataUrl || formData.photoUrl);
+    if (!hasAadhaar || !hasHsc || !hasPhoto) {
+      const missing = [];
+      if (!hasAadhaar) missing.push('Aadhaar Card');
+      if (!hasHsc) missing.push('HSC Certificate');
+      if (!hasPhoto) missing.push('Student Photograph');
+      window.alert(`Please upload all compulsory documents before proceeding to preview:\n- ${missing.join('\n- ')}\n\nRedirecting to Documents step.`);
+      setCurrentStep(7);
+      return;
+    }
     saveDraft({ ...formData, cutOffMarks: cutOffValue ?? '', workflowStep: currentStep, workflowVersion: 2 });
     navigate('/application-preview');
   };

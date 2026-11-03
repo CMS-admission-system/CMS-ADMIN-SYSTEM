@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { CheckCircle2, Download, Printer } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import AdmissionPaperView from '../components/AdmissionPaperView';
+import { downloadElementAsPdf } from '../utils/helpers';
 
 export default function ApplicationSuccessPage() {
   const location = useLocation();
@@ -13,7 +15,27 @@ export default function ApplicationSuccessPage() {
   const studentName = targetApp.studentName || lastSubmitted?.studentName || 'Student';
   const studentEmail = targetApp.email || lastSubmitted?.email || '';
 
-  const handleSavePdf = () => {
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+
+  const handleSavePdf = async () => {
+    const cleanName = String(studentName || 'Student').trim().replace(/[^a-zA-Z0-9_-]/g, '_');
+    const filename = `CMS_Admission_Form_${applicationId}_${cleanName}.pdf`;
+    const targetElement = document.querySelector('.admission-paper-sheet');
+    if (!targetElement) {
+      window.alert('Application form document not found.');
+      return;
+    }
+    setIsDownloadingPdf(true);
+    try {
+      await downloadElementAsPdf(targetElement, filename);
+    } catch (err) {
+      console.error('Error saving PDF:', err);
+    } finally {
+      setIsDownloadingPdf(false);
+    }
+  };
+
+  const handlePrint = () => {
     const originalTitle = document.title;
     const cleanName = String(studentName || 'Student').trim().replace(/[^a-zA-Z0-9_-]/g, '_');
     document.title = `CMS_Admission_Form_${applicationId}_${cleanName}`;
@@ -53,10 +75,16 @@ export default function ApplicationSuccessPage() {
         ) : null}
 
         <div className="cta-row success-actions screen-only" style={{ marginTop: '18px' }}>
-          <button type="button" className="primary-btn" onClick={handleSavePdf} style={{ background: '#166534', borderColor: '#14532d' }}>
-            <Download size={16} /> Save as PDF
+          <button
+            type="button"
+            className="primary-btn"
+            onClick={handleSavePdf}
+            disabled={isDownloadingPdf}
+            style={{ background: '#166534', borderColor: '#14532d' }}
+          >
+            <Download size={16} /> {isDownloadingPdf ? 'Downloading PDF...' : 'Save as PDF'}
           </button>
-          <button type="button" className="secondary-btn" onClick={handleSavePdf}>
+          <button type="button" className="secondary-btn" onClick={handlePrint}>
             <Printer size={16} /> Print
           </button>
           <Link to="/" className="secondary-btn">Back to home</Link>

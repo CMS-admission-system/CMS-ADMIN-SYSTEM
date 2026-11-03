@@ -197,7 +197,7 @@
 
 .brand-block h1 {
   margin: 0;
-  font-size: clamp(1.6rem, 3vw, 2.3rem);
+  font-size: clamp(1.75rem, 3.2vw, 2.45rem);
   color: white;
 }
 
@@ -218,7 +218,7 @@
 .hero-copy h2 {
   max-width: 700px;
   color: white;
-  font-size: clamp(2.2rem, 5vw, 4.2rem);
+  font-size: clamp(2.35rem, 5.2vw, 4.35rem);
   line-height: 1.02;
   margin-bottom: 18px;
 }
@@ -677,7 +677,7 @@
 
 .cutoff-summary p {
   margin: 6px 0;
-  font-size: 1.35rem;
+  font-size: 1.48rem;
   font-weight: 800;
 }
 
@@ -1365,7 +1365,7 @@
 
 .sidebar-brand strong {
   display: block;
-  font-size: 1.04rem;
+  font-size: 1.15rem;
 }
 
 .admin-nav {
@@ -2398,3 +2398,61 @@ fieldset legend {
 }
 
 
+
+
+/* =========================================================================
+   Universal Titles & Headings Enhancement (Student, Admin, VC pages)
+   ========================================================================= */
+.section-header h2,
+.form-panel h2,
+.auth-header h2,
+.admin-topbar h2,
+.vc-topbar h2,
+.success-card h2,
+.payment-panel h2 {
+  font-size: clamp(1.5rem, 2.4vw, 1.95rem) !important;
+  font-weight: 850 !important;
+  letter-spacing: -0.015em !important;
+  line-height: 1.2 !important;
+}
+
+.section-header h3,
+.admin-card h3,
+.card-list > h3,
+.staff-view-section h3,
+.payment-status h3,
+.payment-verification-box h3 {
+  font-size: clamp(1.15rem, 1.8vw, 1.35rem) !important;
+  font-weight: 800 !important;
+}
+
+.table-heading,
+.table-header-title {
+  font-size: 1.05rem !important;
+  font-weight: 800 !important;
+}
+
+/* =========================================================================
+   Payment Page Centering & Responsive Layout
+   ========================================================================= */
+.payment-shell {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 100vh !important;
+  padding: 32px 18px !important;
+  box-sizing: border-box !important;
+  margin: 0 auto !important;
+}
+
+.payment-panel {
+  width: min(920px, 100%) !important;
+  margin: auto !important;
+}
+
+@media (max-width: 640px) {
+  .payment-shell {
+    padding: 16px 12px !important;
+    align-items: flex-start !important;
+  }
+}

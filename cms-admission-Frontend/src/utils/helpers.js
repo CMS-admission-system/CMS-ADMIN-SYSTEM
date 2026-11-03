@@ -288,3 +288,70 @@ export function getInitialDraft() {
     correctionNotes: '',
   };
 }
+
+export async function downloadElementAsPdf(element, filename = 'CMS_Admission_Form.pdf') {
+  if (!element) return false;
+  const safeName = filename.endsWith('.pdf') ? filename : `${filename}.pdf`;
+
+  const opt = {
+    margin: [6, 6, 6, 6],
+    filename: safeName,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, logging: false },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+  };
+
+  try {
+    const html2pdfModule = await import('html2pdf.js');
+    const html2pdf = html2pdfModule.default || html2pdfModule;
+
+    const worker = html2pdf().from(element).set(opt);
+    const pdfBlob = await worker.outputPdf('blob');
+
+    // If browser supports showSaveFilePicker, allow user to choose destination folder
+    if (typeof window !== 'undefined' && 'showSaveFilePicker' in window) {
+      try {
+        const fileHandle = await window.showSaveFilePicker({
+          suggestedName: safeName,
+          types: [{
+            description: 'PDF Document (*.pdf)',
+            accept: { 'application/pdf': ['.pdf'] },
+          }],
+        });
+        const writable = await fileHandle.createWritable();
+        await writable.write(pdfBlob);
+        await writable.close();
+        return true;
+      } catch (pickerErr) {
+        if (pickerErr.name === 'AbortError') {
+          return false;
+        }
+      }
+    }
+
+    // Direct browser file download
+    const url = URL.createObjectURL(pdfBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = safeName;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 1500);
+    return true;
+  } catch (err) {
+    console.error('downloadElementAsPdf error:', err);
+    try {
+      const html2pdfModule = await import('html2pdf.js');
+      const html2pdf = html2pdfModule.default || html2pdfModule;
+      await html2pdf().from(element).set(opt).save();
+      return true;
+    } catch (saveErr) {
+      console.error('html2pdf fallback save error:', saveErr);
+      return false;
+    }
+  }
+}
+
