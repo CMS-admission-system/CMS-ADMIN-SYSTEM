@@ -30,45 +30,261 @@ const certificateLabels = {
   PassportSizePhotographs: 'Student Photo',
 };
 
-export const PICKUP_POINTS = [
-  { id: 'R1', label: 'Eragudi (R1)', busNumber: 'R1', startingPoint: 'Eragudi', endingPoint: 'CMS College' },
-  { id: 'R2', label: 'RVR Bunk (R2)', busNumber: 'R2', startingPoint: 'RVR Bunk', endingPoint: 'CMS College' },
-  { id: 'R3', label: 'Arangur (R3)', busNumber: 'R3', startingPoint: 'Arangur', endingPoint: 'CMS College' },
-  { id: 'R4', label: 'Anaikkalpatty (R4)', busNumber: 'R4', startingPoint: 'Anaikkalpatty', endingPoint: 'CMS College' },
-  { id: 'R5', label: 'Anangur (R5)', busNumber: 'R5', startingPoint: 'Anangur', endingPoint: 'CMS College' },
-  { id: 'R6', label: 'Palayampirivu Road (R6)', busNumber: 'R6', startingPoint: 'Palayampirivu Road', endingPoint: 'CMS College' },
-  { id: 'R7', label: 'Vengamoodu (R7)', busNumber: 'R7', startingPoint: 'Vengamoodu', endingPoint: 'CMS College' },
-  { id: 'R8', label: 'Mullukurichi (R8)', busNumber: 'R8', startingPoint: 'Mullukurichi', endingPoint: 'CMS College' },
-  { id: 'R9', label: 'Kamatchipatti (R9)', busNumber: 'R9', startingPoint: 'Kamatchipatti', endingPoint: 'CMS College' },
-  { id: 'R10', label: 'Salem (R10)', busNumber: 'R10', startingPoint: 'Salem', endingPoint: 'CMS College' },
-  { id: 'R11', label: 'Thuraiyur (R11)', busNumber: 'R11', startingPoint: 'Thuraiyur', endingPoint: 'CMS College' },
-];
+export const BUS_ROUTES_CONFIG = {
+  R1: {
+    busNumber: 'R1',
+    label: 'R1 - Eragudi',
+    startingPoint: 'Eragudi',
+    endingPoint: 'CMS College',
+    places: [
+      'Eragudi',
+      'Vadakupatti',
+      'Sirunavalur',
+      'Aladudaiyanpatti',
+      'Karigali',
+      'Mettupalaiyam',
+      'Konangipatti',
+      'Pillaiyar Palaiyam',
+      'Muthurajapalaiyam',
+      'Velampatti',
+      'Ambayipalaiyam',
+      'Navaladipatti',
+      'Pavithiram',
+      'Varagoor',
+      'Sellipalaiyam',
+      'Devaraiyapuram',
+      'Erumapatti',
+      'Ponneri Kaikatti',
+      'Pottiretipatti',
+      'Alanganattham Pirivu',
+      'Thoosur',
+      'Koolipatti',
+      'Kosavampatti',
+      'Namakkal',
+      'CMS College',
+    ],
+  },
+  R2: {
+    busNumber: 'R2',
+    label: 'R2 - RVR Bunk',
+    startingPoint: 'RVR Bunk',
+    endingPoint: 'CMS College',
+    places: [
+      'RVR Bunk',
+      'Kumaramangalam',
+      'Elachipalayam',
+      'Vaiyappamalai',
+      'Periya Manali',
+      'Vaippampatti',
+      'Velankovindapatti',
+      'CMS College',
+    ],
+  },
+  R3: {
+    busNumber: 'R3',
+    label: 'R3 - Arangur',
+    startingPoint: 'Arangur',
+    endingPoint: 'CMS College',
+    places: [
+      'Arangur',
+      'Thottiyam',
+      '7 Patti',
+      'Meikalnaiyankapatti',
+      'Valaiyapatti',
+      'Puthupatti',
+      'N. Mettupatti',
+      'Namakkal',
+      'CMS College',
+    ],
+  },
+  R4: {
+    busNumber: 'R4',
+    label: 'R4 - Aanaikalpatti',
+    startingPoint: 'Aanaikalpatti',
+    endingPoint: 'CMS College',
+    places: [
+      'Aanaikalpatti',
+      'Kattuputhur',
+      'Sitthapatti',
+      'Unniyur',
+      'Moganur',
+      'Vaangal',
+      'Theerthampalaiyam',
+      'Neikkaranpatti',
+      'Aniyapuram',
+      'Thanneerpanthal',
+      'Vallipuram Bypass',
+      'CMS College',
+    ],
+  },
+  R5: {
+    busNumber: 'R5',
+    label: 'R5 - Aanangoor',
+    startingPoint: 'Aanangoor',
+    endingPoint: 'CMS College',
+    places: [
+      'Aanangoor',
+      'Devanagurichi',
+      'Thiruchengode Bus Stand',
+      'Kumaramangalam',
+      'Unjanai',
+      'Manikkampalaiyam',
+      'Velakoundampatti',
+      'CMS College',
+    ],
+  },
+  R6: {
+    busNumber: 'R6',
+    label: 'R6 - Palaiyam Pirivu Road',
+    startingPoint: 'Palaiyam Pirivu Road',
+    endingPoint: 'CMS College',
+    places: [
+      'Palaiyam Pirivu Road',
+      'Thulaiyanattham',
+      'Mangalam',
+      'Paithamparai',
+      'Devanur',
+      'Tha-Pettai',
+      'Oorakarai',
+      'Jadamangalam',
+      'Pavithiram',
+      'CMS College',
+    ],
+  },
+  R7: {
+    busNumber: 'R7',
+    label: 'R7 - Route 7',
+    startingPoint: 'To be announced',
+    endingPoint: 'CMS College',
+    places: [], // R7 must remain blank (no pickup locations yet)
+  },
+  R8: {
+    busNumber: 'R8',
+    label: 'R8 - Vengamedu',
+    startingPoint: 'Vengamedu',
+    endingPoint: 'CMS College',
+    places: [
+      'Vengamedu',
+      'Karur Old Bus Stand',
+      'Coimbatore Bypass',
+      'Vellur',
+      'Betthanur',
+      'Pandamangalam',
+      'Kabilarmalai',
+      'Paramathi',
+      'Keerambur',
+      'Thindamangalam',
+      'Ernapuram',
+      'CMS College',
+    ],
+  },
+  R9: {
+    busNumber: 'R9',
+    label: 'R9 - Mullukuruchi',
+    startingPoint: 'Mullukuruchi',
+    endingPoint: 'CMS College',
+    places: [
+      'Mullukuruchi',
+      'Mettala',
+      'Namagiripettai',
+      'Sirapalli',
+      'Belukuruchi',
+      'Kalapanayankanpatti',
+      'Senthamangalam',
+      'Muttukkapatti',
+      'Namakkal',
+      'CMS College',
+    ],
+  },
+  R10: {
+    busNumber: 'R10',
+    label: 'R10 - Kamachipatti',
+    startingPoint: 'Kamachipatti',
+    endingPoint: 'CMS College',
+    places: [
+      'Kamachipatti',
+      'Musuri',
+      'Thottiyam',
+      'Ellorepatti',
+      'Meikalnayakkanpatti',
+      'Valaiyapatti',
+      'Puthupatti',
+      'N. Mettupatti',
+      'Namakkal',
+      'CMS College',
+    ],
+  },
+  R11: {
+    busNumber: 'R11',
+    label: 'R11 - Sengattur / Salem',
+    startingPoint: 'Sengattur',
+    endingPoint: 'CMS College',
+    places: [
+      'Sengattur',
+      'Kuppanoor',
+      'Valaisoor',
+      'Aiyoththipattinam',
+      'Udhaiyapatti',
+      'Ammapettai',
+      'Sundhar Lodge',
+      'Salem Old Bus Stand - GH',
+      'Silanaiyankanpatti Bypass',
+      'Panamarathipatti Pirivu',
+      'Mallur',
+      'Paravasa Ulagam',
+      'Attanur Amman Kovil',
+      'Aattaiyampatti Pirivu',
+      'Rasipuram ATC',
+      'Rasipuram Old Bus Stand',
+      'Rasipuram LIC',
+      'Rasipuram Power Office',
+      'Aandalur Gate',
+      'Rasipuram Outer Bypass',
+      'Paichal',
+      'Puthusatthiram',
+      'Perumal Kovil Medu',
+      'Kalangani',
+      'Pudhan Sandhai',
+      'Bommaikutta Medu',
+      'Karungalpalaiyam',
+      'Mudhalapatti',
+      'CMS College',
+    ],
+  },
+  R12: {
+    busNumber: 'R12',
+    label: 'R12 - Thuraiyur',
+    startingPoint: 'Thuraiyur',
+    endingPoint: 'CMS College',
+    places: [
+      'Thuraiyur',
+      'Kannanur',
+      'Palaiyam Pirivu Road',
+      'Thevarappampatti',
+      'Tha.Pettai',
+      'Oorakarai',
+      'Magadevi Pirivu',
+      'Pavithiram',
+      'Varagor',
+      'Erumapatti Outer',
+      'Pottirettipatti',
+      'Thoosur',
+      'Namakkal',
+      'CMS College',
+    ],
+  },
+};
 
-export const BUS_STOPS = [
-  'Eragudi',
-  'Vadakkupatti',
-  'Siru Navalur',
-  'Alathudaiyanpatti',
-  'Karikali',
-  'Kottupalayam',
-  'Konangipatti',
-  'Pillaiyar Palayam',
-  'Muthu Nasa Palayam',
-  'Vempatti',
-  'Ambayipalayam',
-  'Navaladipatti',
-  'Pavithum',
-  'Vagur',
-  'Chellipalayam',
-  'Devalayapuram',
-  'Erumaipatti',
-  'Ponneri Kaikattadi',
-  'Alanganatham Pirivu',
-  'Thosur',
-  'Koolipatti',
-  'Kokkoombetti',
-  'Namakkal',
-];
+export const PICKUP_POINTS = Object.values(BUS_ROUTES_CONFIG).map((b) => ({
+  id: b.busNumber,
+  busNumber: b.busNumber,
+  label: `${b.startingPoint} (${b.busNumber})`,
+  displayLabel: `${b.busNumber} - ${b.startingPoint}`,
+  startingPoint: b.startingPoint,
+  endingPoint: b.endingPoint,
+}));
+
+export const BUS_STOPS = BUS_ROUTES_CONFIG.R1.places;
 
 const stateDistrictsMap = {
   'Tamil Nadu': [
@@ -457,8 +673,11 @@ export default function RegisterPage() {
             && (
               formData.transportRequired === 'No'
               || (
-                String(formData.pickupPoint || '').trim()
-                && String(formData.boardingStop || '').trim()
+                String(formData.busNumber || formData.pickupPoint || '').trim()
+                && (
+                  formData.busNumber === 'R7'
+                  || String(formData.boardingStop || '').trim()
+                )
               )
             )
           )
@@ -666,11 +885,11 @@ export default function RegisterPage() {
         if (!formData.transportRequired) {
           nextErrors.transportRequired = 'Please select Yes or No for Transport Requirement.';
         } else if (formData.transportRequired === 'Yes') {
-          if (!String(formData.pickupPoint || '').trim()) {
-            nextErrors.pickupPoint = 'Please select a pickup point from the dropdown.';
+          if (!String(formData.busNumber || formData.pickupPoint || '').trim()) {
+            nextErrors.pickupPoint = 'Please select a bus route (R1 to R12).';
           }
-          if (!String(formData.boardingStop || '').trim()) {
-            nextErrors.boardingStop = 'Please select your exact boarding stop.';
+          if (formData.busNumber !== 'R7' && !String(formData.boardingStop || '').trim()) {
+            nextErrors.boardingStop = 'Please select your pickup location from the dropdown.';
           }
         }
       }
@@ -1374,7 +1593,13 @@ export default function RegisterPage() {
   );
 
   const renderAccommodationStep = () => {
-    const selectedPointInfo = PICKUP_POINTS.find((p) => p.label === formData.pickupPoint);
+    const selectedPointInfo = PICKUP_POINTS.find(
+      (p) => p.busNumber === formData.busNumber || p.label === formData.pickupPoint || p.id === formData.busNumber
+    );
+    const activeRoute = (formData.busNumber && BUS_ROUTES_CONFIG[formData.busNumber])
+      || (selectedPointInfo?.busNumber && BUS_ROUTES_CONFIG[selectedPointInfo.busNumber]);
+    const assignedPlaces = activeRoute ? activeRoute.places : [];
+    const isR7 = (formData.busNumber === 'R7' || selectedPointInfo?.busNumber === 'R7');
 
     return (
       <div className="form-grid">
@@ -1452,34 +1677,34 @@ export default function RegisterPage() {
 
             {formData.transportRequired === 'Yes' ? (
               <div className="full-width" style={{ marginTop: '10px' }}>
-                {/* 1. Pickup Point Dropdown */}
+                {/* 1. Bus Selection Dropdown (R1 to R12) */}
                 <div className="field-group full-width">
-                  <label htmlFor="pickupPoint" style={{ fontWeight: 800, color: '#0f172a' }}>
-                    Select Pickup Point <span className="required-indicator">*</span>
+                  <label htmlFor="busRouteSelect" style={{ fontWeight: 800, color: '#0f172a' }}>
+                    Select Bus Route (R1 to R12) <span className="required-indicator">*</span>
                   </label>
                   <select
-                    id="pickupPoint"
+                    id="busRouteSelect"
                     required
-                    value={formData.pickupPoint || ''}
+                    value={formData.busNumber || ''}
                     onChange={(event) => {
-                      const val = event.target.value;
-                      const matched = PICKUP_POINTS.find((p) => p.label === val);
+                      const busId = event.target.value;
+                      const matched = PICKUP_POINTS.find((p) => p.busNumber === busId);
                       if (matched) {
                         setFormData((prev) => ({
                           ...prev,
-                          pickupPoint: matched.label,
                           busNumber: matched.busNumber,
                           busRoute: matched.busNumber,
+                          pickupPoint: matched.label,
                           startingPoint: matched.startingPoint,
-                          endingPoint: matched.endingPoint,
-                          boardingStop: prev.boardingStop || (BUS_STOPS.includes(matched.startingPoint) ? matched.startingPoint : ''),
+                          endingPoint: 'CMS College',
+                          boardingStop: '', // Reset on bus change so stops from other buses never persist!
                         }));
                       } else {
                         setFormData((prev) => ({
                           ...prev,
-                          pickupPoint: '',
                           busNumber: '',
                           busRoute: '',
+                          pickupPoint: '',
                           startingPoint: '',
                           endingPoint: '',
                           boardingStop: '',
@@ -1497,18 +1722,18 @@ export default function RegisterPage() {
                       background: '#ffffff',
                     }}
                   >
-                    <option value="">-- Select Pickup Point (1 to 11) --</option>
-                    {PICKUP_POINTS.map((pt, idx) => (
-                      <option key={pt.id} value={pt.label}>
-                        {idx + 1}. {pt.label}
+                    <option value="">-- Select Bus Route (R1 to R12) --</option>
+                    {PICKUP_POINTS.map((pt) => (
+                      <option key={pt.id} value={pt.busNumber}>
+                        {pt.displayLabel || `${pt.busNumber} - ${pt.startingPoint}`}
                       </option>
                     ))}
                   </select>
                   {errors.pickupPoint ? <small className="error-text">{errors.pickupPoint}</small> : null}
                 </div>
 
-                {/* 2 & 3. Bus Route Display & Selectable Stops */}
-                {formData.pickupPoint ? (
+                {/* 2 & 3. Bus Route Display & Dropdown for Assigned Places */}
+                {formData.busNumber ? (
                   <div
                     className="bus-route-display-card"
                     style={{
@@ -1520,7 +1745,7 @@ export default function RegisterPage() {
                       boxShadow: '0 4px 16px rgba(22, 101, 52, 0.08)',
                     }}
                   >
-                    {/* Route Info: Left Side Bus Number | Right Side Starting & Ending Points */}
+                    {/* Route Info: Left Side Bus Number | Right Side Starting Point & Ending Point: CMS College */}
                     <div
                       style={{
                         display: 'flex',
@@ -1532,7 +1757,7 @@ export default function RegisterPage() {
                         borderBottom: '1.5px solid #e2e8f0',
                       }}
                     >
-                      {/* LEFT SIDE: Bus Number (R1–R11) */}
+                      {/* LEFT SIDE: Bus Number */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                         <div
                           style={{
@@ -1548,18 +1773,18 @@ export default function RegisterPage() {
                             BUS NUMBER
                           </span>
                           <strong style={{ display: 'block', fontSize: '1.75rem', fontWeight: 900, color: '#166534', lineHeight: 1.1 }}>
-                            {selectedPointInfo?.busNumber || formData.busNumber || 'R1'}
+                            {formData.busNumber}
                           </strong>
                         </div>
                         <div>
                           <span style={{ display: 'block', fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>Assigned Bus Route</span>
                           <strong style={{ fontSize: '1.05rem', color: '#0f172a', fontWeight: 800 }}>
-                            {formData.pickupPoint}
+                            {formData.busNumber} - {selectedPointInfo?.startingPoint || formData.startingPoint}
                           </strong>
                         </div>
                       </div>
 
-                      {/* RIGHT SIDE: Starting Point & Ending Point */}
+                      {/* RIGHT SIDE: Starting Point & Ending Point: CMS College */}
                       <div
                         style={{
                           background: '#f8fafc',
@@ -1572,7 +1797,7 @@ export default function RegisterPage() {
                         <div style={{ fontSize: '0.92rem', marginBottom: '6px' }}>
                           <span style={{ color: '#64748b', fontWeight: 600 }}>Starting Point: </span>
                           <strong style={{ color: '#0f172a', fontWeight: 800 }}>
-                            {selectedPointInfo?.startingPoint || formData.startingPoint || 'Eragudi'}
+                            {selectedPointInfo?.startingPoint || formData.startingPoint || 'To be announced'}
                           </strong>
                         </div>
                         <div style={{ fontSize: '0.92rem' }}>
@@ -1584,45 +1809,63 @@ export default function RegisterPage() {
                       </div>
                     </div>
 
-                    {/* Below this: Display Selectable Stops (1 to 23) */}
+                    {/* Step 3: Select Pickup Location Dropdown (Assigned places ONLY for this bus) */}
                     <div style={{ marginTop: '18px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
                         <div>
-                          <label style={{ display: 'block', fontWeight: 800, color: '#0f172a', fontSize: '0.98rem' }}>
-                            Select Exact Boarding Stop <span className="required-indicator">*</span>
+                          <label htmlFor="boardingStop" style={{ display: 'block', fontWeight: 800, color: '#0f172a', fontSize: '0.98rem' }}>
+                            Select Pickup Location <span className="required-indicator">{isR7 ? '' : '*'}</span>
                           </label>
                           <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                            Choose from the standard 23 route boarding stops below:
+                            {isR7
+                              ? 'Route 7 (R7) currently has no pickup locations assigned yet.'
+                              : `Select your pickup point from the ${assignedPlaces.length} assigned places for ${formData.busNumber}:`}
                           </span>
                         </div>
                         {formData.boardingStop ? (
                           <span style={{ fontSize: '0.82rem', background: '#dcfce7', color: '#166534', padding: '4px 12px', borderRadius: '20px', fontWeight: 700, border: '1px solid #166534' }}>
-                            ✓ Selected Stop: {formData.boardingStop}
+                            ✓ Selected Pickup Point: {formData.boardingStop}
                           </span>
                         ) : null}
                       </div>
 
-                      {/* Standard Dropdown for quick selection */}
-                      <div style={{ marginBottom: '12px', maxWidth: '360px' }}>
+                      {/* Dropdown for Pickup Location */}
+                      <div style={{ marginBottom: '12px', maxWidth: '100%' }}>
                         <select
                           id="boardingStop"
-                          required
+                          required={!isR7}
+                          disabled={isR7 || assignedPlaces.length === 0}
                           value={formData.boardingStop || ''}
                           onChange={(e) => {
-                            updateField('boardingStop', e.target.value);
+                            const stopVal = e.target.value;
+                            updateField('boardingStop', stopVal);
+                            if (stopVal) {
+                              setFormData((prev) => ({
+                                ...prev,
+                                boardingStop: stopVal,
+                                pickupPoint: `${stopVal} (${prev.busNumber || 'Bus'})`,
+                              }));
+                            }
                             if (errors.boardingStop) setErrors((prev) => ({ ...prev, boardingStop: '' }));
                           }}
                           style={{
                             width: '100%',
-                            padding: '9px 12px',
-                            borderRadius: '8px',
+                            padding: '10px 14px',
+                            borderRadius: '10px',
                             border: '1.5px solid #cbd5e1',
                             fontWeight: 600,
-                            background: '#ffffff',
+                            fontSize: '0.95rem',
+                            background: isR7 ? '#f1f5f9' : '#ffffff',
+                            color: isR7 ? '#94a3b8' : '#0f172a',
+                            cursor: isR7 ? 'not-allowed' : 'pointer',
                           }}
                         >
-                          <option value="">-- Choose Boarding Stop (1 to 23) --</option>
-                          {BUS_STOPS.map((stop, idx) => (
+                          <option value="">
+                            {isR7
+                              ? '-- No pickup locations available for R7 yet --'
+                              : `-- Select Pickup Location for ${formData.busNumber} (${assignedPlaces.length} places) --`}
+                          </option>
+                          {assignedPlaces.map((stop, idx) => (
                             <option key={stop} value={stop}>
                               {idx + 1}. {stop}
                             </option>
@@ -1630,73 +1873,95 @@ export default function RegisterPage() {
                         </select>
                       </div>
 
-                      {/* Interactive 23 Selectable Stops Grid */}
-                      <div
-                        className="bus-stops-grid"
-                        style={{
-                          display: 'grid',
-                          gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
-                          gap: '8px',
-                          maxHeight: '260px',
-                          overflowY: 'auto',
-                          padding: '6px',
-                          border: '1.5px solid #e2e8f0',
-                          borderRadius: '12px',
-                          background: '#f8fafc',
-                        }}
-                      >
-                        {BUS_STOPS.map((stop, index) => {
-                          const isSelected = formData.boardingStop === stop;
-                          return (
-                            <button
-                              key={stop}
-                              type="button"
-                              onClick={() => {
-                                updateField('boardingStop', stop);
-                                if (errors.boardingStop) setErrors((prev) => ({ ...prev, boardingStop: '' }));
-                              }}
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                                padding: '8px 12px',
-                                borderRadius: '8px',
-                                border: isSelected ? '2px solid #14532d' : '1px solid #cbd5e1',
-                                background: isSelected ? '#166534' : '#ffffff',
-                                color: isSelected ? '#ffffff' : '#1e293b',
-                                fontWeight: isSelected ? 700 : 500,
-                                fontSize: '0.84rem',
-                                cursor: 'pointer',
-                                textAlign: 'left',
-                                transition: 'all 0.15s ease',
-                                boxShadow: isSelected ? '0 2px 6px rgba(22, 101, 52, 0.25)' : 'none',
-                              }}
-                            >
-                              <span
+                      {/* If R7, display informative banner */}
+                      {isR7 ? (
+                        <div
+                          style={{
+                            padding: '12px 16px',
+                            borderRadius: '8px',
+                            background: '#fef3c7',
+                            border: '1px solid #f59e0b',
+                            color: '#92400e',
+                            fontSize: '0.88rem',
+                            fontWeight: 600,
+                          }}
+                        >
+                          ℹ️ R7 Route: No pickup locations have been assigned yet. College destination is CMS College.
+                        </div>
+                      ) : (
+                        /* Interactive Selectable Stops Grid for this bus only */
+                        <div
+                          className="bus-stops-grid"
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+                            gap: '8px',
+                            maxHeight: '260px',
+                            overflowY: 'auto',
+                            padding: '6px',
+                            border: '1.5px solid #e2e8f0',
+                            borderRadius: '12px',
+                            background: '#f8fafc',
+                          }}
+                        >
+                          {assignedPlaces.map((stop, index) => {
+                            const isSelected = formData.boardingStop === stop;
+                            return (
+                              <button
+                                key={stop}
+                                type="button"
+                                onClick={() => {
+                                  updateField('boardingStop', stop);
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    boardingStop: stop,
+                                    pickupPoint: `${stop} (${prev.busNumber || 'Bus'})`,
+                                  }));
+                                  if (errors.boardingStop) setErrors((prev) => ({ ...prev, boardingStop: '' }));
+                                }}
                                 style={{
-                                  display: 'inline-flex',
+                                  display: 'flex',
                                   alignItems: 'center',
-                                  justifyContent: 'center',
-                                  width: '20px',
-                                  height: '20px',
-                                  borderRadius: '50%',
-                                  background: isSelected ? '#ffffff' : '#e2e8f0',
-                                  color: isSelected ? '#166534' : '#475569',
-                                  fontSize: '0.72rem',
-                                  fontWeight: 800,
-                                  flexShrink: 0,
+                                  gap: '8px',
+                                  padding: '8px 12px',
+                                  borderRadius: '8px',
+                                  border: isSelected ? '2px solid #14532d' : '1px solid #cbd5e1',
+                                  background: isSelected ? '#166534' : '#ffffff',
+                                  color: isSelected ? '#ffffff' : '#1e293b',
+                                  fontWeight: isSelected ? 700 : 500,
+                                  fontSize: '0.84rem',
+                                  cursor: 'pointer',
+                                  textAlign: 'left',
+                                  transition: 'all 0.15s ease',
+                                  boxShadow: isSelected ? '0 2px 6px rgba(22, 101, 52, 0.25)' : 'none',
                                 }}
                               >
-                                {index + 1}
-                              </span>
-                              <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                {stop}
-                              </span>
-                              {isSelected ? <span style={{ fontWeight: 800 }}>✓</span> : null}
-                            </button>
-                          );
-                        })}
-                      </div>
+                                <span
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    width: '20px',
+                                    height: '20px',
+                                    borderRadius: '50%',
+                                    background: isSelected ? '#ffffff' : '#e2e8f0',
+                                    color: isSelected ? '#166534' : '#475569',
+                                    fontSize: '0.72rem',
+                                    fontWeight: 800,
+                                    flexShrink: 0,
+                                  }}
+                                >
+                                  {index + 1}
+                                </span>
+                                <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  {stop}
+                                </span>
+                                {isSelected ? <span style={{ fontWeight: 800 }}>✓</span> : null}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
                       {errors.boardingStop ? <small className="error-text" style={{ display: 'block', marginTop: '6px' }}>{errors.boardingStop}</small> : null}
                     </div>
                   </div>
