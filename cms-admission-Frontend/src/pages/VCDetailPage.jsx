@@ -59,7 +59,7 @@ export default function VCDetailPage() {
         <div className="section-header space-between" style={{ borderBottom: '1.5px solid #e2e8f0', paddingBottom: '14px', marginBottom: '18px' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-              <p className="eyebrow accent" style={{ margin: 0 }}>Vice-Chairman Review</p>
+              <p className="eyebrow accent" style={{ margin: 0 }}>Vice Chairman View</p>
               <span className="badge badge-success" style={{ padding: '3px 10px', fontSize: '0.78rem' }}>
                 Sent by AO
               </span>
