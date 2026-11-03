@@ -30,7 +30,7 @@ const COURSE_GROUPS = [
     degree: 'B.Tech',
     level: 'UG',
     courses: [
-      { code: 'AI&DS', fullName: 'Artificial Intelligence & Data Science', defaultSeats: 120 },
+      { code: 'AI&DS', fullName: 'Artificial Intelligence & Data Science', defaultSeats: 200 },
     ],
   },
   {
@@ -38,14 +38,14 @@ const COURSE_GROUPS = [
     degree: 'B.E',
     level: 'UG',
     courses: [
-      { code: 'CSE', fullName: 'Computer Science & Engineering', defaultSeats: 120 },
-      { code: 'CS', fullName: 'CSE - Cyber Security', defaultSeats: 60 },
-      { code: 'AIML', fullName: 'Artificial Intelligence & Machine Learning', defaultSeats: 60 },
-      { code: 'BME', fullName: 'Bio-Medical Engineering', defaultSeats: 60 },
-      { code: 'ECE', fullName: 'Electronics & Communication Engineering', defaultSeats: 60 },
-      { code: 'EEE (Electrical and Electronics Engineering)', fullName: 'Electrical & Electronics Engineering', defaultSeats: 60 },
-      { code: 'MECH', fullName: 'Mechanical Engineering', defaultSeats: 60 },
-      { code: 'Electrical and Computer Engineering', fullName: 'Electrical and Computer Engineering', defaultSeats: 60 },
+      { code: 'CSE', fullName: 'Computer Science & Engineering', defaultSeats: 200 },
+      { code: 'CS', fullName: 'CSE - Cyber Security', defaultSeats: 200 },
+      { code: 'AIML', fullName: 'Artificial Intelligence & Machine Learning', defaultSeats: 200 },
+      { code: 'BME', fullName: 'Bio-Medical Engineering', defaultSeats: 200 },
+      { code: 'ECE', fullName: 'Electronics & Communication Engineering', defaultSeats: 200 },
+      { code: 'EEE (Electrical and Electronics Engineering)', fullName: 'Electrical & Electronics Engineering', defaultSeats: 200 },
+      { code: 'MECH', fullName: 'Mechanical Engineering', defaultSeats: 200 },
+      { code: 'Electrical and Computer Engineering', fullName: 'Electrical and Computer Engineering', defaultSeats: 200 },
     ],
   },
   {
@@ -53,10 +53,10 @@ const COURSE_GROUPS = [
     degree: 'M.E',
     level: 'PG',
     courses: [
-      { code: 'VLSI', fullName: 'M.E - VLSI Design', defaultSeats: 18 },
-      { code: 'ISE', fullName: 'M.E - Industrial Safety Engineering', defaultSeats: 18 },
-      { code: 'M.E - CSE', fullName: 'M.E - Computer Science & Engineering', defaultSeats: 18 },
-      { code: 'M.E - BME', fullName: 'M.E - Bio-Medical Engineering', defaultSeats: 18 },
+      { code: 'VLSI', fullName: 'M.E - VLSI Design', defaultSeats: 200 },
+      { code: 'ISE', fullName: 'M.E - Industrial Safety Engineering', defaultSeats: 200 },
+      { code: 'M.E - CSE', fullName: 'M.E - Computer Science & Engineering', defaultSeats: 200 },
+      { code: 'M.E - BME', fullName: 'M.E - Bio-Medical Engineering', defaultSeats: 200 },
     ],
   },
 ];
@@ -137,7 +137,7 @@ export default function VCDashboardPage() {
     let totalCap = 0;
     let totalFilled = 0;
     let totalBal = 0;
-    let aidsBal = 120;
+    let aidsBal = 200;
 
     for (const group of COURSE_GROUPS) {
       for (const course of group.courses) {
@@ -778,7 +778,7 @@ export default function VCDashboardPage() {
               <div style={{ background: '#ecfdf5', padding: '14px 18px', borderRadius: '10px', border: '1px solid #a7f3d0' }}>
                 <span style={{ fontSize: '0.78rem', color: '#065f46', fontWeight: 600, textTransform: 'uppercase' }}>AI&DS Course Status</span>
                 <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#047857', marginTop: '4px' }}>
-                  {editableSeats['AI&DS'] ?? 120} Total | {allSeatStats.aidsBal} Balance
+                  {editableSeats['AI&DS'] ?? 200} Total | {allSeatStats.aidsBal} Balance
                 </div>
               </div>
             </div>

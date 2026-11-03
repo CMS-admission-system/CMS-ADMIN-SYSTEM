@@ -1142,9 +1142,10 @@ export default function RegisterPage() {
           <legend>Course selection <span className="required-indicator">*</span></legend>
           <div className="choice-grid">
             {availableCourses.map((course) => {
-              const seatInfo = getSeatInfo ? getSeatInfo(course) : { total: 120, balance: 120, filled: 0 };
+              const seatInfo = getSeatInfo ? getSeatInfo(course) : { total: 200, balance: 200, filled: 0 };
               const isSelected = formData.coursePreference?.firstPreference === course;
               const isFull = seatInfo.balance <= 0;
+              const isFillingFast = !isFull && seatInfo.balance <= 30;
 
               return (
                 <button
@@ -1173,16 +1174,41 @@ export default function RegisterPage() {
                       gap: '6px',
                       fontSize: '0.82rem',
                       fontWeight: 600,
-                      padding: '2px 8px',
+                      padding: '3px 10px',
                       borderRadius: '999px',
-                      background: isFull ? '#fee2e2' : (isSelected ? 'rgba(255, 255, 255, 0.22)' : '#f0fdf4'),
-                      color: isFull ? '#991b1b' : (isSelected ? '#ffffff' : '#166534'),
-                      border: `1px solid ${isFull ? '#fecaca' : (isSelected ? 'rgba(255, 255, 255, 0.4)' : '#86efac')}`,
+                      background: isFull
+                        ? '#fee2e2'
+                        : isFillingFast
+                          ? (isSelected ? 'rgba(254, 243, 199, 0.3)' : '#fef3c7')
+                          : (isSelected ? 'rgba(255, 255, 255, 0.22)' : '#f0fdf4'),
+                      color: isFull
+                        ? '#991b1b'
+                        : isFillingFast
+                          ? (isSelected ? '#fef08a' : '#92400e')
+                          : (isSelected ? '#ffffff' : '#166534'),
+                      border: `1px solid ${
+                        isFull
+                          ? '#fecaca'
+                          : isFillingFast
+                            ? '#fde68a'
+                            : (isSelected ? 'rgba(255, 255, 255, 0.4)' : '#86efac')
+                      }`,
+                      flexWrap: 'wrap',
+                      justifyContent: 'center',
                     }}
                   >
-                    <span>Total: {seatInfo.total} seats</span>
+                    <span>Total: <strong>{seatInfo.total}</strong></span>
+                    <span>|</span>
+                    <span>Filled: <strong>{seatInfo.filled || 0}</strong></span>
                     <span>|</span>
                     <span>Balance: <strong>{seatInfo.balance}</strong> seats</span>
+                    <span>|</span>
+                    <span style={{
+                      fontWeight: 800,
+                      color: isFull ? '#991b1b' : (isFillingFast ? (isSelected ? '#fef08a' : '#b45309') : (isSelected ? '#ffffff' : '#15803d'))
+                    }}>
+                      Status: {isFull ? 'Full' : (isFillingFast ? 'Filling Fast' : 'Available')}
+                    </span>
                   </div>
                 </button>
               );

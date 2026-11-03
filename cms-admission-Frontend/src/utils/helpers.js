@@ -9,25 +9,27 @@ export const PROGRAMME_COURSES = {
 };
 
 export const DEFAULT_COURSE_SEAT_QUOTAS = {
-  'AI&DS': 120,   // explicitly 120 seats
-  'CSE': 120,
-  'BME': 60,
-  'CS': 60,
-  'ECE': 60,
-  'MECH': 60,
-  'AIML': 60,
-  'Electrical and Computer Engineering': 60,
-  'EEE (Electrical and Electronics Engineering)': 60,
-  'VLSI': 18,
-  'ISE': 18,
-  'M.E - CSE': 18,
-  'M.E - BME': 18,
+  'AI&DS': 200,
+  'CSE': 200,
+  'BME': 200,
+  'CS': 200,
+  'ECE': 200,
+  'MECH': 200,
+  'AIML': 200,
+  'Electrical and Computer Engineering': 200,
+  'EEE (Electrical and Electronics Engineering)': 200,
+  'VLSI': 200,
+  'ISE': 200,
+  'M.E - CSE': 200,
+  'M.E - BME': 200,
 };
 
 export function normalizeCourseName(name = '') {
   if (!name) return '';
   const n = String(name).trim().toLowerCase();
   if (n.includes('ai&ds') || n.includes('aids') || n.includes('data science')) return 'AI&DS';
+  if (n.includes('m.e') && (n.includes('cse') || n.includes('computer'))) return 'M.E - CSE';
+  if (n.includes('m.e') && (n.includes('bme') || n.includes('bio'))) return 'M.E - BME';
   if (n.includes('cyber') || n.includes('cse-cs') || n === 'cs') return 'CS';
   if (n.includes('ai&ml') || n.includes('aiml') || n.includes('machine learning')) return 'AIML';
   if (n.includes('bio') || n.includes('bme')) return 'BME';
@@ -37,7 +39,7 @@ export function normalizeCourseName(name = '') {
   if (n.includes('mech')) return 'MECH';
   if (n.includes('cse') || n.includes('computer science')) return 'CSE';
   if (n.includes('vlsi')) return 'VLSI';
-  if (n.includes('ise')) return 'ISE';
+  if (n.includes('ise') || n.includes('safety')) return 'ISE';
   return String(name).trim();
 }
 

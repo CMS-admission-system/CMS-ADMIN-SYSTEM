@@ -66,7 +66,7 @@ export function AppProvider({ children }) {
     for (const [cName, seatData] of Object.entries(baseQuotas)) {
       const total = typeof seatData === 'object' && seatData !== null && seatData.total !== undefined
         ? Number(seatData.total)
-        : Number(seatData || 60);
+        : Number(seatData || 200);
       const filled = filledCounts[cName] || 0;
       const balance = Math.max(0, total - filled);
       merged[cName] = { total, filled, balance };
@@ -287,7 +287,7 @@ export function AppProvider({ children }) {
     if (courseSeats && courseSeats[norm]) {
       return courseSeats[norm];
     }
-    const defaultTotal = DEFAULT_COURSE_SEAT_QUOTAS[norm] || 60;
+    const defaultTotal = DEFAULT_COURSE_SEAT_QUOTAS[norm] || 200;
     const filled = applications.filter((app) => {
       const c = app.coursePreference?.firstPreference || app.courseName || '';
       return normalizeCourseName(c) === norm;
@@ -342,7 +342,9 @@ export function AppProvider({ children }) {
 
     setApplications((current) => {
       const filtered = current.filter((item) => item.id !== officialId);
-      return [appRecord, ...filtered];
+      const nextApps = [appRecord, ...filtered];
+      setCourseSeats((prev) => computeSeatBalances(prev, nextApps));
+      return nextApps;
     });
 
     setLastSubmitted(appRecord);

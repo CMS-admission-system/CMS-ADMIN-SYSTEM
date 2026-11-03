@@ -40,7 +40,7 @@ class Course(Base):
     code: Mapped[str] = mapped_column(String(20), unique=True, index=True)
     name: Mapped[str] = mapped_column(String(120))
     level: Mapped[Level] = mapped_column(Enum(Level, native_enum=False))
-    seats: Mapped[int] = mapped_column(Integer, default=60)
+    seats: Mapped[int] = mapped_column(Integer, default=200)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     applications: Mapped[list["Application"]] = relationship(back_populates="course")

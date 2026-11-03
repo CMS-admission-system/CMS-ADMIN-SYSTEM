@@ -334,6 +334,11 @@ def create_portal_application(
 
     # 3. Broadcast real-time creation event to all connected staff & dashboards
     emit_realtime_event("application_created", payload)
+    try:
+        updated_seats = get_course_seats_summary(db)
+        emit_realtime_event("course_seats_updated", updated_seats)
+    except Exception as e:
+        logger.warning(f"Could not broadcast course_seats_updated on application create: {e}")
 
     return payload
 
@@ -437,6 +442,11 @@ def update_portal_application(
 
     # 3. Broadcast real-time update event to all connected dashboards and views
     emit_realtime_event("application_updated", data)
+    try:
+        updated_seats = get_course_seats_summary(db)
+        emit_realtime_event("course_seats_updated", updated_seats)
+    except Exception as e:
+        logger.warning(f"Could not broadcast course_seats_updated on application update: {e}")
 
     return data
 
@@ -452,6 +462,11 @@ def delete_portal_application(
     db.delete(record)
     db.commit()
     emit_realtime_event("application_deleted", {"id": app_id})
+    try:
+        updated_seats = get_course_seats_summary(db)
+        emit_realtime_event("course_seats_updated", updated_seats)
+    except Exception as e:
+        logger.warning(f"Could not broadcast course_seats_updated on application delete: {e}")
     return {"ok": True, "id": app_id}
 
 
@@ -518,19 +533,19 @@ def save_portal_setting(key: str, payload: dict[str, Any], db: Session = Depends
 # Course Seat Management (Real-time tracking & VC exclusive quota updates)
 # ---------------------------------------------------------------------------
 DEFAULT_COURSE_SEAT_QUOTAS: dict[str, int] = {
-    "AI&DS": 120,   # explicitly 120 seats
-    "CSE": 120,
-    "BME": 60,
-    "CS": 60,
-    "ECE": 60,
-    "MECH": 60,
-    "AIML": 60,
-    "Electrical and Computer Engineering": 60,
-    "EEE (Electrical and Electronics Engineering)": 60,
-    "VLSI": 18,
-    "ISE": 18,
-    "M.E - CSE": 18,
-    "M.E - BME": 18,
+    "AI&DS": 200,
+    "CSE": 200,
+    "BME": 200,
+    "CS": 200,
+    "ECE": 200,
+    "MECH": 200,
+    "AIML": 200,
+    "Electrical and Computer Engineering": 200,
+    "EEE (Electrical and Electronics Engineering)": 200,
+    "VLSI": 200,
+    "ISE": 200,
+    "M.E - CSE": 200,
+    "M.E - BME": 200,
 }
 
 
@@ -540,6 +555,10 @@ def normalize_course_name(name: str) -> str:
     n = name.strip().lower()
     if "ai&ds" in n or "aids" in n or "data science" in n:
         return "AI&DS"
+    if "m.e" in n and ("cse" in n or "computer" in n):
+        return "M.E - CSE"
+    if "m.e" in n and ("bme" in n or "bio" in n):
+        return "M.E - BME"
     if "cyber" in n or "cse-cs" in n or n == "cs":
         return "CS"
     if "ai&ml" in n or "aiml" in n or "machine learning" in n:
@@ -558,7 +577,7 @@ def normalize_course_name(name: str) -> str:
         return "CSE"
     if "vlsi" in n:
         return "VLSI"
-    if "ise" in n:
+    if "ise" in n or "safety" in n:
         return "ISE"
     return name.strip()
 
@@ -570,9 +589,15 @@ def get_course_seats_summary(db: Session) -> dict[str, Any]:
         try:
             saved = json.loads(setting.value_json)
             if isinstance(saved, dict):
-                quotas.update({k: int(v) for k, v in saved.items()})
+                for k, v in saved.items():
+                    quotas[k] = int(v)
         except Exception:
             pass
+
+    # Ensure all courses default to at least 200 seats
+    for k, v in DEFAULT_COURSE_SEAT_QUOTAS.items():
+        if k not in quotas or quotas[k] < 200:
+            quotas[k] = 200
 
     # Synchronize from courses table in TiDB
     try:
@@ -590,7 +615,7 @@ def get_course_seats_summary(db: Session) -> dict[str, Any]:
         for c in db_courses:
             mapped_name = code_to_name.get(c.code)
             if mapped_name and c.seats:
-                quotas[mapped_name] = max(quotas.get(mapped_name, 0), c.seats)
+                quotas[mapped_name] = max(quotas.get(mapped_name, 200), c.seats)
     except Exception:
         pass
 
