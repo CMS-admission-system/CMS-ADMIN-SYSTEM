@@ -2430,8 +2430,8 @@ label:not(.preview-shell label):not(.cms-paper-wrapper label):not(.admission-pap
 }
 
 /* Headings in WHITE and larger font sizes */
-.form-panel h2:not(.preview-shell *):not(.cms-paper-wrapper *):not(.college-fees-heading-black):not(.payment-heading-black),
-.section-header h2:not(.preview-shell *):not(.cms-paper-wrapper *):not(.college-fees-heading-black):not(.payment-heading-black) {
+.form-panel h2:not(.preview-shell *):not(.cms-paper-wrapper *):not(.college-fees-heading-black):not(.payment-heading-black):not(.vc-shell *),
+.section-header h2:not(.preview-shell *):not(.cms-paper-wrapper *):not(.college-fees-heading-black):not(.payment-heading-black):not(.vc-shell *) {
   font-size: clamp(1.65rem, 2.6vw, 2.2rem) !important;
   font-weight: 900 !important;
   color: #ffffff !important;
@@ -2439,7 +2439,7 @@ label:not(.preview-shell label):not(.cms-paper-wrapper label):not(.admission-pap
 }
 
 .form-panel h3:not(.preview-shell *):not(.cms-paper-wrapper *):not(.documents-table-wrapper *):not(.fees-step *),
-.section-header h3:not(.preview-shell *):not(.cms-paper-wrapper *),
+.section-header h3:not(.preview-shell *):not(.cms-paper-wrapper *):not(.vc-shell *),
 .card-list > h3:not(.preview-shell *):not(.cms-paper-wrapper *):not(.documents-table-wrapper *) {
   font-size: clamp(1.22rem, 1.9vw, 1.45rem) !important;
   font-weight: 850 !important;
@@ -2776,4 +2776,30 @@ label[for="boardingStop"] {
 .officer-correction-box label {
   color: #000000 !important;
   text-shadow: none !important;
+}
+
+/* VC Dashboard UI Alignments & Headings Customizations */
+.vc-shell .content-panel,
+.vc-shell .table-card {
+  width: 100% !important;
+  max-width: 100% !important;
+  border-radius: 24px !important;
+  box-sizing: border-box !important;
+}
+
+.vc-shell .content-panel h2,
+.vc-shell .content-panel h3,
+.vc-shell .section-header h2,
+.vc-shell .section-header h3,
+.vc-shell .table-card h2,
+.vc-shell .table-card h3,
+.vc-shell .table-card .section-header h3,
+.vc-shell .table-card .section-header h2 {
+  color: #000000 !important;
+  text-shadow: none !important;
+}
+
+.vc-shell .table-card .section-header {
+  min-height: 84px !important;
+  box-sizing: border-box !important;
 }

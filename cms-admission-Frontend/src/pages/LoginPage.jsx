@@ -77,6 +77,7 @@ export default function LoginPage() {
             <span style={{ color: '#000000', fontWeight: 700 }}>Username</span>
             <input
               type="text"
+              style={{ color: '#000000' }}
               value={form.username}
               onChange={(event) => setForm((prev) => ({ ...prev, username: event.target.value }))}
               placeholder="Enter username"
@@ -87,6 +88,7 @@ export default function LoginPage() {
             <span style={{ color: '#000000', fontWeight: 700 }}>Password</span>
             <input
               type="password"
+              style={{ color: '#000000' }}
               value={form.password}
               onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))}
               placeholder="Enter password"

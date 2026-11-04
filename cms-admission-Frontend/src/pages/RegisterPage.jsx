@@ -914,8 +914,10 @@ export default function RegisterPage() {
         const mobileError = getIndianMobileError(formData.studentMobile);
         if (mobileError) nextErrors.studentMobile = mobileError;
       }
-      if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(formData.email || '').trim())) {
-        nextErrors.email = 'Enter a valid email address to receive your admission application copy.';
+      const emailVal = String(formData.email || '').trim();
+      const userPart = emailVal.replace(/@gmail\.com$/i, '').trim();
+      if (!emailVal || !userPart || !/^[a-zA-Z0-9._%+-]+@gmail\.com$/i.test(emailVal)) {
+        nextErrors.email = 'Enter a valid Gmail username to receive your admission application copy.';
       }
       if (formData.aadhaar && !/^\d{12}$/.test(formData.aadhaar.replace(/\s/g, ''))) {
         nextErrors.aadhaar = 'Aadhaar number must contain 12 digits.';
@@ -1363,21 +1365,24 @@ export default function RegisterPage() {
         <label htmlFor="email">
           Email ID (For receiving Admission Form &amp; Updates) <span className="required-indicator">*</span>
         </label>
-        <input
-          id="email"
-          type="email"
-          required
-          autoComplete="email"
-          placeholder="student@gmail.com"
-          value={formData.email || ''}
-          onChange={(event) => updateField('email', event.target.value.trim())}
-          onBlur={(event) => {
-            const val = event.target.value.trim();
-            if (val && !val.includes('@')) {
-              updateField('email', `${val}@gmail.com`);
-            }
-          }}
-        />
+        <div className="email-input-group">
+          <input
+            id="email"
+            type="text"
+            required
+            autoComplete="username"
+            placeholder="Enter username only"
+            value={(formData.email || '').replace(/@gmail\.com$/i, '').replace(/@.*$/, '')}
+            onChange={(event) => {
+              const cleanUsername = event.target.value.replace(/@.*$/, '').trim();
+              updateField('email', cleanUsername ? `${cleanUsername}@gmail.com` : '');
+              if (errors.email) {
+                setErrors((prev) => ({ ...prev, email: '' }));
+              }
+            }}
+          />
+          <span aria-hidden="true" style={{ fontWeight: 700, color: '#006747' }}>@gmail.com</span>
+        </div>
         {errors.email ? <small className="error-text">{errors.email}</small> : null}
       </div>
       <div className="field-group full-width">

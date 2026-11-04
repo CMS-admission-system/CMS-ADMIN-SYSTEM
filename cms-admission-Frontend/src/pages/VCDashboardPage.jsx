@@ -467,7 +467,7 @@ export default function VCDashboardPage() {
                   <ArrowLeft size={16} /> Back to {activeTab === 'home' ? 'Student List' : (selectedCategory === 'FG' ? 'First Graduate' : selectedCategory) + ' List'}
                 </button>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '1.3rem', color: '#004d38', fontWeight: 800 }}>
+                  <h3 style={{ margin: 0, fontSize: '1.3rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>
                     {selectedStudentPreview.studentName}
                   </h3>
                   <span style={{ fontSize: '0.82rem', color: '#64748b' }}>
@@ -508,7 +508,7 @@ export default function VCDashboardPage() {
 
             {/* 2. Uploaded Photos and Certificates */}
             <div style={{ marginTop: '24px' }}>
-              <h3 style={{ margin: '0 0 12px', fontSize: '1.15rem', color: '#004d38', fontWeight: 800 }}>
+              <h3 style={{ margin: '0 0 12px', fontSize: '1.15rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>
                 Uploaded Photos &amp; Certificates
               </h3>
               <ApplicationDocuments
@@ -538,10 +538,10 @@ export default function VCDashboardPage() {
               TAB 1: HOME - COMPLETE OVERALL STUDENT LIST SENT BY ADMIN (Requirement 4)
              ========================================================================= */
           <div className="content-panel table-card">
-            <div className="section-header space-between" style={{ flexWrap: 'wrap', gap: '10px' }}>
+            <div className="section-header space-between" style={{ flexWrap: 'wrap', gap: '10px', minHeight: '84px', alignItems: 'center', padding: '16px 24px' }}>
               <div>
                 <p className="eyebrow accent" style={{ margin: 0 }}>Vice Chairman View</p>
-                <h3 style={{ margin: '4px 0 0', fontSize: '1.25rem', color: '#004d38', fontWeight: 800 }}>
+                <h3 style={{ margin: '4px 0 0', fontSize: '1.25rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>
                   Overall Student List Sent by Admin ({filteredSentToVC.length})
                 </h3>
                 <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: '#6b7280' }}>
@@ -651,7 +651,7 @@ export default function VCDashboardPage() {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
                     <div>
                       <p className="eyebrow accent" style={{ margin: 0 }}>Vice Chairman View</p>
-                      <h2 style={{ margin: '4px 0 0', fontSize: '1.45rem', color: '#004d38', fontWeight: 800 }}>
+                      <h2 style={{ margin: '4px 0 0', fontSize: '1.45rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>
                         Category Overview
                       </h2>
                     </div>
@@ -685,7 +685,7 @@ export default function VCDashboardPage() {
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#004d38' }}>
                           <Bus size={22} color="#004d38" />
-                          <strong style={{ fontSize: '1.05rem', color: '#0f172a' }}>Transport</strong>
+                          <strong style={{ fontSize: '1.05rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>Transport</strong>
                         </div>
                         {selectedCategory === 'Transport' && (
                           <span style={{ fontSize: '0.72rem', background: '#004d38', color: '#ffffff', padding: '2px 8px', borderRadius: '999px', fontWeight: 800 }}>
@@ -720,7 +720,7 @@ export default function VCDashboardPage() {
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#004d38' }}>
                           <Building2 size={22} color="#004d38" />
-                          <strong style={{ fontSize: '1.05rem', color: '#0f172a' }}>Hostel</strong>
+                          <strong style={{ fontSize: '1.05rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>Hostel</strong>
                         </div>
                         {selectedCategory === 'Hostel' && (
                           <span style={{ fontSize: '0.72rem', background: '#004d38', color: '#ffffff', padding: '2px 8px', borderRadius: '999px', fontWeight: 800 }}>
@@ -755,7 +755,7 @@ export default function VCDashboardPage() {
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#004d38' }}>
                           <GraduationCap size={22} color="#004d38" />
-                          <strong style={{ fontSize: '1.05rem', color: '#0f172a' }}>First Graduate (FG)</strong>
+                          <strong style={{ fontSize: '1.05rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>First Graduate (FG)</strong>
                         </div>
                         {selectedCategory === 'FG' && (
                           <span style={{ fontSize: '0.72rem', background: '#004d38', color: '#ffffff', padding: '2px 8px', borderRadius: '999px', fontWeight: 800 }}>
@@ -790,7 +790,7 @@ export default function VCDashboardPage() {
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#004d38' }}>
                           <Trophy size={22} color="#004d38" />
-                          <strong style={{ fontSize: '1.05rem', color: '#0f172a' }}>Sports Quota</strong>
+                          <strong style={{ fontSize: '1.05rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>Sports Quota</strong>
                         </div>
                         {selectedCategory === 'Sports' && (
                           <span style={{ fontSize: '0.72rem', background: '#004d38', color: '#ffffff', padding: '2px 8px', borderRadius: '999px', fontWeight: 800 }}>
@@ -817,7 +817,7 @@ export default function VCDashboardPage() {
                       {selectedCategory === 'FG' && <GraduationCap size={24} color="#166534" />}
                       {selectedCategory === 'Sports' && <Trophy size={24} color="#166534" />}
                       <div>
-                        <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#166534', fontWeight: 800 }}>
+                        <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>
                           Confirmed {selectedCategory === 'FG' ? 'First Graduate' : selectedCategory} Students ({activeCategoryStudents.length})
                         </h3>
                         <p style={{ margin: '2px 0 0', fontSize: '0.82rem', color: '#64748b' }}>
@@ -954,11 +954,11 @@ export default function VCDashboardPage() {
              TAB 3: COURSE SEATS MANAGEMENT (Vice Chairman Exclusive Authorization)
              ========================================================================= */
           <div className="content-panel table-card">
-            <div className="section-header space-between" style={{ flexWrap: 'wrap', gap: '14px', borderBottom: '1px solid #e2e8f0', paddingBottom: '16px' }}>
+            <div className="section-header space-between" style={{ flexWrap: 'wrap', gap: '14px', borderBottom: '1px solid #e2e8f0', paddingBottom: '16px', minHeight: '84px', alignItems: 'center', padding: '16px 24px' }}>
               <div>
                 <p className="eyebrow accent" style={{ margin: 0 }}>Vice Chairman View</p>
-                <h3 style={{ margin: '4px 0 0', fontSize: '1.4rem', color: '#004d38', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <GraduationCap size={24} color="#006747" /> Course Seats Management & Quota Configuration
+                <h3 style={{ margin: '4px 0 0', fontSize: '1.4rem', color: '#000000', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', textShadow: 'none' }}>
+                  <GraduationCap size={24} color="#000000" /> <span style={{ color: '#000000' }}>Course Seats Management &amp; Quota Configuration</span>
                 </h3>
                 <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: '#64748b' }}>
                   Exclusive Vice Chairman seat quota authorization. Balance seats update dynamically in real time as students submit admission forms.
