@@ -152,12 +152,12 @@ export default function ApplicationPreviewPage() {
 
   const validateMandatoryDocs = () => {
     const hasAadhaar = Boolean(draft?.documents?.AadhaarCard?.dataUrl);
-    const hasHsc = Boolean(draft?.documents?.HSC?.dataUrl);
+    const hasSslc = Boolean(draft?.documents?.SSLC?.dataUrl);
     const hasPhoto = Boolean(draft?.documents?.PassportSizePhotographs?.dataUrl || draft?.studentPhoto?.dataUrl || draft?.photoUrl);
-    if (!hasAadhaar || !hasHsc || !hasPhoto) {
+    if (!hasAadhaar || !hasSslc || !hasPhoto) {
       const missing = [];
+      if (!hasSslc) missing.push('SSLC Certificate');
       if (!hasAadhaar) missing.push('Aadhaar Card');
-      if (!hasHsc) missing.push('HSC Certificate');
       if (!hasPhoto) missing.push('Student Photograph');
       window.alert(`Cannot submit application: The following compulsory document(s) are missing:\n- ${missing.join('\n- ')}\n\nPlease click Previous and upload them in the Documents step.`);
       return false;
@@ -168,7 +168,7 @@ export default function ApplicationPreviewPage() {
   const handleSavePdf = async () => {
     const cleanName = String(draft.studentName || 'Student').trim().replace(/[^a-zA-Z0-9_-]/g, '_');
     const filename = `CMS_Admission_Form_${adminNumber}_${cleanName}.pdf`;
-    const targetElement = document.querySelector('.admission-paper-sheet');
+    const targetElement = document.querySelector('.admission-paper-sheet, .cms-paper-form');
     if (!targetElement) {
       window.alert('Application form document not found.');
       return;

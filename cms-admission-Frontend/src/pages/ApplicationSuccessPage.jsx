@@ -20,7 +20,7 @@ export default function ApplicationSuccessPage() {
   const handleSavePdf = async () => {
     const cleanName = String(studentName || 'Student').trim().replace(/[^a-zA-Z0-9_-]/g, '_');
     const filename = `CMS_Admission_Form_${applicationId}_${cleanName}.pdf`;
-    const targetElement = document.querySelector('.admission-paper-sheet');
+    const targetElement = document.querySelector('.admission-paper-sheet, .cms-paper-form');
     if (!targetElement) {
       window.alert('Application form document not found.');
       return;

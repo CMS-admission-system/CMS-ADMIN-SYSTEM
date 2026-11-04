@@ -192,10 +192,10 @@ export default function AdmissionPaymentPage() {
         <div className="section-header">
           <div>
             <p className="eyebrow accent">Admission Payment</p>
-            <h2>Seat confirmation payment</h2>
+            <h2 style={{ color: '#ffffff', fontSize: '1.95rem', fontWeight: 850 }}>Seat confirmation payment</h2>
             {fromAdmin && targetApp ? (
-              <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: '#166534', fontWeight: 700 }}>
-                Processing payment for: <strong>{targetApp.studentName}</strong> ({targetApp.coursePreference?.firstPreference || 'Course'})
+              <p style={{ margin: '6px 0 0', fontSize: '1rem', color: '#ffffff', fontWeight: 700 }}>
+                Processing payment for: <strong style={{ color: '#ffffff', textDecoration: 'underline' }}>{targetApp.studentName}</strong> ({targetApp.coursePreference?.firstPreference || 'Course'})
               </p>
             ) : null}
           </div>
@@ -213,8 +213,8 @@ export default function AdmissionPaymentPage() {
         </div>
 
         {/* Method Switcher Header */}
-        <div style={{ margin: '20px 0 10px' }}>
-          <p style={{ margin: '0 0 10px', fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>
+        <div style={{ margin: '24px 0 12px' }}>
+          <p style={{ margin: '0 0 12px', fontSize: '1.15rem', fontWeight: 800, color: '#ffffff' }}>
             Select Payment Verification Method:
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
@@ -225,7 +225,8 @@ export default function AdmissionPaymentPage() {
               style={{
                 padding: '14px 18px',
                 border: `2px solid ${selectedMethod === 'Cash' ? '#166534' : '#cbd5e1'}`,
-                background: selectedMethod === 'Cash' ? '#dcfce7' : '#ffffff',
+                background: selectedMethod === 'Cash' ? '#166534' : '#ffffff',
+                color: selectedMethod === 'Cash' ? '#ffffff' : '#1e293b',
                 fontWeight: 800,
                 display: 'flex',
                 alignItems: 'center',
@@ -234,12 +235,12 @@ export default function AdmissionPaymentPage() {
                 cursor: 'pointer',
               }}
             >
-              <Banknote size={22} color={selectedMethod === 'Cash' ? '#166534' : '#475569'} />
+              <Banknote size={22} color={selectedMethod === 'Cash' ? '#ffffff' : '#475569'} />
               <div>
-                <span style={{ display: 'block', fontSize: '1rem', color: selectedMethod === 'Cash' ? '#166534' : '#1e293b' }}>
+                <span style={{ display: 'block', fontSize: '1.05rem', color: selectedMethod === 'Cash' ? '#ffffff' : '#1e293b' }}>
                   A. Cash Payment
                 </span>
-                <small style={{ fontSize: '0.78rem', color: '#64748b' }}>Office Counter Cash Receipt</small>
+                <small style={{ fontSize: '0.8rem', color: selectedMethod === 'Cash' ? '#e2e8f0' : '#64748b' }}>Office Counter Cash Receipt</small>
               </div>
             </button>
 
@@ -249,8 +250,9 @@ export default function AdmissionPaymentPage() {
               onClick={() => setSelectedMethod('GPay')}
               style={{
                 padding: '14px 18px',
-                border: `2px solid ${selectedMethod === 'GPay' ? '#0369a1' : '#cbd5e1'}`,
-                background: selectedMethod === 'GPay' ? '#e0f2fe' : '#ffffff',
+                border: `2px solid ${selectedMethod === 'GPay' ? '#0284c7' : '#cbd5e1'}`,
+                background: selectedMethod === 'GPay' ? '#0284c7' : '#ffffff',
+                color: selectedMethod === 'GPay' ? '#ffffff' : '#1e293b',
                 fontWeight: 800,
                 display: 'flex',
                 alignItems: 'center',
@@ -259,29 +261,25 @@ export default function AdmissionPaymentPage() {
                 cursor: 'pointer',
               }}
             >
-              <QrCode size={22} color={selectedMethod === 'GPay' ? '#0369a1' : '#475569'} />
+              <QrCode size={22} color={selectedMethod === 'GPay' ? '#ffffff' : '#475569'} />
               <div>
-                <span style={{ display: 'block', fontSize: '1rem', color: selectedMethod === 'GPay' ? '#0369a1' : '#1e293b' }}>
+                <span style={{ display: 'block', fontSize: '1.05rem', color: selectedMethod === 'GPay' ? '#ffffff' : '#1e293b' }}>
                   B. GPay / UPI Payment
                 </span>
-                <small style={{ fontSize: '0.78rem', color: '#64748b' }}>Google Pay / PhonePe / Paytm QR</small>
+                <small style={{ fontSize: '0.8rem', color: selectedMethod === 'GPay' ? '#e2e8f0' : '#64748b' }}>Google Pay / PhonePe / Paytm QR</small>
               </div>
             </button>
           </div>
         </div>
 
-        {/* TWO SEPARATE PAYMENT VERIFICATION BOXES */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-          gap: '24px',
-          marginTop: '16px',
-        }}>
-          {/* =========================================================================
-              BOX A: CASH PAYMENT VERIFICATION
-             ========================================================================= */}
-          <section
-            className="payment-verification-box"
+        {/* DYNAMIC PAYMENT VERIFICATION DETAILS (SHOW ONLY SELECTED METHOD) */}
+        <div style={{ marginTop: '16px' }}>
+          {selectedMethod === 'Cash' ? (
+            /* =========================================================================
+                BOX A: CASH PAYMENT VERIFICATION
+               ========================================================================= */
+            <section
+              className="payment-verification-box"
             style={{
               background: '#ffffff',
               borderRadius: '16px',
@@ -411,13 +409,13 @@ export default function AdmissionPaymentPage() {
                 Required staff signature / name verifying physical cash collection.
               </small>
             </div>
-          </section>
-
-          {/* =========================================================================
-              BOX B: GPAY / UPI PAYMENT VERIFICATION
-             ========================================================================= */}
-          <section
-            className="payment-verification-box"
+            </section>
+          ) : (
+            /* =========================================================================
+                BOX B: GPAY / UPI PAYMENT VERIFICATION
+               ========================================================================= */
+            <section
+              className="payment-verification-box"
             style={{
               background: '#ffffff',
               borderRadius: '16px',
@@ -570,7 +568,8 @@ export default function AdmissionPaymentPage() {
                 Required staff signature / name verifying digital UPI transaction.
               </small>
             </div>
-          </section>
+            </section>
+          )}
         </div>
 
         {paymentError ? (

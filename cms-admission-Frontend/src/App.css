@@ -444,12 +444,6 @@
   transition: all 0.2s ease;
 }
 
-.phone-input:focus-within > span {
-  border-color: #16a34a !important;
-  color: #15803d !important;
-  background-color: #f0fdf4 !important;
-}
-
 .phone-input input {
   min-width: 0;
 }
@@ -473,12 +467,6 @@
   user-select: none;
   white-space: nowrap;
   transition: all 0.2s ease;
-}
-
-.email-input-group:focus-within > span {
-  border-color: #16a34a !important;
-  color: #15803d !important;
-  background-color: #f0fdf4 !important;
 }
 
 .email-input-group input {
@@ -533,13 +521,6 @@
   flex-direction: column;
 }
 
-.field-group:focus-within > label,
-.field-group:focus-within > legend,
-.field-group:focus-within > .field-label {
-  color: #15803d !important;
-  transition: color 0.15s ease;
-}
-
 .inline-field-row {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -585,38 +566,35 @@
 }
 
 .choice-card:hover:not(.active) {
-  border-color: #16a34a !important;
-  background: #f0fdf4 !important;
+  border-color: #006747;
+  background: #f8fafc;
   transform: translateY(-2px);
-  box-shadow: 0 4px 14px rgba(22, 163, 74, 0.18) !important;
+  box-shadow: 0 4px 12px rgba(0, 103, 71, 0.12);
 }
 
 .choice-card:focus,
 .choice-card:focus-visible {
-  outline: none !important;
-  border-color: #16a34a !important;
-  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.35) !important;
-  background-color: #f0fdf4 !important;
+  outline: none;
+  border-color: #006747;
+  box-shadow: 0 0 0 3px rgba(0, 103, 71, 0.18);
 }
 
 .choice-card:active {
-  border-color: #15803d !important;
   transform: scale(0.985);
-  box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.35) !important;
 }
 
 .choice-card.active {
   background: #166534 !important;
-  border: 2px solid #16a34a !important;
+  border: 2px solid #14532d !important;
   color: #ffffff !important;
-  box-shadow: 0 4px 16px rgba(22, 163, 74, 0.4) !important;
+  box-shadow: 0 4px 16px rgba(22, 101, 52, 0.35) !important;
   font-weight: 700;
   transform: translateY(-1px);
 }
 
 .choice-card.active:hover {
   background: #14532d !important;
-  border-color: #16a34a !important;
+  border-color: #14532d !important;
   color: #ffffff !important;
 }
 
@@ -799,12 +777,9 @@
   border: 0;
 }
 
-.upload-action:focus-within,
-.upload-action:active {
-  outline: none;
-  border-color: #16a34a !important;
-  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.3) !important;
-  background-color: #f0fdf4 !important;
+.upload-action:focus-within {
+  outline: 3px solid rgba(0, 103, 71, 0.25);
+  outline-offset: 2px;
 }
 
 .document-preview {
@@ -1836,14 +1811,6 @@ input[type="number"] {
   transition: all 0.2s ease;
 }
 
-.signature-box-card:focus-within {
-  border-color: #16a34a !important;
-  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.25) !important;
-}
-
-.signature-box-card:focus-within .signature-box-label {
-  color: #15803d !important;
-}
 
 .signature-box-header {
   display: flex;
@@ -2109,9 +2076,8 @@ input[type="number"] {
 
 .cms-consultant-input:focus {
   outline: none;
-  border-color: #16a34a !important;
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.3) !important;
-  background-color: #f0fdf4 !important;
+  border-color: #006747;
+  box-shadow: 0 0 0 2px rgba(0, 103, 71, 0.15);
 }
 
 .cms-form-title-bar {
@@ -2414,18 +2380,100 @@ input[type="number"] {
 }
 
 /* ==========================================================================
-   Text Highlighting - Bold & Brighter Visible Shades Across All Pages
+   Universal High-Contrast Crisp White Text & Increased Font Sizes
+   Across Registration, Payment, and Portal pages.
+   EXCEPTIONS PRESERVED EXACTLY AS CURRENTLY:
+   1. Preview Page (.preview-shell, .cms-paper-wrapper, .admission-paper-sheet)
+   2. Documents Page (.documents-table-wrapper, .excel-docs-table)
+   3. Fee Structure Page (.fees-step, .fees-table, .fee-summary-card, .fee-structure)
    ========================================================================== */
-label,
-.field-group label,
-.upload-title,
-.signature-box-label,
-.cms-consultant-field label,
-.cms-signature-label,
+
+/* Titles, legends, and selection headings in WHITE */
 legend,
-fieldset legend {
+fieldset legend,
+.choice-fieldset > legend {
+  font-size: 1.22rem !important;
+  font-weight: 850 !important;
+  color: #ffffff !important;
+  letter-spacing: -0.01em !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5) !important;
+  margin-bottom: 8px !important;
+}
+
+/* Form labels outside the 3 excluded pages in WHITE */
+label:not(.preview-shell label):not(.cms-paper-wrapper label):not(.admission-paper-sheet label):not(.excel-docs-table label):not(.documents-table-wrapper label):not(.fees-step label):not(.fee-summary-card label):not(.payment-verification-box label),
+.field-group > label:not(.preview-shell label):not(.cms-paper-wrapper label):not(.admission-paper-sheet label):not(.excel-docs-table label):not(.documents-table-wrapper label):not(.fees-step label):not(.payment-verification-box label),
+.field-label:not(.preview-shell *):not(.cms-paper-wrapper *):not(.excel-docs-table *):not(.fees-step *):not(.payment-verification-box *),
+.signature-box-label:not(.preview-shell *):not(.cms-paper-wrapper *) {
+  font-size: 1.08rem !important;
+  font-weight: 800 !important;
+  color: #ffffff !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45) !important;
+}
+
+/* Explanatory sentences, notes, and helper text outside the 3 excluded pages in WHITE */
+.required-fields-note:not(.preview-shell *):not(.cms-paper-wrapper *),
+.form-step-description:not(.preview-shell *):not(.cms-paper-wrapper *),
+.declaration-text:not(.preview-shell *):not(.cms-paper-wrapper *),
+.upload-storage-note:not(.preview-shell *):not(.cms-paper-wrapper *):not(.documents-table-wrapper *),
+.success-detail:not(.preview-shell *):not(.cms-paper-wrapper *),
+.form-panel p:not(.preview-shell *):not(.cms-paper-wrapper *):not(.documents-table-wrapper *):not(.fees-step *):not(.bus-route-display-card *) {
+  color: #ffffff !important;
+  font-size: 1rem !important;
   font-weight: 700 !important;
-  color: #0f172a !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Headings in WHITE and larger font sizes */
+.form-panel h2:not(.preview-shell *):not(.cms-paper-wrapper *),
+.section-header h2:not(.preview-shell *):not(.cms-paper-wrapper *),
+.payment-panel h2 {
+  font-size: clamp(1.65rem, 2.6vw, 2.2rem) !important;
+  font-weight: 900 !important;
+  color: #ffffff !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.45) !important;
+}
+
+.form-panel h3:not(.preview-shell *):not(.cms-paper-wrapper *):not(.documents-table-wrapper *):not(.fees-step *),
+.section-header h3:not(.preview-shell *):not(.cms-paper-wrapper *),
+.card-list > h3:not(.preview-shell *):not(.cms-paper-wrapper *):not(.documents-table-wrapper *) {
+  font-size: clamp(1.22rem, 1.9vw, 1.45rem) !important;
+  font-weight: 850 !important;
+  color: #ffffff !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* EXCEPTION 1: Preview Page strictly preserved with dark text on paper view */
+.preview-shell,
+.preview-shell *,
+.cms-paper-wrapper,
+.cms-paper-wrapper *,
+.admission-paper-sheet,
+.admission-paper-sheet * {
+  text-shadow: none !important;
+}
+
+.admission-paper-sheet,
+.admission-paper-sheet * {
+  color: #0f172a;
+}
+
+/* EXCEPTION 2: Documents Step Table strictly preserved */
+.documents-table-wrapper,
+.documents-table-wrapper *,
+.excel-docs-table,
+.excel-docs-table * {
+  text-shadow: none !important;
+}
+
+/* EXCEPTION 3: Fee Structure Step Table strictly preserved */
+.fees-step,
+.fees-step *,
+.fees-table,
+.fees-table *,
+.fee-summary-card,
+.fee-summary-card * {
+  text-shadow: none !important;
 }
 
 .eyebrow.accent {
@@ -2453,15 +2501,6 @@ fieldset legend {
   background: #FFF7ED !important;
   color: #9A3412 !important;
   font-weight: 700 !important;
-}
-
-.required-fields-note,
-.field-help,
-.upload-storage-note,
-.qr-note,
-.success-detail {
-  font-weight: 700 !important;
-  color: #0f172a !important;
 }
 
 

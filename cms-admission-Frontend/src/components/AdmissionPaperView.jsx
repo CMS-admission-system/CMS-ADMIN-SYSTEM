@@ -129,7 +129,7 @@ export default function AdmissionPaperView({
   const isVocational = String(draft.hscGroup || '').toLowerCase().includes('vocational');
 
   return (
-    <article className="cms-paper-form">
+    <article className="cms-paper-form admission-paper-sheet">
       {/* Header matching authentic Reference Images 1 & 2 */}
       <header className="cms-paper-header">
         <div className="cms-branding-top">

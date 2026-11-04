@@ -33,7 +33,7 @@ export default function VCDetailPage() {
   const handleSavePdf = async () => {
     const cleanName = String(application.studentName || 'Student').trim().replace(/[^a-zA-Z0-9_-]/g, '_');
     const filename = `CMS_Admission_Form_${application.formNumber || application.id}_${cleanName}.pdf`;
-    const targetElement = document.querySelector('.admission-paper-sheet');
+    const targetElement = document.querySelector('.admission-paper-sheet, .cms-paper-form');
     if (!targetElement) {
       window.alert('Application form sheet not found.');
       return;

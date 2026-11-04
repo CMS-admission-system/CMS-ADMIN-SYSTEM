@@ -343,28 +343,7 @@ export async function downloadElementAsPdf(element, filename = 'CMS_Admission_Fo
     const worker = html2pdf().from(element).set(opt);
     const pdfBlob = await worker.outputPdf('blob');
 
-    // If browser supports showSaveFilePicker, allow user to choose destination folder
-    if (typeof window !== 'undefined' && 'showSaveFilePicker' in window) {
-      try {
-        const fileHandle = await window.showSaveFilePicker({
-          suggestedName: safeName,
-          types: [{
-            description: 'PDF Document (*.pdf)',
-            accept: { 'application/pdf': ['.pdf'] },
-          }],
-        });
-        const writable = await fileHandle.createWritable();
-        await writable.write(pdfBlob);
-        await writable.close();
-        return true;
-      } catch (pickerErr) {
-        if (pickerErr.name === 'AbortError') {
-          return false;
-        }
-      }
-    }
-
-    // Direct browser file download
+    // Direct browser file download via Blob URL (reliable & browser compatible)
     const url = URL.createObjectURL(pdfBlob);
     const a = document.createElement('a');
     a.href = url;
@@ -377,7 +356,7 @@ export async function downloadElementAsPdf(element, filename = 'CMS_Admission_Fo
     }, 1500);
     return true;
   } catch (err) {
-    console.error('downloadElementAsPdf error:', err);
+    console.error('downloadElementAsPdf blob error, attempting direct save fallback:', err);
     try {
       const html2pdfModule = await import('html2pdf.js');
       const html2pdf = html2pdfModule.default || html2pdfModule;

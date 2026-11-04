@@ -697,7 +697,7 @@ export default function RegisterPage() {
         && (formData.studentSignature?.dataUrl || formData.signature?.dataUrl)
         && formData.parentSignature?.dataUrl
         && formData.documents?.AadhaarCard?.dataUrl
-        && formData.documents?.HSC?.dataUrl
+        && formData.documents?.SSLC?.dataUrl
         && (formData.documents?.PassportSizePhotographs?.dataUrl || formData.studentPhoto?.dataUrl || formData.photoUrl),
       ),
       currentStep >= 8,
@@ -738,45 +738,121 @@ export default function RegisterPage() {
     setErrors((previous) => ({ ...previous, degree: '', firstPreference: '' }));
   };
 
-  const handleDocumentFile = (docKey, file) => {
-    if (!file) return;
-    if (file.dataUrl) {
-      setFormData((previous) => ({
-        ...previous,
-        documents: {
-          ...(previous.documents || {}),
-          [docKey]: file,
-          ...(docKey === 'CommunityCertificate' ? { CC: file } : {}),
-          ...(docKey === 'PassportSizePhotographs' ? { StudentPhoto: file } : {}),
-        },
-        ...(docKey === 'PassportSizePhotographs' ? { studentPhoto: file } : {}),
-      }));
-      return;
+  const computeFileContentHash = async (fileOrDataUrl) => {
+    try {
+      let arrayBuffer = null;
+      if (fileOrDataUrl instanceof Blob || fileOrDataUrl instanceof File) {
+        arrayBuffer = await fileOrDataUrl.arrayBuffer();
+      } else if (typeof fileOrDataUrl === 'string') {
+        const base64Data = fileOrDataUrl.includes(',') ? fileOrDataUrl.split(',')[1] : fileOrDataUrl;
+        const binary = atob(base64Data);
+        const len = binary.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+          bytes[i] = binary.charCodeAt(i);
+        }
+        arrayBuffer = bytes.buffer;
+      } else if (fileOrDataUrl?.dataUrl) {
+        const base64Data = fileOrDataUrl.dataUrl.includes(',') ? fileOrDataUrl.dataUrl.split(',')[1] : fileOrDataUrl.dataUrl;
+        const binary = atob(base64Data);
+        const len = binary.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+          bytes[i] = binary.charCodeAt(i);
+        }
+        arrayBuffer = bytes.buffer;
+      }
+
+      if (arrayBuffer && window.crypto && window.crypto.subtle) {
+        const hashBuffer = await window.crypto.subtle.digest('SHA-256', arrayBuffer);
+        return Array.from(new Uint8Array(hashBuffer)).map((b) => b.toString(16).padStart(2, '0')).join('');
+      }
+    } catch (err) {
+      console.warn('SubtleCrypto error, falling back to string hash', err);
     }
+
+    const str = fileOrDataUrl?.dataUrl || (typeof fileOrDataUrl === 'string' ? fileOrDataUrl : '');
+    if (str) {
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        hash = ((hash << 5) - hash) + str.charCodeAt(i);
+        hash |= 0;
+      }
+      return String(hash);
+    }
+    return null;
+  };
+
+  const handleDocumentFile = async (docKey, file) => {
+    if (!file) return;
+
     if (file.size > 10 * 1024 * 1024) {
       window.alert('File size must be 10 MB or smaller.');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const fileData = {
-        name: file.name,
-        size: file.size,
-        mimeType: file.type || 'application/octet-stream',
-        dataUrl: String(reader.result),
-      };
-      setFormData((previous) => ({
-        ...previous,
-        documents: {
-          ...(previous.documents || {}),
-          [docKey]: fileData,
-          ...(docKey === 'CommunityCertificate' ? { CC: fileData } : {}),
-          ...(docKey === 'PassportSizePhotographs' ? { StudentPhoto: fileData } : {}),
-        },
-        ...(docKey === 'PassportSizePhotographs' ? { studentPhoto: fileData } : {}),
-      }));
+
+    let dataUrl = file.dataUrl;
+    const name = file.name || `${docKey}_file`;
+    const mimeType = file.mimeType || file.type || 'application/octet-stream';
+    const size = file.size || 0;
+
+    if (!dataUrl && (file instanceof Blob || file instanceof File)) {
+      dataUrl = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    if (!dataUrl) return;
+
+    // Check content hash to prevent uploading the same image/file more than once
+    const newHash = await computeFileContentHash(dataUrl);
+
+    const allDocs = formData.documents || {};
+    const aliasPairs = {
+      CommunityCertificate: 'CC',
+      CC: 'CommunityCertificate',
+      PassportSizePhotographs: 'StudentPhoto',
+      StudentPhoto: 'PassportSizePhotographs',
     };
-    reader.readAsDataURL(file);
+
+    for (const [existingKey, existingDoc] of Object.entries(allDocs)) {
+      if (!existingDoc || !existingDoc.dataUrl) continue;
+      if (existingKey === docKey || aliasPairs[docKey] === existingKey) continue;
+
+      const existingHash = existingDoc.contentHash || (await computeFileContentHash(existingDoc.dataUrl));
+      if (existingHash && newHash && existingHash === newHash) {
+        const existingLabel = certificateLabels[existingKey] || existingKey;
+        const currentLabel = certificateLabels[docKey] || docKey;
+        window.alert(
+          `Duplicate File Detected!\n\n` +
+          `The file/image you selected for "${currentLabel}" is identical to the file already uploaded for "${existingLabel}".\n\n` +
+          `Each document must be a unique, original certificate. Please select the correct distinct file.`
+        );
+        return; // Reject upload!
+      }
+    }
+
+    const fileData = {
+      name,
+      size,
+      mimeType,
+      dataUrl,
+      contentHash: newHash,
+    };
+
+    setFormData((previous) => ({
+      ...previous,
+      documents: {
+        ...(previous.documents || {}),
+        [docKey]: fileData,
+        ...(docKey === 'CommunityCertificate' ? { CC: fileData } : {}),
+        ...(docKey === 'PassportSizePhotographs' ? { StudentPhoto: fileData } : {}),
+      },
+      ...(docKey === 'PassportSizePhotographs' ? { studentPhoto: fileData } : {}),
+    }));
+    setErrors((previous) => ({ ...previous, [docKey]: '' }));
   };
 
   const handleRemoveDocument = (docKey) => {
@@ -917,17 +993,24 @@ export default function RegisterPage() {
 
     if (currentStep === 7) {
       const hasAadhaar = Boolean(formData.documents?.AadhaarCard?.dataUrl);
-      const hasHsc = Boolean(formData.documents?.HSC?.dataUrl);
+      const hasSslc = Boolean(formData.documents?.SSLC?.dataUrl);
       const hasPhoto = Boolean(formData.documents?.PassportSizePhotographs?.dataUrl || formData.studentPhoto?.dataUrl || formData.photoUrl);
 
-      if (!hasAadhaar) {
-        nextErrors.AadhaarCard = 'Aadhaar Card is compulsory. Please upload or capture photo.';
+      const missingCompulsory = [];
+      if (!hasSslc) {
+        nextErrors.SSLC = 'SSLC Certificate is compulsory. Please upload or capture photo.';
+        missingCompulsory.push('SSLC Certificate');
       }
-      if (!hasHsc) {
-        nextErrors.HSC = 'HSC Certificate is compulsory. Please upload or capture photo.';
+      if (!hasAadhaar) {
+        nextErrors.AadhaarCard = 'Aadhaar Document is compulsory. Please upload or capture photo.';
+        missingCompulsory.push('Aadhaar Document');
       }
       if (!hasPhoto) {
         nextErrors.PassportSizePhotographs = 'Student Photograph is compulsory. Please take photo or upload.';
+        missingCompulsory.push('Student Photograph');
+      }
+      if (missingCompulsory.length > 0) {
+        window.alert(`Compulsory Document(s) Missing:\n- ${missingCompulsory.join('\n- ')}\n\nPlease upload the compulsory certificate(s) before proceeding.`);
       }
       if (!formData.declaration) nextErrors.declaration = 'You must agree to the declaration.';
       if (!formData.parentDeclaration) nextErrors.parentDeclaration = 'Parent declaration is required.';
@@ -1142,10 +1225,7 @@ export default function RegisterPage() {
           <legend>Course selection <span className="required-indicator">*</span></legend>
           <div className="choice-grid">
             {availableCourses.map((course) => {
-              const seatInfo = getSeatInfo ? getSeatInfo(course) : { total: 200, balance: 200, filled: 0 };
               const isSelected = formData.coursePreference?.firstPreference === course;
-              const isFull = seatInfo.balance <= 0;
-              const isFillingFast = !isFull && seatInfo.balance <= 30;
 
               return (
                 <button
@@ -1156,60 +1236,15 @@ export default function RegisterPage() {
                   onClick={() => updateCoursePreference(course)}
                   style={{
                     display: 'flex',
-                    flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '6px',
-                    padding: '12px 14px',
+                    padding: '16px 18px',
                     textAlign: 'center',
+                    fontWeight: 750,
+                    fontSize: '1.08rem',
                   }}
                 >
-                  <span style={{ fontWeight: 700, fontSize: '1.05rem', color: isSelected ? '#ffffff' : 'inherit' }}>
-                    {course}
-                  </span>
-                  <div
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      fontSize: '0.82rem',
-                      fontWeight: 600,
-                      padding: '3px 10px',
-                      borderRadius: '999px',
-                      background: isFull
-                        ? '#fee2e2'
-                        : isFillingFast
-                          ? (isSelected ? 'rgba(254, 243, 199, 0.3)' : '#fef3c7')
-                          : (isSelected ? 'rgba(255, 255, 255, 0.22)' : '#f0fdf4'),
-                      color: isFull
-                        ? '#991b1b'
-                        : isFillingFast
-                          ? (isSelected ? '#fef08a' : '#92400e')
-                          : (isSelected ? '#ffffff' : '#166534'),
-                      border: `1px solid ${
-                        isFull
-                          ? '#fecaca'
-                          : isFillingFast
-                            ? '#fde68a'
-                            : (isSelected ? 'rgba(255, 255, 255, 0.4)' : '#86efac')
-                      }`,
-                      flexWrap: 'wrap',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <span>Total: <strong>{seatInfo.total}</strong></span>
-                    <span>|</span>
-                    <span>Filled: <strong>{seatInfo.filled || 0}</strong></span>
-                    <span>|</span>
-                    <span>Balance: <strong>{seatInfo.balance}</strong> seats</span>
-                    <span>|</span>
-                    <span style={{
-                      fontWeight: 800,
-                      color: isFull ? '#991b1b' : (isFillingFast ? (isSelected ? '#fef08a' : '#b45309') : (isSelected ? '#ffffff' : '#15803d'))
-                    }}>
-                      Status: {isFull ? 'Full' : (isFillingFast ? 'Filling Fast' : 'Available')}
-                    </span>
-                  </div>
+                  {course}
                 </button>
               );
             })}
@@ -1705,7 +1740,7 @@ export default function RegisterPage() {
               <div className="full-width" style={{ marginTop: '10px' }}>
                 {/* 1. Bus Selection Dropdown (R1 to R12) */}
                 <div className="field-group full-width">
-                  <label htmlFor="busRouteSelect" style={{ fontWeight: 800, color: '#0f172a' }}>
+                  <label htmlFor="busRouteSelect" style={{ fontWeight: 850, color: '#ffffff', fontSize: '1.25rem', marginBottom: '8px', display: 'block' }}>
                     Select Bus Route (R1 to R12) <span className="required-indicator">*</span>
                   </label>
                   <select
@@ -2131,7 +2166,7 @@ export default function RegisterPage() {
       <div className="card-list">
         <h3>Upload Documents</h3>
         <p className="field-help" style={{ marginBottom: '8px' }}>
-          Upload certificates via photo capture or select files. <strong>Aadhaar Card, HSC Certificate, and Student Photograph are compulsory.</strong> Other certificates are optional.
+          Upload certificates via photo capture or select files. <strong>SSLC Certificate, Aadhaar Card, and Student Photograph are compulsory.</strong> Other certificates are optional.
         </p>
 
         <div className="documents-table-wrapper">
@@ -2150,7 +2185,7 @@ export default function RegisterPage() {
                 const file = formData.documents?.[key] || (key === 'CommunityCertificate' ? formData.documents?.CC : null);
                 const isUploaded = Boolean(file?.dataUrl);
 
-                const isCompulsory = key === 'AadhaarCard' || key === 'HSC' || key === 'PassportSizePhotographs';
+                const isCompulsory = key === 'SSLC' || key === 'AadhaarCard' || key === 'PassportSizePhotographs';
 
                 return (
                   <tr key={key} style={errors[key] ? { background: '#fef2f2' } : {}}>
@@ -2356,12 +2391,12 @@ export default function RegisterPage() {
 
   const goToPreview = () => {
     const hasAadhaar = Boolean(formData.documents?.AadhaarCard?.dataUrl);
-    const hasHsc = Boolean(formData.documents?.HSC?.dataUrl);
+    const hasSslc = Boolean(formData.documents?.SSLC?.dataUrl);
     const hasPhoto = Boolean(formData.documents?.PassportSizePhotographs?.dataUrl || formData.studentPhoto?.dataUrl || formData.photoUrl);
-    if (!hasAadhaar || !hasHsc || !hasPhoto) {
+    if (!hasAadhaar || !hasSslc || !hasPhoto) {
       const missing = [];
-      if (!hasAadhaar) missing.push('Aadhaar Card');
-      if (!hasHsc) missing.push('HSC Certificate');
+      if (!hasSslc) missing.push('SSLC Certificate');
+      if (!hasAadhaar) missing.push('Aadhaar Document');
       if (!hasPhoto) missing.push('Student Photograph');
       window.alert(`Please upload all compulsory documents before proceeding to preview:\n- ${missing.join('\n- ')}\n\nRedirecting to Documents step.`);
       setCurrentStep(7);
