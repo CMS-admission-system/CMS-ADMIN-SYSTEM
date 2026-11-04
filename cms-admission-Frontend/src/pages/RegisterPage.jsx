@@ -16,7 +16,7 @@ const steps = [
   'Accommodation',
   'Education details',
   'Documents and signatures',
-  'Fees Structure',
+  'College Fees Structure',
 ];
 
 const certificateLabels = {
@@ -1512,19 +1512,19 @@ export default function RegisterPage() {
           {formData.hasParents ? (
             <div className="form-grid" style={{ gap: '14px', marginTop: 0 }}>
               <div className="field-group">
-                <label htmlFor="fatherName">Father Name <span className="required-indicator">*</span></label>
+                <label htmlFor="fatherName" style={{ color: "#000000", textShadow: "none" }}>Father Name <span className="required-indicator">*</span></label>
                 <input id="fatherName" required value={formData.fatherName || ''} onChange={(event) => updateField('fatherName', event.target.value)} placeholder="Enter father's full name" />
                 {errors.fatherName ? <small className="error-text">{errors.fatherName}</small> : null}
               </div>
 
               <div className="field-group">
-                <label htmlFor="fatherOccupation">Father Occupation <span className="required-indicator">*</span></label>
+                <label htmlFor="fatherOccupation" style={{ color: "#000000", textShadow: "none" }}>Father Occupation <span className="required-indicator">*</span></label>
                 <input id="fatherOccupation" required value={formData.fatherOccupation || ''} onChange={(event) => updateField('fatherOccupation', event.target.value)} placeholder="Enter father's occupation" />
                 {errors.fatherOccupation ? <small className="error-text">{errors.fatherOccupation}</small> : null}
               </div>
 
               <div className="field-group">
-                <label htmlFor="fatherMobile">Father Mobile Number <span className="required-indicator">*</span></label>
+                <label htmlFor="fatherMobile" style={{ color: "#000000", textShadow: "none" }}>Father Mobile Number <span className="required-indicator">*</span></label>
                 <div className="phone-input">
                   <span aria-hidden="true">+91</span>
                   <input id="fatherMobile" type="tel" required inputMode="numeric" pattern="[6-9][0-9]{9}" maxLength={10} value={formData.fatherMobile || ''} onChange={(event) => updateField('fatherMobile', event.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="10-digit mobile" />
@@ -1533,19 +1533,19 @@ export default function RegisterPage() {
               </div>
 
               <div className="field-group">
-                <label htmlFor="motherName">Mother Name <span className="required-indicator">*</span></label>
+                <label htmlFor="motherName" style={{ color: "#000000", textShadow: "none" }}>Mother Name <span className="required-indicator">*</span></label>
                 <input id="motherName" required value={formData.motherName || ''} onChange={(event) => updateField('motherName', event.target.value)} placeholder="Enter mother's full name" />
                 {errors.motherName ? <small className="error-text">{errors.motherName}</small> : null}
               </div>
 
               <div className="field-group">
-                <label htmlFor="motherOccupation">Mother Occupation <span className="required-indicator">*</span></label>
+                <label htmlFor="motherOccupation" style={{ color: "#000000", textShadow: "none" }}>Mother Occupation <span className="required-indicator">*</span></label>
                 <input id="motherOccupation" required value={formData.motherOccupation || ''} onChange={(event) => updateField('motherOccupation', event.target.value)} placeholder="Enter mother's occupation" />
                 {errors.motherOccupation ? <small className="error-text">{errors.motherOccupation}</small> : null}
               </div>
 
               <div className="field-group">
-                <label htmlFor="motherMobile">Mother Mobile Number <span className="required-indicator">*</span></label>
+                <label htmlFor="motherMobile" style={{ color: "#000000", textShadow: "none" }}>Mother Mobile Number <span className="required-indicator">*</span></label>
                 <div className="phone-input">
                   <span aria-hidden="true">+91</span>
                   <input id="motherMobile" type="tel" required inputMode="numeric" pattern="[6-9][0-9]{9}" maxLength={10} value={formData.motherMobile || ''} onChange={(event) => updateField('motherMobile', event.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="10-digit mobile" />
@@ -1624,19 +1624,19 @@ export default function RegisterPage() {
           {formData.hasGuardian ? (
             <div className="form-grid" style={{ gap: '14px', marginTop: 0 }}>
               <div className="field-group">
-                <label htmlFor="guardianName">Guardian Name <span className="required-indicator">*</span></label>
+                <label htmlFor="guardianName" style={{ color: "#000000", textShadow: "none" }}>Guardian Name <span className="required-indicator">*</span></label>
                 <input id="guardianName" required value={formData.guardianName || ''} onChange={(event) => updateField('guardianName', event.target.value)} placeholder="Enter guardian's full name" />
                 {errors.guardianName ? <small className="error-text">{errors.guardianName}</small> : null}
               </div>
 
               <div className="field-group">
-                <label htmlFor="guardianOccupation">Guardian Occupation <span className="required-indicator">*</span></label>
+                <label htmlFor="guardianOccupation" style={{ color: "#000000", textShadow: "none" }}>Guardian Occupation <span className="required-indicator">*</span></label>
                 <input id="guardianOccupation" required value={formData.guardianOccupation || ''} onChange={(event) => updateField('guardianOccupation', event.target.value)} placeholder="Enter guardian's occupation" />
                 {errors.guardianOccupation ? <small className="error-text">{errors.guardianOccupation}</small> : null}
               </div>
 
               <div className="field-group">
-                <label htmlFor="guardianMobile">Guardian Mobile Number <span className="required-indicator">*</span></label>
+                <label htmlFor="guardianMobile" style={{ color: "#000000", textShadow: "none" }}>Guardian Mobile Number <span className="required-indicator">*</span></label>
                 <div className="phone-input">
                   <span aria-hidden="true">+91</span>
                   <input id="guardianMobile" type="tel" required inputMode="numeric" pattern="[6-9][0-9]{9}" maxLength={10} value={formData.guardianMobile || ''} onChange={(event) => updateField('guardianMobile', event.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="10-digit mobile" />
@@ -1875,7 +1875,7 @@ export default function RegisterPage() {
                     <div style={{ marginTop: '18px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
                         <div>
-                          <label htmlFor="boardingStop" style={{ display: 'block', fontWeight: 800, color: '#0f172a', fontSize: '0.98rem' }}>
+                          <label htmlFor="boardingStop" className="pickup-location-label" style={{ display: 'block', fontWeight: 800, color: '#000000', fontSize: '0.98rem', textShadow: 'none' }}>
                             Select Pickup Location <span className="required-indicator">{isR7 ? '' : '*'}</span>
                           </label>
                           <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
@@ -2149,7 +2149,7 @@ export default function RegisterPage() {
       )}
       <div className="field-group full-width summary-box cutoff-summary" aria-live="polite">
         <strong>Calculated Cutoff Mark</strong>
-        <p>
+        <p style={{ color: '#000000', textShadow: 'none' }}>
           {!formData.hscGroup
             ? '— / 200'
             : !hasCutoffEligibleSubjects
@@ -2166,9 +2166,6 @@ export default function RegisterPage() {
     return (
       <div className="card-list">
         <h3>Upload Documents</h3>
-        <p className="field-help" style={{ marginBottom: '8px' }}>
-          Upload certificates via photo capture or select files. <strong>SSLC Certificate, Aadhaar Card, and Student Photograph are compulsory.</strong> Other certificates are optional.
-        </p>
 
         <div className="documents-table-wrapper">
           <table className="excel-docs-table">
@@ -2223,7 +2220,7 @@ export default function RegisterPage() {
                             title="Take photo with mobile camera"
                             style={{ margin: 0, padding: '4px 8px', fontSize: '0.76rem' }}
                           >
-                            <Camera size={13} /> Take Photo
+                            <Camera size={13} color="#000000" /> <span style={{ color: "#000000" }}>Take Photo</span>
                             <input
                               type="file"
                               accept="image/*"
@@ -2243,7 +2240,7 @@ export default function RegisterPage() {
                             style={{ margin: 0, padding: '4px 8px', fontSize: '0.76rem', cursor: 'pointer' }}
                             onClick={() => setCameraModalDocKey(key)}
                           >
-                            <Camera size={13} /> Take Photo
+                            <Camera size={13} color="#000000" /> <span style={{ color: "#000000" }}>Take Photo</span>
                           </button>
                         )}
 
@@ -2252,7 +2249,7 @@ export default function RegisterPage() {
                           title="Choose image or PDF file"
                           style={{ margin: 0, padding: '4px 8px', fontSize: '0.76rem' }}
                         >
-                          <ImagePlus size={13} /> Choose Image
+                          <ImagePlus size={13} color="#000000" /> <span style={{ color: "#000000" }}>Choose Image</span>
                           <input
                             type="file"
                             accept={key === 'PassportSizePhotographs' ? 'image/*' : 'image/*,application/pdf'}
@@ -2329,12 +2326,12 @@ export default function RegisterPage() {
         </p>
 
         <div className="declaration-panel">
-          <label className="checkbox-row">
+          <label className="checkbox-row" style={{ color: '#000000', textShadow: 'none' }}>
             <input type="checkbox" checked={!!formData.declaration} onChange={(event) => updateField('declaration', event.target.checked)} />
             Student declaration <span className="required-indicator">*</span>
           </label>
           {errors.declaration ? <small className="error-text">{errors.declaration}</small> : null}
-          <label className="checkbox-row">
+          <label className="checkbox-row" style={{ color: '#000000', textShadow: 'none' }}>
             <input type="checkbox" checked={!!formData.parentDeclaration} onChange={(event) => updateField('parentDeclaration', event.target.checked)} />
             Parent declaration <span className="required-indicator">*</span>
           </label>
@@ -2406,7 +2403,11 @@ export default function RegisterPage() {
               <span className="admissions-portal-label">Admissions Portal</span>
               <span className="completion-count">{completedStepCount}/{steps.length}</span>
             </p>
-            {currentStep !== 1 ? <h2>{steps[currentStep - 1]}</h2> : null}
+            {currentStep !== 1 ? (
+              <h2 className={currentStep === steps.length ? 'college-fees-heading-black' : ''} style={currentStep === steps.length ? { color: '#000000', textShadow: 'none' } : {}}>
+                {steps[currentStep - 1]}
+              </h2>
+            ) : null}
           </div>
         </div>
 

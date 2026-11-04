@@ -160,7 +160,7 @@ export default function SignaturePadBox({
   return (
     <div className="signature-box-card">
       <div className="signature-box-header">
-        <label className="signature-box-label">
+        <label className="signature-box-label" style={{ color: '#000000', textShadow: 'none' }}>
           {title} {required ? <span className="required-indicator" style={{ color: '#006747' }}>*</span> : null}
         </label>
         {isSigned ? (
@@ -199,8 +199,8 @@ export default function SignaturePadBox({
       </div>
 
       <div className="signature-toolbar">
-        <label className="secondary-btn compact signature-tool-btn" title="Take a photo of your signature">
-          <Camera size={14} /> Take Photo
+        <label className="secondary-btn compact signature-tool-btn" title="Take a photo of your signature" style={{ color: '#000000' }}>
+          <Camera size={14} color="#000000" /> <span style={{ color: '#000000' }}>Take Photo</span>
           <input
             type="file"
             accept="image/*"
@@ -210,8 +210,8 @@ export default function SignaturePadBox({
           />
         </label>
 
-        <label className="secondary-btn compact signature-tool-btn" title="Choose a signature image file">
-          <ImagePlus size={14} /> Choose/Take Image
+        <label className="secondary-btn compact signature-tool-btn" title="Choose a signature image file" style={{ color: '#000000' }}>
+          <ImagePlus size={14} color="#000000" /> <span style={{ color: '#000000' }}>Choose Image</span>
           <input
             type="file"
             accept="image/*"

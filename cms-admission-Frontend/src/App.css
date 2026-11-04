@@ -2408,10 +2408,9 @@ fieldset legend,
 }
 
 /* Form labels outside the 3 excluded pages in WHITE */
-label:not(.preview-shell label):not(.cms-paper-wrapper label):not(.admission-paper-sheet label):not(.excel-docs-table label):not(.documents-table-wrapper label):not(.fees-step label):not(.fee-summary-card label):not(.payment-verification-box label),
-.field-group > label:not(.preview-shell label):not(.cms-paper-wrapper label):not(.admission-paper-sheet label):not(.excel-docs-table label):not(.documents-table-wrapper label):not(.fees-step label):not(.payment-verification-box label),
-.field-label:not(.preview-shell *):not(.cms-paper-wrapper *):not(.excel-docs-table *):not(.fees-step *):not(.payment-verification-box *),
-.signature-box-label:not(.preview-shell *):not(.cms-paper-wrapper *) {
+label:not(.preview-shell label):not(.cms-paper-wrapper label):not(.admission-paper-sheet label):not(.excel-docs-table label):not(.documents-table-wrapper label):not(.fees-step label):not(.fee-summary-card label):not(.payment-verification-box label):not(.parent-panel-card label):not(.parents-two-panel-grid label):not(.pickup-location-label):not(label[for="boardingStop"]):not(.declaration-panel label),
+.field-group > label:not(.preview-shell label):not(.cms-paper-wrapper label):not(.admission-paper-sheet label):not(.excel-docs-table label):not(.documents-table-wrapper label):not(.fees-step label):not(.payment-verification-box label):not(.parent-panel-card label):not(.parents-two-panel-grid label):not(.pickup-location-label):not(label[for="boardingStop"]):not(.declaration-panel label),
+.field-label:not(.preview-shell *):not(.cms-paper-wrapper *):not(.excel-docs-table *):not(.fees-step *):not(.payment-verification-box *):not(.parent-panel-card *):not(.parents-two-panel-grid *) {
   font-size: 1.08rem !important;
   font-weight: 800 !important;
   color: #ffffff !important;
@@ -2423,8 +2422,7 @@ label:not(.preview-shell label):not(.cms-paper-wrapper label):not(.admission-pap
 .form-step-description:not(.preview-shell *):not(.cms-paper-wrapper *),
 .declaration-text:not(.preview-shell *):not(.cms-paper-wrapper *),
 .upload-storage-note:not(.preview-shell *):not(.cms-paper-wrapper *):not(.documents-table-wrapper *),
-.success-detail:not(.preview-shell *):not(.cms-paper-wrapper *),
-.form-panel p:not(.preview-shell *):not(.cms-paper-wrapper *):not(.documents-table-wrapper *):not(.fees-step *):not(.bus-route-display-card *) {
+.form-panel p:not(.preview-shell *):not(.cms-paper-wrapper *):not(.documents-table-wrapper *):not(.fees-step *):not(.bus-route-display-card *):not(.cutoff-summary p):not(.payment-method-heading-black) {
   color: #ffffff !important;
   font-size: 1rem !important;
   font-weight: 700 !important;
@@ -2432,9 +2430,8 @@ label:not(.preview-shell label):not(.cms-paper-wrapper label):not(.admission-pap
 }
 
 /* Headings in WHITE and larger font sizes */
-.form-panel h2:not(.preview-shell *):not(.cms-paper-wrapper *),
-.section-header h2:not(.preview-shell *):not(.cms-paper-wrapper *),
-.payment-panel h2 {
+.form-panel h2:not(.preview-shell *):not(.cms-paper-wrapper *):not(.college-fees-heading-black):not(.payment-heading-black),
+.section-header h2:not(.preview-shell *):not(.cms-paper-wrapper *):not(.college-fees-heading-black):not(.payment-heading-black) {
   font-size: clamp(1.65rem, 2.6vw, 2.2rem) !important;
   font-weight: 900 !important;
   color: #ffffff !important;
@@ -2661,4 +2658,69 @@ label:not(.preview-shell label):not(.cms-paper-wrapper label):not(.admission-pap
   .dashboard-filters {
     grid-template-columns: 1fr;
   }
+}
+
+/* Targeted Black and Blue UI Customizations for Register / Application Pages */
+.parent-panel-card label,
+.parents-two-panel-grid label {
+  color: #000000 !important;
+  text-shadow: none !important;
+}
+
+.pickup-location-label,
+label[for="boardingStop"] {
+  color: #000000 !important;
+  text-shadow: none !important;
+}
+
+.cutoff-summary p {
+  color: #000000 !important;
+  text-shadow: none !important;
+}
+
+.signature-box-label {
+  font-size: 1.08rem !important;
+  font-weight: 800 !important;
+  color: #000000 !important;
+  text-shadow: none !important;
+}
+
+.signature-tool-btn:not(.danger),
+.doc-actions .signature-tool-btn:not(.danger),
+.signature-toolbar .signature-tool-btn:not(.danger) {
+  color: #000000 !important;
+}
+
+.declaration-panel label,
+.declaration-panel .checkbox-row {
+  color: #000000 !important;
+  text-shadow: none !important;
+}
+
+.college-fees-heading-black,
+.form-panel h2.college-fees-heading-black,
+.fees-step h2,
+.fees-step h3,
+.fee-structure-preview h2,
+.fee-structure-preview h3 {
+  color: #000000 !important;
+  text-shadow: none !important;
+}
+
+.payment-heading-black,
+.payment-panel h2,
+.payment-panel h2.payment-heading-black {
+  color: #000000 !important;
+  text-shadow: none !important;
+}
+
+.payment-method-heading-black {
+  color: #000000 !important;
+  text-shadow: none !important;
+}
+
+.success-detail,
+.success-card .success-detail {
+  color: #2563eb !important;
+  text-shadow: none !important;
 }

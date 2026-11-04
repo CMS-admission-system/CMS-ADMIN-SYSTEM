@@ -51,7 +51,7 @@ export default function ApplicationSuccessPage() {
         <div className="success-icon"><CheckCircle2 size={54} /></div>
         <p className="eyebrow accent">Application Submitted</p>
         <h2>Thank you, {studentName}.</h2>
-        <p className="success-detail">Your admission application has been received successfully.</p>
+        <p className="success-detail" style={{ color: '#2563eb', textShadow: 'none' }}>Your admission application has been received successfully.</p>
 
         <div className="success-meta">
           <div className="meta-block">

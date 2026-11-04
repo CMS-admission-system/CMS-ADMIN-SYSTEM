@@ -192,7 +192,7 @@ export default function AdmissionPaymentPage() {
         <div className="section-header">
           <div>
             <p className="eyebrow accent">Admission Payment</p>
-            <h2 style={{ color: '#ffffff', fontSize: '1.95rem', fontWeight: 850 }}>Seat confirmation payment</h2>
+            <h2 className="payment-heading-black" style={{ color: '#000000', fontSize: '1.95rem', fontWeight: 850, textShadow: 'none' }}>Seat Confirmation Payment</h2>
             {fromAdmin && targetApp ? (
               <p style={{ margin: '6px 0 0', fontSize: '1rem', color: '#ffffff', fontWeight: 700 }}>
                 Processing payment for: <strong style={{ color: '#ffffff', textDecoration: 'underline' }}>{targetApp.studentName}</strong> ({targetApp.coursePreference?.firstPreference || 'Course'})
@@ -232,7 +232,7 @@ export default function AdmissionPaymentPage() {
 
         {/* Method Switcher Header */}
         <div style={{ margin: '24px 0 12px' }}>
-          <p style={{ margin: '0 0 12px', fontSize: '1.15rem', fontWeight: 800, color: '#ffffff' }}>
+          <p className="payment-method-heading-black" style={{ margin: '0 0 12px', fontSize: '1.15rem', fontWeight: 800, color: '#000000', textShadow: 'none' }}>
             Select Payment Verification Method:
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
