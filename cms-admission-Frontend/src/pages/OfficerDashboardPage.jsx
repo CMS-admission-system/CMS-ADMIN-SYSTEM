@@ -15,7 +15,8 @@ import {
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
-import { downloadApplicationsCsv, formatDate } from '../utils/helpers';
+import { downloadApplicationsCsv, formatDate, calculateCutoff, downloadElementAsPdf } from '../utils/helpers';
+import AdmissionPaperView from '../components/AdmissionPaperView';
 
 export default function OfficerDashboardPage() {
   const navigate = useNavigate();
@@ -31,6 +32,33 @@ export default function OfficerDashboardPage() {
   const [categoryFilter, setCategoryFilter] = useState('');
   const [courseFilter, setCourseFilter] = useState('');
   const [activeCategoryModal, setActiveCategoryModal] = useState(null);
+  const [pdfRenderStudent, setPdfRenderStudent] = useState(null);
+  const [downloadingId, setDownloadingId] = useState(null);
+
+  const handleDownloadPdf = async (student) => {
+    if (!student) return;
+    setDownloadingId(student.id);
+    setPdfRenderStudent(student);
+
+    await new Promise((resolve) => setTimeout(resolve, 150));
+
+    try {
+      const cleanName = String(student.studentName || 'Student').trim().replace(/[^a-zA-Z0-9_-]/g, '_');
+      const filename = `CMS_Admission_Form_${student.formNumber || student.id}_${cleanName}.pdf`;
+      const targetElement = document.querySelector('#officer-pdf-render-slot .admission-paper-sheet, #officer-pdf-render-slot .cms-paper-form');
+      if (!targetElement) {
+        window.alert('Unable to generate application document for PDF export.');
+        return;
+      }
+      await downloadElementAsPdf(targetElement, filename);
+    } catch (err) {
+      console.error('Error generating PDF:', err);
+      window.alert('Failed to generate PDF. Please try again.');
+    } finally {
+      setDownloadingId(null);
+      setPdfRenderStudent(null);
+    }
+  };
 
   const normalizedSearch = searchTerm.trim().toLocaleLowerCase();
 
@@ -164,13 +192,10 @@ export default function OfficerDashboardPage() {
             </button>
           </div>
 
-          {/* Navigation Items: Home, Edit, Logout with suitable icons */}
+          {/* Navigation Items: Home, Logout with suitable icons */}
           <nav className="admin-nav">
             <Link to="/officer/dashboard" className="nav-item active" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
               <Home size={15} /> Home
-            </Link>
-            <Link to="/officer/documents" className="nav-item" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-              <FileEdit size={15} /> Edit
             </Link>
             <button
               type="button"
@@ -270,7 +295,7 @@ export default function OfficerDashboardPage() {
         </div>
 
         {/* Status Counts Grid */}
-        <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', marginBottom: '20px' }}>
+        <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '24px', width: '100%' }}>
           <div className="stat-card">
             <span>Enquiring</span>
             <strong>{applications.filter((app) => app.status === 'Enquiring').length}</strong>
@@ -282,78 +307,6 @@ export default function OfficerDashboardPage() {
           <div className="stat-card">
             <span>Sent to VC</span>
             <strong>{applications.filter((app) => app.status === 'Sent to VC' || app.status === 'Forwarded to VC').length}</strong>
-          </div>
-        </div>
-
-        {/* 3. Confirmed Category Summary Box with clickable icons */}
-        <div className="content-panel" style={{
-          background: 'rgba(255, 255, 255, 0.45)',
-          backdropFilter: 'blur(3px)',
-          border: '1px solid rgba(22, 101, 52, 0.2)',
-          borderRadius: '16px',
-          padding: '18px 24px',
-          marginBottom: '24px'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
-            <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#166534', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
-              Confirmed Category Summary
-            </h3>
-            <span style={{ fontSize: '0.85rem', color: '#166534', fontWeight: 700, background: '#dcfce7', padding: '4px 12px', borderRadius: '999px', border: '1px solid #bbf7d0' }}>
-              Total Confirmed &amp; Paid: {confirmedStudents.length}
-            </span>
-          </div>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-            gap: '14px'
-          }}>
-            <div
-              style={{ background: '#ffffff', borderRadius: '12px', padding: '14px 18px', border: '1px solid #e5e7eb', boxShadow: '0 2px 4px rgba(0,0,0,0.04)', cursor: 'pointer', transition: 'all 0.2s ease' }}
-              onClick={() => setActiveCategoryModal('Transport')}
-              title="Click to view Confirmed Transport Students"
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#166534', marginBottom: '4px' }}>
-                <Bus size={18} />
-                <p style={{ margin: 0, fontSize: '0.88rem', fontWeight: 700 }}>Transport</p>
-              </div>
-              <strong style={{ fontSize: '1.7rem', color: '#166534', fontWeight: 800 }}>{transportCount}</strong>
-            </div>
-
-            <div
-              style={{ background: '#ffffff', borderRadius: '12px', padding: '14px 18px', border: '1px solid #e5e7eb', boxShadow: '0 2px 4px rgba(0,0,0,0.04)', cursor: 'pointer', transition: 'all 0.2s ease' }}
-              onClick={() => setActiveCategoryModal('Hostel')}
-              title="Click to view Confirmed Hostel Students"
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#166534', marginBottom: '4px' }}>
-                <Building2 size={18} />
-                <p style={{ margin: 0, fontSize: '0.88rem', fontWeight: 700 }}>Hostel</p>
-              </div>
-              <strong style={{ fontSize: '1.7rem', color: '#166534', fontWeight: 800 }}>{hostelCount}</strong>
-            </div>
-
-            <div
-              style={{ background: '#ffffff', borderRadius: '12px', padding: '14px 18px', border: '1px solid #e5e7eb', boxShadow: '0 2px 4px rgba(0,0,0,0.04)', cursor: 'pointer', transition: 'all 0.2s ease' }}
-              onClick={() => setActiveCategoryModal('FG')}
-              title="Click to view Confirmed First Graduate Students"
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#166534', marginBottom: '4px' }}>
-                <GraduationCap size={18} />
-                <p style={{ margin: 0, fontSize: '0.88rem', fontWeight: 700 }}>First Graduate (FG)</p>
-              </div>
-              <strong style={{ fontSize: '1.7rem', color: '#166534', fontWeight: 800 }}>{fgCount}</strong>
-            </div>
-
-            <div
-              style={{ background: '#ffffff', borderRadius: '12px', padding: '14px 18px', border: '1px solid #e5e7eb', boxShadow: '0 2px 4px rgba(0,0,0,0.04)', cursor: 'pointer', transition: 'all 0.2s ease' }}
-              onClick={() => setActiveCategoryModal('Sports')}
-              title="Click to view Confirmed Sports Quota Students"
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#166534', marginBottom: '4px' }}>
-                <Trophy size={18} />
-                <p style={{ margin: 0, fontSize: '0.88rem', fontWeight: 700 }}>Sports</p>
-              </div>
-              <strong style={{ fontSize: '1.7rem', color: '#166534', fontWeight: 800 }}>{sportsCount}</strong>
-            </div>
           </div>
         </div>
 
@@ -400,6 +353,16 @@ export default function OfficerDashboardPage() {
                         title="Process Seat Confirmation Payment"
                       >
                         Confirm
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-review"
+                        onClick={() => handleDownloadPdf(app)}
+                        disabled={downloadingId === app.id}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
+                        title="Download Complete Student Application Form PDF"
+                      >
+                        <Download size={13} /> {downloadingId === app.id ? 'Saving...' : 'PDF'}
                       </button>
                       <Link
                         to={`/officer/application/${app.id}`}
@@ -466,6 +429,16 @@ export default function OfficerDashboardPage() {
                   <td><span className="badge badge-success">Confirmed</span></td>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        className="btn-review"
+                        onClick={() => handleDownloadPdf(app)}
+                        disabled={downloadingId === app.id}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
+                        title="Download Complete Student Application Form PDF"
+                      >
+                        <Download size={13} /> {downloadingId === app.id ? 'Saving...' : 'PDF'}
+                      </button>
                       <Link
                         to={`/officer/application/${app.id}`}
                         className="btn-review"
@@ -545,6 +518,16 @@ export default function OfficerDashboardPage() {
                   <td><span className="badge badge-success">Sent to VC</span></td>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <button
+                        type="button"
+                        className="btn-review"
+                        onClick={() => handleDownloadPdf(app)}
+                        disabled={downloadingId === app.id}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
+                        title="Download Complete Student Application Form PDF"
+                      >
+                        <Download size={13} /> {downloadingId === app.id ? 'Saving...' : 'PDF'}
+                      </button>
                       <Link
                         to={`/officer/application/${app.id}`}
                         className="btn-review"
@@ -680,6 +663,31 @@ export default function OfficerDashboardPage() {
           </div>
         </div>
       ) : null}
+
+      {/* Hidden offscreen container for high-fidelity PDF capture */}
+      <div
+        id="officer-pdf-render-slot"
+        style={{
+          position: 'fixed',
+          left: '-9999px',
+          top: 0,
+          width: '900px',
+          zIndex: -999,
+          background: '#ffffff',
+          visibility: pdfRenderStudent ? 'visible' : 'hidden',
+          pointerEvents: 'none',
+        }}
+      >
+        {pdfRenderStudent && (
+          <AdmissionPaperView
+            draft={pdfRenderStudent}
+            cutoff={calculateCutoff(pdfRenderStudent)}
+            uploadedDocuments={pdfRenderStudent.documents || pdfRenderStudent.uploadedDocuments}
+            feeStructure={pdfRenderStudent.feeStructure}
+            paymentReceipt={pdfRenderStudent.paymentReceipt}
+          />
+        )}
+      </div>
     </main>
   );
 }

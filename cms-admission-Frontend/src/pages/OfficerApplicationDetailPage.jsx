@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft,
   CheckCheck,
+  Download,
   Eye,
   FileEdit,
   FileText,
@@ -15,7 +16,7 @@ import {
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import AdmissionPaperView from '../components/AdmissionPaperView';
-import { formatDate } from '../utils/helpers';
+import { formatDate, downloadElementAsPdf } from '../utils/helpers';
 
 const officeDocuments = [
   ['SSLC', 'SSLC Certificate'],
@@ -50,6 +51,26 @@ export default function OfficerApplicationDetailPage() {
   const [selectedFilePreview, setSelectedFilePreview] = useState(null);
   const [saveSuccessMsg, setSaveSuccessMsg] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+
+  const handleDownloadPdf = async () => {
+    const cleanName = String(draftApplication.studentName || application.studentName || 'Student').trim().replace(/[^a-zA-Z0-9_-]/g, '_');
+    const filename = `CMS_Admission_Form_${draftApplication.formNumber || draftApplication.id || application.id}_${cleanName}.pdf`;
+    const targetElement = document.querySelector('.admission-paper-sheet, .cms-paper-form');
+    if (!targetElement) {
+      window.alert('Unable to find document sheet for PDF export.');
+      return;
+    }
+    setIsDownloadingPdf(true);
+    try {
+      await downloadElementAsPdf(targetElement, filename);
+    } catch (err) {
+      console.error('Error generating PDF:', err);
+      window.alert('Failed to generate PDF. Please try again.');
+    } finally {
+      setIsDownloadingPdf(false);
+    }
+  };
 
   // Synchronize draft when application updates
   useEffect(() => {
@@ -209,14 +230,11 @@ export default function OfficerApplicationDetailPage() {
           </div>
         </div>
 
-        {/* RIGHT SIDE: Home, Edit, Logout */}
+        {/* RIGHT SIDE: Home, Logout */}
         <div className="header-right-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginLeft: 'auto' }}>
           <nav className="admin-nav" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Link to="/officer/dashboard" className="nav-item" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
               <Home size={15} /> Home
-            </Link>
-            <Link to={`/officer/documents?id=${encodeURIComponent(application.id)}`} className="nav-item" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-              <FileEdit size={15} /> Edit
             </Link>
             <button
               type="button"
@@ -244,6 +262,16 @@ export default function OfficerApplicationDetailPage() {
               onClick={() => navigate('/officer/dashboard')}
             >
               <ArrowLeft size={16} /> Back to Home
+            </button>
+            <button
+              type="button"
+              className="primary-btn compact"
+              onClick={handleDownloadPdf}
+              disabled={isDownloadingPdf}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              title="Download Complete Student Application Form PDF"
+            >
+              <Download size={16} /> {isDownloadingPdf ? 'Generating PDF...' : 'Download PDF'}
             </button>
             <button
               type="button"
@@ -561,6 +589,15 @@ export default function OfficerApplicationDetailPage() {
           <div className="form-actions" style={{ marginTop: '24px' }}>
             <button type="button" className="secondary-btn" onClick={() => navigate('/officer/dashboard')}>
               <ArrowLeft size={16} /> Back to Home
+            </button>
+            <button
+              type="button"
+              className="primary-btn"
+              onClick={handleDownloadPdf}
+              disabled={isDownloadingPdf}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            >
+              <Download size={16} /> {isDownloadingPdf ? 'Generating PDF...' : 'Download PDF'}
             </button>
             <button type="button" className="primary-btn" onClick={handleSave} disabled={isSaving} style={{ background: '#166534', borderColor: '#14532d' }}>
               <Save size={16} /> {isSaving ? 'Saving...' : 'Save All Changes'}

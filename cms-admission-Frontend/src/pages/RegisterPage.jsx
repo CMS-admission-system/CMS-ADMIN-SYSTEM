@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, ArrowRight, Camera, CheckCircle2, Eye, ImagePlus, Search, Trash2, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Camera, CheckCircle2, Download, Eye, ImagePlus, Search, Trash2, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import SignaturePadBox from '../components/SignaturePadBox';
@@ -547,7 +547,7 @@ function formatAadhaar(value) {
 
 export default function RegisterPage() {
   const navigate = useNavigate();
-  const { draft, saveDraft, getSeatInfo, courseSeats } = useAppContext();
+  const { draft, saveDraft, getSeatInfo, courseSeats, paymentSettings } = useAppContext();
   const savedProgramme = draft?.programme || '';
   const savedDegree = PROGRAMME_COURSES[savedProgramme]?.[draft?.degree] ? draft.degree : '';
   const savedCourses = PROGRAMME_COURSES[savedProgramme]?.[savedDegree] || [];
@@ -2346,7 +2346,22 @@ export default function RegisterPage() {
   const renderFeeStructureStep = () => {
     return (
       <section className="fee-structure-preview">
-        <h3>College Fee Structure</h3>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '14px' }}>
+          <h3 style={{ margin: 0 }}>College Fee Structure</h3>
+          {paymentSettings?.feeStructure?.dataUrl ? (
+            <a
+              href={paymentSettings.feeStructure.dataUrl}
+              download={paymentSettings.feeStructure.name || 'CMS_College_Fee_Structure.pdf'}
+              target="_blank"
+              rel="noreferrer"
+              className="primary-btn compact"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'none' }}
+              title="Download official Vice Chairman approved fee schedule"
+            >
+              <Download size={14} /> Download Official Fee Sheet ({paymentSettings.feeStructure.name})
+            </a>
+          ) : null}
+        </div>
         <div className="table-scroll">
           <table className="fee-table">
             <thead>

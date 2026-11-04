@@ -10,19 +10,29 @@ import {
   FileText,
   GraduationCap,
   Home,
+  Image,
   LayoutGrid,
   LogOut,
   Printer,
   Save,
   Search,
+  Trash2,
   Trophy,
+  Upload,
   X,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import AdmissionPaperView from '../components/AdmissionPaperView';
 import ApplicationDocuments from '../components/ApplicationDocuments';
-import { downloadApplicationsCsv, downloadElementAsPdf, formatDate, DEFAULT_COURSE_SEAT_QUOTAS, normalizeCourseName } from '../utils/helpers';
+import {
+  downloadApplicationsCsv,
+  downloadElementAsPdf,
+  formatDate,
+  DEFAULT_COURSE_SEAT_QUOTAS,
+  normalizeCourseName,
+  calculateCutoff,
+} from '../utils/helpers';
 
 const COURSE_GROUPS = [
   {
@@ -63,16 +73,28 @@ const COURSE_GROUPS = [
 
 export default function VCDashboardPage() {
   const navigate = useNavigate();
-  const { applications, logoutDemoUser, courseSeats, updateCourseSeats } = useAppContext();
+  const {
+    applications,
+    logoutDemoUser,
+    courseSeats,
+    updateCourseSeats,
+    backgroundSettings,
+    setBackgroundSettings,
+    paymentSettings,
+    setPaymentSettings,
+  } = useAppContext();
 
-  // Navigation tab state: 'overview' (Category Overview), 'seats' (Course Seats Quotas), or 'edit' (Applications from Admission Office)
-  const [activeTab, setActiveTab] = useState('overview');
+  // Navigation tab state: 'home' (Overall Forwarded Student List), 'overview' (Category Overview), 'seats' (Course Seats Quotas), or 'edit' (VC Portal Settings)
+  const [activeTab, setActiveTab] = useState('home');
   const [selectedCategory, setSelectedCategory] = useState('Transport');
   const [searchTerm, setSearchTerm] = useState('');
   const [categorySearchTerm, setCategorySearchTerm] = useState('');
   const [selectedStudentPreview, setSelectedStudentPreview] = useState(null);
   const [selectedFileModal, setSelectedFileModal] = useState(null);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const [pdfRenderStudent, setPdfRenderStudent] = useState(null);
+  const [downloadingStudentId, setDownloadingStudentId] = useState(null);
+  const [settingsNotice, setSettingsNotice] = useState('');
 
   // Exclusive VC Course Seat Editor state
   const [editableSeats, setEditableSeats] = useState({});
@@ -221,21 +243,112 @@ export default function VCDashboardPage() {
     downloadApplicationsCsv(activeCategoryStudents, `cms-vc-${selectedCategory.toLowerCase()}-students.csv`);
   };
 
-  const handleDownloadPdf = async (student) => {
-    const cleanName = String(student.studentName || 'Student').trim().replace(/[^a-zA-Z0-9_-]/g, '_');
-    const filename = `CMS_Admission_Form_${student.formNumber || student.id}_${cleanName}.pdf`;
-    const targetElement = document.querySelector('.admission-paper-sheet, .cms-paper-form');
-    if (!targetElement) {
-      window.alert('Application form document sheet not found.');
+  const handleFeeStructureUpload = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 20 * 1024 * 1024) {
+      window.alert('Fee structure file must be smaller than 20MB.');
       return;
     }
-    setIsDownloadingPdf(true);
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target.result;
+      const nextFee = {
+        name: file.name,
+        dataUrl,
+        mimeType: file.type || (file.name.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg'),
+        size: file.size,
+        uploadedAt: new Date().toISOString(),
+      };
+      setPaymentSettings((prev) => ({
+        ...prev,
+        feeStructure: nextFee,
+      }));
+      setSettingsNotice('Official Fee Structure uploaded and saved successfully!');
+      setTimeout(() => setSettingsNotice(''), 4500);
+    };
+    reader.readAsDataURL(file);
+    event.target.value = '';
+  };
+
+  const handleDeleteFeeStructure = () => {
+    if (window.confirm('Are you sure you want to remove the uploaded Fee Structure?')) {
+      setPaymentSettings((prev) => ({
+        ...prev,
+        feeStructure: null,
+      }));
+      setSettingsNotice('Fee Structure removed successfully.');
+      setTimeout(() => setSettingsNotice(''), 4500);
+    }
+  };
+
+  const handleBackgroundImageUpload = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 20 * 1024 * 1024) {
+      window.alert('Background image must be smaller than 20MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target.result;
+      const nextBg = {
+        enabled: true,
+        backgroundImageDataUrl: dataUrl,
+        videoDataUrl: dataUrl,
+        mimeType: file.type || 'image/jpeg',
+        updatedAt: new Date().toISOString(),
+      };
+      setBackgroundSettings(nextBg);
+      setSettingsNotice('Portal background image updated and saved successfully!');
+      setTimeout(() => setSettingsNotice(''), 4500);
+    };
+    reader.readAsDataURL(file);
+    event.target.value = '';
+  };
+
+  const handleDeleteBackgroundImage = () => {
+    if (window.confirm('Reset background to default college campus image?')) {
+      setBackgroundSettings({
+        enabled: true,
+        backgroundImageDataUrl: '',
+        videoDataUrl: '',
+        mimeType: '',
+        updatedAt: new Date().toISOString(),
+      });
+      setSettingsNotice('Background image reset to default campus image.');
+      setTimeout(() => setSettingsNotice(''), 4500);
+    }
+  };
+
+  const handleDownloadPdf = async (student) => {
+    if (!student) return;
+    setDownloadingStudentId(student.id);
+    setPdfRenderStudent(student);
+
+    await new Promise((resolve) => setTimeout(resolve, 150));
+
     try {
+      const cleanName = String(student.studentName || 'Student').trim().replace(/[^a-zA-Z0-9_-]/g, '_');
+      const filename = `CMS_Admission_Form_${student.formNumber || student.id}_${cleanName}.pdf`;
+      const targetElement = document.querySelector('#vc-pdf-render-slot .admission-paper-sheet, #vc-pdf-render-slot .cms-paper-form, .admission-paper-sheet, .cms-paper-form');
+      if (!targetElement) {
+        window.alert('Application form document sheet not found.');
+        return;
+      }
+      setIsDownloadingPdf(true);
       await downloadElementAsPdf(targetElement, filename);
     } catch (err) {
       console.error('Error saving PDF:', err);
+      window.alert('Failed to generate PDF. Please try again.');
     } finally {
       setIsDownloadingPdf(false);
+      setDownloadingStudentId(null);
+      setPdfRenderStudent(null);
     }
   };
 
@@ -251,9 +364,21 @@ export default function VCDashboardPage() {
           </div>
         </div>
 
-        {/* RIGHT SIDE of Green Box: Category Overview, Edit, Logout */}
+        {/* RIGHT SIDE of Green Box: Home, Category Overview, Course Seats, Edit, Logout */}
         <div className="header-right-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginLeft: 'auto' }}>
           <nav className="admin-nav" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button
+              type="button"
+              className={`nav-item ${activeTab === 'home' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveTab('home');
+                setSelectedStudentPreview(null);
+              }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+              title="Home: View Complete Overall Student List Sent by Admin"
+            >
+              <Home size={15} /> Home
+            </button>
             <button
               type="button"
               className={`nav-item ${activeTab === 'overview' ? 'active' : ''}`}
@@ -286,7 +411,7 @@ export default function VCDashboardPage() {
                 setSelectedStudentPreview(null);
               }}
               style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
-              title="View & Edit Forwarded Applications"
+              title="Portal Settings: Upload & Manage Fee Structure and Background Image"
             >
               <FileEdit size={15} /> Edit
             </button>
@@ -303,104 +428,227 @@ export default function VCDashboardPage() {
       </aside>
 
       <section className="admin-content" style={{ width: '100%' }}>
-        {/* =========================================================================
-            TAB 1: CATEGORY OVERVIEW (Requirement 2 & 3)
-           ========================================================================= */}
-        {activeTab === 'overview' ? (
-          <div>
-            {/* If a student is currently selected for full preview */}
-            {selectedStudentPreview ? (
-              <div className="content-panel" style={{ background: '#ffffff', borderRadius: '20px', padding: '24px 20px', marginBottom: '24px', border: '1.5px solid rgba(0,77,56,0.15)' }}>
-                {/* Header with Back, Title, and PDF Export */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', borderBottom: '1.5px solid #e2e8f0', paddingBottom: '14px', marginBottom: '20px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <button
-                      type="button"
-                      className="secondary-btn compact"
-                      onClick={() => setSelectedStudentPreview(null)}
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                    >
-                      <ArrowLeft size={16} /> Back to {selectedCategory === 'FG' ? 'First Graduate' : selectedCategory} List
-                    </button>
-                    <div>
-                      <h3 style={{ margin: 0, fontSize: '1.3rem', color: '#004d38', fontWeight: 800 }}>
-                        {selectedStudentPreview.studentName}
-                      </h3>
-                      <span style={{ fontSize: '0.82rem', color: '#64748b' }}>
-                        Admin No: <strong>#{selectedStudentPreview.formNumber || selectedStudentPreview.id}</strong> · Status: <span className="badge badge-success" style={{ padding: '2px 8px', fontSize: '0.75rem' }}>Sent by AO</span>
-                      </span>
-                    </div>
-                  </div>
+        {settingsNotice ? (
+          <div style={{
+            background: '#ecfdf5',
+            border: '1.5px solid #10b981',
+            borderRadius: '14px',
+            padding: '12px 18px',
+            color: '#065f46',
+            fontWeight: 700,
+            marginBottom: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '10px',
+          }}>
+            <span>{settingsNotice}</span>
+            <button
+              type="button"
+              onClick={() => setSettingsNotice('')}
+              style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#065f46' }}
+            >
+              <X size={16} />
+            </button>
+          </div>
+        ) : null}
 
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    <button
-                      type="button"
-                      className="primary-btn compact"
-                      onClick={() => handleDownloadPdf(selectedStudentPreview)}
-                      disabled={isDownloadingPdf}
-                      style={{ background: '#166534', borderColor: '#14532d', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                    >
-                      <Download size={15} /> {isDownloadingPdf ? 'Generating PDF...' : 'Download PDF'}
-                    </button>
-                    <button
-                      type="button"
-                      className="secondary-btn compact"
-                      onClick={() => window.print()}
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                    >
-                      <Printer size={15} /> Print
-                    </button>
-                  </div>
-                </div>
-
-                {/* 1. Complete Institutional Admission Paper View */}
-                <div style={{ background: '#ffffff', borderRadius: '16px', padding: '12px 6px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>
-                  <AdmissionPaperView
-                    draft={selectedStudentPreview}
-                    adminNumber={selectedStudentPreview.formNumber || selectedStudentPreview.id}
-                    isEditableConsultant={false}
-                  />
-                </div>
-
-                {/* 2. Uploaded Photos and Certificates */}
-                <div style={{ marginTop: '24px' }}>
-                  <h3 style={{ margin: '0 0 12px', fontSize: '1.15rem', color: '#004d38', fontWeight: 800 }}>
-                    Uploaded Photos &amp; Certificates
+        {selectedStudentPreview ? (
+          <div className="content-panel" style={{ background: '#ffffff', borderRadius: '20px', padding: '24px 20px', marginBottom: '24px', border: '1.5px solid rgba(0,77,56,0.15)' }}>
+            {/* Header with Back, Title, and PDF Export */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', borderBottom: '1.5px solid #e2e8f0', paddingBottom: '14px', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <button
+                  type="button"
+                  className="secondary-btn compact"
+                  onClick={() => setSelectedStudentPreview(null)}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <ArrowLeft size={16} /> Back to {activeTab === 'home' ? 'Student List' : (selectedCategory === 'FG' ? 'First Graduate' : selectedCategory) + ' List'}
+                </button>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.3rem', color: '#004d38', fontWeight: 800 }}>
+                    {selectedStudentPreview.studentName}
                   </h3>
-                  <ApplicationDocuments
-                    documents={{
-                      ...(selectedStudentPreview.documents || {}),
-                      ...(selectedStudentPreview.cashReceipt?.dataUrl ? { cashReceipt: selectedStudentPreview.cashReceipt } : {}),
-                    }}
-                    signature={selectedStudentPreview.signature}
-                    studentSignature={selectedStudentPreview.studentSignature}
-                    parentSignature={selectedStudentPreview.parentSignature}
-                  />
-                </div>
-
-                <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-start' }}>
-                  <button
-                    type="button"
-                    className="secondary-btn"
-                    onClick={() => setSelectedStudentPreview(null)}
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                  >
-                    <ArrowLeft size={16} /> Back to {selectedCategory === 'FG' ? 'First Graduate' : selectedCategory} List
-                  </button>
+                  <span style={{ fontSize: '0.82rem', color: '#64748b' }}>
+                    Admin No: <strong>#{selectedStudentPreview.formNumber || selectedStudentPreview.id}</strong> · Status: <span className="badge badge-success" style={{ padding: '2px 8px', fontSize: '0.75rem' }}>Sent by AO</span>
+                  </span>
                 </div>
               </div>
-            ) : (
-              <>
-                {/* 2. Category Selector (4 Selectable Boxes) */}
-                <div className="content-panel" style={{
-                  background: 'rgba(255, 255, 255, 0.65)',
-                  backdropFilter: 'blur(4px)',
-                  border: '1.5px solid rgba(22, 101, 52, 0.25)',
-                  borderRadius: '20px',
-                  padding: '22px 24px',
-                  marginBottom: '24px',
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
+
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className="primary-btn compact"
+                  onClick={() => handleDownloadPdf(selectedStudentPreview)}
+                  disabled={isDownloadingPdf}
+                  style={{ background: '#004d38', borderColor: '#003325', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <Download size={15} /> {isDownloadingPdf ? 'Generating PDF...' : 'Download PDF'}
+                </button>
+                <button
+                  type="button"
+                  className="secondary-btn compact"
+                  onClick={() => window.print()}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <Printer size={15} /> Print
+                </button>
+              </div>
+            </div>
+
+            {/* 1. Complete Institutional Admission Paper View */}
+            <div style={{ background: '#ffffff', borderRadius: '16px', padding: '12px 6px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>
+              <AdmissionPaperView
+                draft={selectedStudentPreview}
+                adminNumber={selectedStudentPreview.formNumber || selectedStudentPreview.id}
+                isEditableConsultant={false}
+              />
+            </div>
+
+            {/* 2. Uploaded Photos and Certificates */}
+            <div style={{ marginTop: '24px' }}>
+              <h3 style={{ margin: '0 0 12px', fontSize: '1.15rem', color: '#004d38', fontWeight: 800 }}>
+                Uploaded Photos &amp; Certificates
+              </h3>
+              <ApplicationDocuments
+                documents={{
+                  ...(selectedStudentPreview.documents || {}),
+                  ...(selectedStudentPreview.cashReceipt?.dataUrl ? { cashReceipt: selectedStudentPreview.cashReceipt } : {}),
+                }}
+                signature={selectedStudentPreview.signature}
+                studentSignature={selectedStudentPreview.studentSignature}
+                parentSignature={selectedStudentPreview.parentSignature}
+              />
+            </div>
+
+            <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-start' }}>
+              <button
+                type="button"
+                className="secondary-btn"
+                onClick={() => setSelectedStudentPreview(null)}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              >
+                <ArrowLeft size={16} /> Back to {activeTab === 'home' ? 'Student List' : (selectedCategory === 'FG' ? 'First Graduate' : selectedCategory) + ' List'}
+              </button>
+            </div>
+          </div>
+        ) : activeTab === 'home' ? (
+          /* =========================================================================
+              TAB 1: HOME - COMPLETE OVERALL STUDENT LIST SENT BY ADMIN (Requirement 4)
+             ========================================================================= */
+          <div className="content-panel table-card">
+            <div className="section-header space-between" style={{ flexWrap: 'wrap', gap: '10px' }}>
+              <div>
+                <p className="eyebrow accent" style={{ margin: 0 }}>Vice Chairman View</p>
+                <h3 style={{ margin: '4px 0 0', fontSize: '1.25rem', color: '#004d38', fontWeight: 800 }}>
+                  Overall Student List Sent by Admin ({filteredSentToVC.length})
+                </h3>
+                <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: '#6b7280' }}>
+                  Complete list of student applications verified and forwarded by Admission Office to Vice Chairman
+                </p>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <button type="button" className="secondary-btn compact" onClick={handleCsvExport}>
+                  <Download size={14} /> Export CSV
+                </button>
+              </div>
+            </div>
+
+            {/* Search Box */}
+            <div style={{ margin: '14px 0' }}>
+              <div className="search-input-wrapper">
+                <Search size={18} color="#006747" style={{ flexShrink: 0 }} />
+                <input
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  placeholder="Search forwarded students by name, admin no, course, EMIS..."
+                  aria-label="Search forwarded students"
+                />
+                {searchTerm ? (
+                  <button
+                    type="button"
+                    onClick={() => setSearchTerm('')}
+                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px', color: '#64748b' }}
+                    title="Clear search"
+                  >
+                    <X size={16} />
+                  </button>
+                ) : null}
+              </div>
+            </div>
+
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th style={{ width: '56px' }}>S.No</th>
+                  <th>Admin No</th>
+                  <th>Student Name</th>
+                  <th>EMIS ID</th>
+                  <th>Course</th>
+                  <th>Category</th>
+                  <th>Confirmation Date</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredSentToVC.length ? filteredSentToVC.map((app, index) => (
+                  <tr key={app.id}>
+                    <td><strong>{index + 1}</strong></td>
+                    <td>{app.formNumber || app.id}</td>
+                    <td><strong>{app.studentName}</strong></td>
+                    <td>{app.emisId || '—'}</td>
+                    <td>{app.coursePreference?.firstPreference || '—'}</td>
+                    <td>{app.admissionCategory || '—'}</td>
+                    <td>{formatDate(app.forwardedAt || app.confirmedAt || app.submittedAt)}</td>
+                    <td><span className="badge badge-success">Sent by AO</span></td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          className="btn-review"
+                          onClick={() => setSelectedStudentPreview(app)}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#004d38', color: '#ffffff', fontWeight: 700, border: 'none', cursor: 'pointer' }}
+                          title="Open Full Application Preview"
+                        >
+                          <Eye size={13} /> View
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-review"
+                          onClick={() => handleDownloadPdf(app)}
+                          disabled={downloadingStudentId === app.id}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
+                          title="Download Complete Student Application Form PDF"
+                        >
+                          <Download size={13} /> {downloadingStudentId === app.id ? 'Saving...' : 'PDF'}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )) : (
+                  <tr>
+                    <td colSpan="9" style={{ textAlign: 'center', padding: '24px' }}>
+                      {sentToVC.length ? 'No forwarded applications match your search.' : 'No applications have been sent to VC yet.'}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        ) : activeTab === 'overview' ? (
+          <div>
+            {/* 2. Category Selector (4 Selectable Boxes) */}
+            <div className="content-panel" style={{
+              background: 'rgba(255, 255, 255, 0.65)',
+              backdropFilter: 'blur(4px)',
+              border: '1.5px solid rgba(22, 101, 52, 0.25)',
+              borderRadius: '20px',
+              padding: '22px 24px',
+              marginBottom: '24px',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
                     <div>
                       <p className="eyebrow accent" style={{ margin: 0 }}>Vice Chairman View</p>
                       <h2 style={{ margin: '4px 0 0', fontSize: '1.45rem', color: '#004d38', fontWeight: 800 }}>
@@ -421,13 +669,13 @@ export default function VCDashboardPage() {
                     {/* Card 1: Transport */}
                     <div
                       style={{
-                        background: selectedCategory === 'Transport' ? '#dcfce7' : '#ffffff',
-                        border: selectedCategory === 'Transport' ? '2.5px solid #166534' : '1.5px solid #e2e8f0',
+                        background: '#ffffff',
+                        border: selectedCategory === 'Transport' ? '2.5px solid #004d38' : '1.5px solid #e2e8f0',
                         borderRadius: '16px',
                         padding: '16px 20px',
                         cursor: 'pointer',
                         transition: 'all 0.2s ease',
-                        boxShadow: selectedCategory === 'Transport' ? '0 6px 16px rgba(22, 101, 52, 0.18)' : '0 2px 4px rgba(0,0,0,0.03)',
+                        boxShadow: selectedCategory === 'Transport' ? '0 4px 14px rgba(0, 77, 56, 0.12)' : '0 2px 4px rgba(0,0,0,0.03)',
                       }}
                       onClick={() => {
                         setSelectedCategory('Transport');
@@ -435,17 +683,17 @@ export default function VCDashboardPage() {
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#166534' }}>
-                          <Bus size={22} color="#166534" />
-                          <strong style={{ fontSize: '1.05rem', color: '#166534' }}>Transport</strong>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#004d38' }}>
+                          <Bus size={22} color="#004d38" />
+                          <strong style={{ fontSize: '1.05rem', color: '#0f172a' }}>Transport</strong>
                         </div>
                         {selectedCategory === 'Transport' && (
-                          <span style={{ fontSize: '0.72rem', background: '#166534', color: '#ffffff', padding: '2px 8px', borderRadius: '999px', fontWeight: 800 }}>
+                          <span style={{ fontSize: '0.72rem', background: '#004d38', color: '#ffffff', padding: '2px 8px', borderRadius: '999px', fontWeight: 800 }}>
                             Active
                           </span>
                         )}
                       </div>
-                      <strong style={{ display: 'block', fontSize: '2rem', color: '#166534', fontWeight: 850 }}>
+                      <strong style={{ display: 'block', fontSize: '2rem', color: '#004d38', fontWeight: 850 }}>
                         {transportCount}
                       </strong>
                       <small style={{ color: '#475569', fontSize: '0.8rem', fontWeight: 600 }}>
@@ -456,13 +704,13 @@ export default function VCDashboardPage() {
                     {/* Card 2: Hostel */}
                     <div
                       style={{
-                        background: selectedCategory === 'Hostel' ? '#dcfce7' : '#ffffff',
-                        border: selectedCategory === 'Hostel' ? '2.5px solid #166534' : '1.5px solid #e2e8f0',
+                        background: '#ffffff',
+                        border: selectedCategory === 'Hostel' ? '2.5px solid #004d38' : '1.5px solid #e2e8f0',
                         borderRadius: '16px',
                         padding: '16px 20px',
                         cursor: 'pointer',
                         transition: 'all 0.2s ease',
-                        boxShadow: selectedCategory === 'Hostel' ? '0 6px 16px rgba(22, 101, 52, 0.18)' : '0 2px 4px rgba(0,0,0,0.03)',
+                        boxShadow: selectedCategory === 'Hostel' ? '0 4px 14px rgba(0, 77, 56, 0.12)' : '0 2px 4px rgba(0,0,0,0.03)',
                       }}
                       onClick={() => {
                         setSelectedCategory('Hostel');
@@ -470,17 +718,17 @@ export default function VCDashboardPage() {
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#166534' }}>
-                          <Building2 size={22} color="#166534" />
-                          <strong style={{ fontSize: '1.05rem', color: '#166534' }}>Hostel</strong>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#004d38' }}>
+                          <Building2 size={22} color="#004d38" />
+                          <strong style={{ fontSize: '1.05rem', color: '#0f172a' }}>Hostel</strong>
                         </div>
                         {selectedCategory === 'Hostel' && (
-                          <span style={{ fontSize: '0.72rem', background: '#166534', color: '#ffffff', padding: '2px 8px', borderRadius: '999px', fontWeight: 800 }}>
+                          <span style={{ fontSize: '0.72rem', background: '#004d38', color: '#ffffff', padding: '2px 8px', borderRadius: '999px', fontWeight: 800 }}>
                             Active
                           </span>
                         )}
                       </div>
-                      <strong style={{ display: 'block', fontSize: '2rem', color: '#166534', fontWeight: 850 }}>
+                      <strong style={{ display: 'block', fontSize: '2rem', color: '#004d38', fontWeight: 850 }}>
                         {hostelCount}
                       </strong>
                       <small style={{ color: '#475569', fontSize: '0.8rem', fontWeight: 600 }}>
@@ -491,13 +739,13 @@ export default function VCDashboardPage() {
                     {/* Card 3: First Graduate (FG) */}
                     <div
                       style={{
-                        background: selectedCategory === 'FG' ? '#dcfce7' : '#ffffff',
-                        border: selectedCategory === 'FG' ? '2.5px solid #166534' : '1.5px solid #e2e8f0',
+                        background: '#ffffff',
+                        border: selectedCategory === 'FG' ? '2.5px solid #004d38' : '1.5px solid #e2e8f0',
                         borderRadius: '16px',
                         padding: '16px 20px',
                         cursor: 'pointer',
                         transition: 'all 0.2s ease',
-                        boxShadow: selectedCategory === 'FG' ? '0 6px 16px rgba(22, 101, 52, 0.18)' : '0 2px 4px rgba(0,0,0,0.03)',
+                        boxShadow: selectedCategory === 'FG' ? '0 4px 14px rgba(0, 77, 56, 0.12)' : '0 2px 4px rgba(0,0,0,0.03)',
                       }}
                       onClick={() => {
                         setSelectedCategory('FG');
@@ -505,17 +753,17 @@ export default function VCDashboardPage() {
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#166534' }}>
-                          <GraduationCap size={22} color="#166534" />
-                          <strong style={{ fontSize: '1.05rem', color: '#166534' }}>First Graduate (FG)</strong>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#004d38' }}>
+                          <GraduationCap size={22} color="#004d38" />
+                          <strong style={{ fontSize: '1.05rem', color: '#0f172a' }}>First Graduate (FG)</strong>
                         </div>
                         {selectedCategory === 'FG' && (
-                          <span style={{ fontSize: '0.72rem', background: '#166534', color: '#ffffff', padding: '2px 8px', borderRadius: '999px', fontWeight: 800 }}>
+                          <span style={{ fontSize: '0.72rem', background: '#004d38', color: '#ffffff', padding: '2px 8px', borderRadius: '999px', fontWeight: 800 }}>
                             Active
                           </span>
                         )}
                       </div>
-                      <strong style={{ display: 'block', fontSize: '2rem', color: '#166534', fontWeight: 850 }}>
+                      <strong style={{ display: 'block', fontSize: '2rem', color: '#004d38', fontWeight: 850 }}>
                         {fgCount}
                       </strong>
                       <small style={{ color: '#475569', fontSize: '0.8rem', fontWeight: 600 }}>
@@ -526,13 +774,13 @@ export default function VCDashboardPage() {
                     {/* Card 4: Sports */}
                     <div
                       style={{
-                        background: selectedCategory === 'Sports' ? '#dcfce7' : '#ffffff',
-                        border: selectedCategory === 'Sports' ? '2.5px solid #166534' : '1.5px solid #e2e8f0',
+                        background: '#ffffff',
+                        border: selectedCategory === 'Sports' ? '2.5px solid #004d38' : '1.5px solid #e2e8f0',
                         borderRadius: '16px',
                         padding: '16px 20px',
                         cursor: 'pointer',
                         transition: 'all 0.2s ease',
-                        boxShadow: selectedCategory === 'Sports' ? '0 6px 16px rgba(22, 101, 52, 0.18)' : '0 2px 4px rgba(0,0,0,0.03)',
+                        boxShadow: selectedCategory === 'Sports' ? '0 4px 14px rgba(0, 77, 56, 0.12)' : '0 2px 4px rgba(0,0,0,0.03)',
                       }}
                       onClick={() => {
                         setSelectedCategory('Sports');
@@ -540,17 +788,17 @@ export default function VCDashboardPage() {
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#166534' }}>
-                          <Trophy size={22} color="#166534" />
-                          <strong style={{ fontSize: '1.05rem', color: '#166534' }}>Sports Quota</strong>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#004d38' }}>
+                          <Trophy size={22} color="#004d38" />
+                          <strong style={{ fontSize: '1.05rem', color: '#0f172a' }}>Sports Quota</strong>
                         </div>
                         {selectedCategory === 'Sports' && (
-                          <span style={{ fontSize: '0.72rem', background: '#166534', color: '#ffffff', padding: '2px 8px', borderRadius: '999px', fontWeight: 800 }}>
+                          <span style={{ fontSize: '0.72rem', background: '#004d38', color: '#ffffff', padding: '2px 8px', borderRadius: '999px', fontWeight: 800 }}>
                             Active
                           </span>
                         )}
                       </div>
-                      <strong style={{ display: 'block', fontSize: '2rem', color: '#166534', fontWeight: 850 }}>
+                      <strong style={{ display: 'block', fontSize: '2rem', color: '#004d38', fontWeight: 850 }}>
                         {sportsCount}
                       </strong>
                       <small style={{ color: '#475569', fontSize: '0.8rem', fontWeight: 600 }}>
@@ -667,15 +915,27 @@ export default function VCDashboardPage() {
                             </span>
                           </td>
                           <td>
-                            <button
-                              type="button"
-                              className="btn-review"
-                              onClick={() => setSelectedStudentPreview(app)}
-                              style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#166534', color: '#ffffff', fontWeight: 700, border: 'none', cursor: 'pointer' }}
-                              title="Click to view student's complete preview page"
-                            >
-                              <Eye size={13} /> View Preview
-                            </button>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                              <button
+                                type="button"
+                                className="btn-review"
+                                onClick={() => setSelectedStudentPreview(app)}
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#004d38', color: '#ffffff', fontWeight: 700, border: 'none', cursor: 'pointer' }}
+                                title="Click to view student's complete preview page"
+                              >
+                                <Eye size={13} /> View
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-review"
+                                onClick={() => handleDownloadPdf(app)}
+                                disabled={downloadingStudentId === app.id}
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
+                                title="Download Complete Student Application Form PDF"
+                              >
+                                <Download size={13} /> {downloadingStudentId === app.id ? 'Saving...' : 'PDF'}
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       )) : (
@@ -688,9 +948,7 @@ export default function VCDashboardPage() {
                     </tbody>
                   </table>
                 </div>
-              </>
-            )}
-          </div>
+              </div>
         ) : activeTab === 'seats' ? (
           /* =========================================================================
              TAB 3: COURSE SEATS MANAGEMENT (Vice Chairman Exclusive Authorization)
@@ -925,93 +1183,219 @@ export default function VCDashboardPage() {
           </div>
         ) : (
           /* =========================================================================
-             TAB 2: EDIT / FORWARDED APPLICATIONS LIST (Renamed from "Application from AO")
+             TAB 4: EDIT / VC SETTINGS (Fee Structure & Background Image Management)
              ========================================================================= */
-          <div className="content-panel table-card">
-            <div className="section-header space-between" style={{ flexWrap: 'wrap', gap: '10px' }}>
-              <div>
-                <p className="eyebrow accent" style={{ margin: 0 }}>Vice Chairman View</p>
-                <h3 style={{ margin: '4px 0 0', fontSize: '1.25rem', color: '#004d38', fontWeight: 800 }}>
-                  Forwarded Applications ({filteredSentToVC.length})
-                </h3>
-                <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: '#6b7280' }}>
-                  Confirmed student records forwarded by Admission Office for Vice Chairman review
-                </p>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <button type="button" className="secondary-btn compact" onClick={handleCsvExport}>
-                  <Download size={14} /> Export CSV
-                </button>
-              </div>
+          <div className="content-panel" style={{ background: '#ffffff', borderRadius: '20px', padding: '28px 24px', border: '1.5px solid rgba(0,77,56,0.15)' }}>
+            <div style={{ marginBottom: '22px', borderBottom: '1.5px solid #e2e8f0', paddingBottom: '14px' }}>
+              <p className="eyebrow accent" style={{ margin: 0 }}>Vice Chairman Controls</p>
+              <h2 style={{ margin: '4px 0 0', fontSize: '1.45rem', color: '#004d38', fontWeight: 800 }}>
+                Portal Settings &amp; Customization
+              </h2>
+              <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: '#64748b' }}>
+                Upload, edit, and manage the official College Fee Structure schedule and the Student Portal Background Image. Changes are persistently saved to TiDB database.
+              </p>
             </div>
 
-            {/* Search Box */}
-            <div style={{ margin: '14px 0' }}>
-              <div className="search-input-wrapper">
-                <Search size={18} color="#006747" style={{ flexShrink: 0 }} />
-                <input
-                  value={searchTerm}
-                  onChange={(event) => setSearchTerm(event.target.value)}
-                  placeholder="Search forwarded students by name, admin no, course, EMIS..."
-                  aria-label="Search forwarded students"
-                />
-                {searchTerm ? (
-                  <button
-                    type="button"
-                    onClick={() => setSearchTerm('')}
-                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px', color: '#64748b' }}
-                    title="Clear search"
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '22px' }}>
+              {/* Box 1: Fee Structure Upload */}
+              <div style={{
+                background: '#f8fafc',
+                border: '1.5px solid #cbd5e1',
+                borderRadius: '16px',
+                padding: '20px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+              }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#004d38', marginBottom: '10px' }}>
+                    <FileText size={22} color="#004d38" />
+                    <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#0f172a', fontWeight: 800 }}>
+                      College Fee Structure
+                    </h3>
+                  </div>
+                  <p style={{ fontSize: '0.86rem', color: '#64748b', marginBottom: '16px' }}>
+                    Upload official tuition &amp; institutional fee schedules (PDF or Image). Students can download and review this directly in their portal.
+                  </p>
+
+                  {paymentSettings?.feeStructure?.dataUrl ? (
+                    <div style={{
+                      background: '#ffffff',
+                      border: '1px solid #94a3b8',
+                      borderRadius: '12px',
+                      padding: '14px 16px',
+                      marginBottom: '16px',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                        <span style={{ fontSize: '0.75rem', background: '#e0e7ff', color: '#3730a3', padding: '2px 8px', borderRadius: '6px', fontWeight: 700 }}>
+                          Active Upload
+                        </span>
+                        <strong style={{ fontSize: '0.92rem', color: '#1e293b', wordBreak: 'break-all' }}>
+                          {paymentSettings.feeStructure.name}
+                        </strong>
+                      </div>
+                      {paymentSettings.feeStructure.uploadedAt && (
+                        <p style={{ margin: 0, fontSize: '0.78rem', color: '#64748b' }}>
+                          Uploaded: {formatDate(paymentSettings.feeStructure.uploadedAt)}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div style={{
+                      background: '#ffffff',
+                      border: '1.5px dashed #cbd5e1',
+                      borderRadius: '12px',
+                      padding: '18px',
+                      textAlign: 'center',
+                      color: '#64748b',
+                      fontSize: '0.86rem',
+                      marginBottom: '16px',
+                    }}>
+                      No custom fee structure uploaded. Default standard institutional rates are active.
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                  <label
+                    className="primary-btn compact"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      cursor: 'pointer',
+                      margin: 0,
+                      background: '#004d38',
+                      borderColor: '#003325',
+                    }}
                   >
-                    <X size={16} />
-                  </button>
-                ) : null}
+                    <Upload size={14} />
+                    {paymentSettings?.feeStructure?.dataUrl ? 'Edit / Replace File' : 'Upload Fee Structure'}
+                    <input
+                      type="file"
+                      accept=".pdf,image/*"
+                      onChange={handleFeeStructureUpload}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+
+                  {paymentSettings?.feeStructure?.dataUrl && (
+                    <>
+                      <button
+                        type="button"
+                        className="secondary-btn compact"
+                        onClick={() => setSelectedFileModal({ title: 'College Fee Structure', file: paymentSettings.feeStructure })}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                      >
+                        <Eye size={14} /> View
+                      </button>
+                      <button
+                        type="button"
+                        className="secondary-btn compact"
+                        onClick={handleDeleteFeeStructure}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#dc2626', borderColor: '#fca5a5' }}
+                      >
+                        <Trash2 size={14} /> Delete
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Box 2: Background Image Upload */}
+              <div style={{
+                background: '#f8fafc',
+                border: '1.5px solid #cbd5e1',
+                borderRadius: '16px',
+                padding: '20px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+              }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#004d38', marginBottom: '10px' }}>
+                    <Image size={22} color="#004d38" />
+                    <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#0f172a', fontWeight: 800 }}>
+                      Student Portal Background
+                    </h3>
+                  </div>
+                  <p style={{ fontSize: '0.86rem', color: '#64748b', marginBottom: '16px' }}>
+                    Customize the background image across all student registration, login, and application screens.
+                  </p>
+
+                  <div style={{
+                    background: '#ffffff',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '12px',
+                    padding: '12px',
+                    marginBottom: '16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '14px',
+                  }}>
+                    <div style={{ width: '100px', height: '64px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0', flexShrink: 0, background: '#000000' }}>
+                      <img
+                        src={backgroundSettings?.backgroundImageDataUrl || backgroundSettings?.videoDataUrl || '/campus-background.jpg'}
+                        alt="Portal Background Preview"
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    </div>
+                    <div>
+                      <span style={{
+                        fontSize: '0.75rem',
+                        background: backgroundSettings?.backgroundImageDataUrl ? '#dcfce7' : '#f1f5f9',
+                        color: backgroundSettings?.backgroundImageDataUrl ? '#166534' : '#475569',
+                        padding: '2px 8px',
+                        borderRadius: '6px',
+                        fontWeight: 700,
+                        display: 'inline-block',
+                        marginBottom: '4px',
+                      }}>
+                        {backgroundSettings?.backgroundImageDataUrl ? 'Custom Image Active' : 'Default Campus Image'}
+                      </span>
+                      <p style={{ margin: 0, fontSize: '0.78rem', color: '#64748b' }}>
+                        {backgroundSettings?.backgroundImageDataUrl ? 'Custom high-res image loaded' : '/campus-background.jpg'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                  <label
+                    className="primary-btn compact"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      cursor: 'pointer',
+                      margin: 0,
+                      background: '#004d38',
+                      borderColor: '#003325',
+                    }}
+                  >
+                    <Upload size={14} />
+                    {backgroundSettings?.backgroundImageDataUrl ? 'Edit / Upload Image' : 'Upload Image'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleBackgroundImageUpload}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+
+                  {backgroundSettings?.backgroundImageDataUrl && (
+                    <button
+                      type="button"
+                      className="secondary-btn compact"
+                      onClick={handleDeleteBackgroundImage}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#dc2626', borderColor: '#fca5a5' }}
+                    >
+                      <Trash2 size={14} /> Reset to Default
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
-
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th style={{ width: '56px' }}>S.No</th>
-                  <th>Admin No</th>
-                  <th>Student</th>
-                  <th>EMIS ID</th>
-                  <th>Course</th>
-                  <th>Category</th>
-                  <th>Confirmation Date</th>
-                  <th>Status</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredSentToVC.length ? filteredSentToVC.map((app, index) => (
-                  <tr key={app.id}>
-                    <td><strong>{index + 1}</strong></td>
-                    <td>{app.formNumber || app.id}</td>
-                    <td><strong>{app.studentName}</strong></td>
-                    <td>{app.emisId || '—'}</td>
-                    <td>{app.coursePreference?.firstPreference || '—'}</td>
-                    <td>{app.admissionCategory || '—'}</td>
-                    <td>{formatDate(app.forwardedAt || app.confirmedAt || app.submittedAt)}</td>
-                    <td><span className="badge badge-success">Sent by AO</span></td>
-                    <td>
-                      <Link
-                        to={`/vc/confirmed/${app.id}`}
-                        className="btn-review"
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                      >
-                        <Eye size={13} /> View Record
-                      </Link>
-                    </td>
-                  </tr>
-                )) : (
-                  <tr>
-                    <td colSpan="9" style={{ textAlign: 'center', padding: '24px' }}>
-                      {sentToVC.length ? 'No forwarded applications match your search.' : 'No applications have been sent to VC yet.'}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
           </div>
         )}
       </section>
@@ -1087,6 +1471,31 @@ export default function VCDashboardPage() {
           </div>
         </div>
       ) : null}
+
+      {/* Offscreen container for high-fidelity PDF capture */}
+      <div
+        id="vc-pdf-render-slot"
+        style={{
+          position: 'fixed',
+          left: '-9999px',
+          top: 0,
+          width: '900px',
+          zIndex: -999,
+          background: '#ffffff',
+          visibility: pdfRenderStudent ? 'visible' : 'hidden',
+          pointerEvents: 'none',
+        }}
+      >
+        {pdfRenderStudent && (
+          <AdmissionPaperView
+            draft={pdfRenderStudent}
+            cutoff={calculateCutoff(pdfRenderStudent)}
+            uploadedDocuments={pdfRenderStudent.documents || pdfRenderStudent.uploadedDocuments}
+            feeStructure={pdfRenderStudent.feeStructure}
+            paymentReceipt={pdfRenderStudent.paymentReceipt}
+          />
+        )}
+      </div>
     </main>
   );
 }
