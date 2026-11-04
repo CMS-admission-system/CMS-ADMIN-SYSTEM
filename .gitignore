@@ -31,7 +31,6 @@ yarn-error.log*
 uploads/
 */uploads/
 */*/uploads/
-dist/
 
 # IDE & OS
 .vscode/

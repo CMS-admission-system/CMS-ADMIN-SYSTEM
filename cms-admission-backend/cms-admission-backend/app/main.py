@@ -4,7 +4,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 import socketio
 
@@ -57,12 +57,19 @@ def health():
 
 # ---- Serve Unified Frontend (Option B) ----
 FRONTEND_DIST = None
-for candidate in [
+candidate_dirs = [
+    Path(__file__).resolve().parent / "dist",
+    Path(__file__).resolve().parent.parent / "dist",
     Path(__file__).resolve().parents[3] / "cms-admission-Frontend" / "dist",
     Path(__file__).resolve().parents[2] / "cms-admission-Frontend" / "dist",
-    Path.cwd() / "cms-admission-Frontend" / "dist",
+    Path(__file__).resolve().parents[1] / "cms-admission-Frontend" / "dist",
     Path.cwd() / "dist",
-]:
+    Path.cwd() / "app" / "dist",
+    Path.cwd() / "cms-admission-Frontend" / "dist",
+    Path.cwd().parent / "cms-admission-Frontend" / "dist",
+    Path.cwd().parent.parent / "cms-admission-Frontend" / "dist",
+]
+for candidate in candidate_dirs:
     if candidate.exists() and (candidate / "index.html").exists():
         FRONTEND_DIST = candidate
         break
@@ -72,6 +79,10 @@ if FRONTEND_DIST:
     if assets_dir.exists():
         core_app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="assets")
 
+    @core_app.get("/", include_in_schema=False)
+    async def serve_root():
+        return FileResponse(FRONTEND_DIST / "index.html")
+
     @core_app.get("/{full_path:path}", include_in_schema=False)
     async def serve_spa(full_path: str):
         if full_path:
@@ -79,6 +90,20 @@ if FRONTEND_DIST:
             if file_path.is_file():
                 return FileResponse(file_path)
         return FileResponse(FRONTEND_DIST / "index.html")
+else:
+    @core_app.get("/", include_in_schema=False)
+    async def serve_fallback_root():
+        return HTMLResponse("""
+            <!DOCTYPE html>
+            <html>
+            <head><title>CMS Admission Portal</title></head>
+            <body style="font-family:system-ui,-apple-system,sans-serif;text-align:center;padding:50px 20px;color:#0f172a;">
+                <h2 style="color:#004d38;">CMS Admission Portal - API Online</h2>
+                <p>Frontend production assets are initializing or not detected.</p>
+                <p><a href="/health" style="color:#006747;font-weight:bold;">Click here to check API Health</a></p>
+            </body>
+            </html>
+        """)
 
 # Wrap core_app with Socket.IO ASGIApp for unified single-port real-time WebSocket + REST
 app = socketio.ASGIApp(sio, other_asgi_app=core_app, socketio_path="socket.io")
