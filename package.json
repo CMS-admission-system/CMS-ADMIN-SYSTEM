@@ -1,0 +1,29 @@
+{
+  "name": "cms-admin-portal",
+  "version": "1.0.0",
+  "private": true,
+  "description": "College Admission System - Admin Portal (React Vite Frontend & FastAPI Backend)",
+  "scripts": {
+    "dev": "npm --prefix cms-admission-Frontend run dev",
+    "build": "npm --prefix cms-admission-Frontend run build",
+    "lint": "npm --prefix cms-admission-Frontend run lint",
+    "preview": "npm --prefix cms-admission-Frontend run preview",
+    "start": "cd cms-admission-backend/cms-admission-backend && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+  },
+  "dependencies": {
+    "html2pdf.js": "^0.14.0",
+    "lucide-react": "^1.59.0",
+    "qrcode.react": "^4.2.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-router-dom": "^7.18.4",
+    "socket.io-client": "^4.8.4"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "@vitejs/plugin-react": "^6.1.1",
+    "oxlint": "^1.81.0",
+    "vite": "^8.3.0"
+  }
+}
