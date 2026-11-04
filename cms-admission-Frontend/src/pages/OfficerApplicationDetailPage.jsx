@@ -357,7 +357,7 @@ export default function OfficerApplicationDetailPage() {
           <div className="section-header space-between" style={{ borderBottom: '1.5px solid #e2e8f0', paddingBottom: '12px' }}>
             <div>
               <p className="eyebrow accent" style={{ margin: 0 }}>Verification &amp; Checklist</p>
-              <h2 style={{ margin: '4px 0 0', fontSize: '1.35rem', color: '#004d38', fontWeight: 800 }}>
+              <h2 style={{ margin: '4px 0 0', fontSize: '1.35rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>
                 Document Verification &amp; Office Checklist
               </h2>
             </div>
@@ -368,12 +368,6 @@ export default function OfficerApplicationDetailPage() {
 
           {/* Uploaded Documents Grid */}
           <div style={{ marginTop: '18px' }}>
-            <h3 style={{ fontSize: '1.05rem', color: '#0f172a', fontWeight: 800, marginBottom: '8px' }}>
-              Uploaded Certificates &amp; Documents ({uploadedDocumentList.length})
-            </h3>
-            <p className="field-help" style={{ marginBottom: '14px' }}>
-              Click View to inspect the certificate in full preview, or Replace/Upload as needed.
-            </p>
 
             {uploadedDocumentList.length ? (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '16px' }}>
@@ -423,7 +417,7 @@ export default function OfficerApplicationDetailPage() {
                         <Eye size={13} /> View
                       </button>
                       <label className="secondary-btn compact" style={{ flex: 1, justifyContent: 'center', cursor: 'pointer', margin: 0, fontSize: '0.78rem' }}>
-                        <Upload size={13} /> Replace
+                        <Upload size={13} color="#166534" /> Replace
                         <input type="file" style={{ display: 'none' }} accept="image/*,application/pdf" onChange={(e) => handleFileUpload(key, e)} />
                       </label>
                       <button
@@ -488,7 +482,7 @@ export default function OfficerApplicationDetailPage() {
                         ))}
                         <td style={{ textAlign: 'center' }}>
                           <label className="secondary-btn compact" style={{ cursor: 'pointer', margin: 0, display: 'inline-flex', padding: '3px 8px', fontSize: '0.76rem' }}>
-                            <Upload size={12} /> {isUploaded ? 'Replace' : 'Upload'}
+                            <Upload size={12} color="#166534" /> {isUploaded ? 'Replace' : 'Upload'}
                             <input type="file" style={{ display: 'none' }} accept="image/*,application/pdf" onChange={(e) => handleFileUpload(key, e)} />
                           </label>
                         </td>
@@ -501,8 +495,8 @@ export default function OfficerApplicationDetailPage() {
           </section>
 
           {/* Authorized Staff Corrections Form */}
-          <div style={{ marginTop: '28px', borderTop: '1.5px solid #e2e8f0', paddingTop: '18px' }}>
-            <h3 style={{ fontSize: '1.05rem', color: '#0f172a', fontWeight: 800, marginBottom: '6px' }}>
+          <div className="officer-correction-box" style={{ marginTop: '28px', borderTop: '1.5px solid #e2e8f0', paddingTop: '18px' }}>
+            <h3 style={{ fontSize: '1.05rem', color: '#000000', fontWeight: 800, marginBottom: '6px', textShadow: 'none' }}>
               Authorized Staff Corrections
             </h3>
             <p className="field-help" style={{ marginBottom: '14px' }}>
@@ -510,35 +504,35 @@ export default function OfficerApplicationDetailPage() {
             </p>
             <div className="preview-grid two-column">
               <div className="field-group">
-                <label>Student Name</label>
+                <label style={{ color: '#000000', fontWeight: 700, textShadow: 'none' }}>Student Name</label>
                 <input
                   value={draftApplication.studentName || ''}
                   onChange={(event) => setDraftApplication((prev) => ({ ...prev, studentName: event.target.value }))}
                 />
               </div>
               <div className="field-group">
-                <label>Email ID</label>
+                <label style={{ color: '#000000', fontWeight: 700, textShadow: 'none' }}>Email ID</label>
                 <input
                   value={draftApplication.email || ''}
                   onChange={(event) => setDraftApplication((prev) => ({ ...prev, email: event.target.value }))}
                 />
               </div>
               <div className="field-group">
-                <label>EMIS ID</label>
+                <label style={{ color: '#000000', fontWeight: 700, textShadow: 'none' }}>EMIS ID</label>
                 <input
                   value={draftApplication.emisId || ''}
                   onChange={(event) => setDraftApplication((prev) => ({ ...prev, emisId: event.target.value }))}
                 />
               </div>
               <div className="field-group">
-                <label>Student Mobile</label>
+                <label style={{ color: '#000000', fontWeight: 700, textShadow: 'none' }}>Student Mobile</label>
                 <input
                   value={draftApplication.studentMobile || ''}
                   onChange={(event) => setDraftApplication((prev) => ({ ...prev, studentMobile: event.target.value }))}
                 />
               </div>
               <div className="field-group">
-                <label>Selected Course</label>
+                <label style={{ color: '#000000', fontWeight: 700, textShadow: 'none' }}>Selected Course</label>
                 <input
                   value={draftApplication.coursePreference?.firstPreference || ''}
                   onChange={(event) => setDraftApplication((prev) => ({
@@ -548,14 +542,14 @@ export default function OfficerApplicationDetailPage() {
                 />
               </div>
               <div className="field-group">
-                <label>Admission Category</label>
+                <label style={{ color: '#000000', fontWeight: 700, textShadow: 'none' }}>Admission Category</label>
                 <input
                   value={draftApplication.admissionCategory || ''}
                   onChange={(event) => setDraftApplication((prev) => ({ ...prev, admissionCategory: event.target.value }))}
                 />
               </div>
               <div className="field-group full-width">
-                <label>Communication Address</label>
+                <label style={{ color: '#000000', fontWeight: 700, textShadow: 'none' }}>Communication Address</label>
                 <textarea
                   value={draftApplication.communicationAddress || ''}
                   onChange={(event) => setDraftApplication((prev) => ({ ...prev, communicationAddress: event.target.value }))}
@@ -563,7 +557,7 @@ export default function OfficerApplicationDetailPage() {
                 />
               </div>
               <div className="field-group full-width">
-                <label>Officer Correction Notes</label>
+                <label style={{ color: '#000000', fontWeight: 700, textShadow: 'none' }}>Officer Correction Notes</label>
                 <textarea
                   value={note}
                   onChange={(event) => setNote(event.target.value)}
@@ -574,17 +568,7 @@ export default function OfficerApplicationDetailPage() {
             </div>
           </div>
 
-          {/* History */}
-          <div className="detail-history" style={{ marginTop: '20px' }}>
-            <h3 style={{ fontSize: '1rem', color: '#0f172a', fontWeight: 800 }}>Audit &amp; Change History</h3>
-            {history.length ? history.map((entry) => (
-              <div className="history-item" key={entry.id}>
-                <strong>{entry.actor}</strong>
-                <span>{formatDate(entry.createdAt)}</span>
-                <p>{entry.note}</p>
-              </div>
-            )) : <p style={{ color: '#64748b', fontSize: '0.85rem' }}>No prior correction history logged for this record.</p>}
-          </div>
+
 
           <div className="form-actions" style={{ marginTop: '24px' }}>
             <button type="button" className="secondary-btn" onClick={() => navigate('/officer/dashboard')}>

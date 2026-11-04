@@ -74,7 +74,7 @@ export default function LoginPage() {
 
         <form className="auth-form" onSubmit={handleSubmit}>
           <label>
-            <span>Username</span>
+            <span style={{ color: '#000000', fontWeight: 700 }}>Username</span>
             <input
               type="text"
               value={form.username}
@@ -84,7 +84,7 @@ export default function LoginPage() {
           </label>
 
           <label>
-            <span>Password</span>
+            <span style={{ color: '#000000', fontWeight: 700 }}>Password</span>
             <input
               type="password"
               value={form.password}

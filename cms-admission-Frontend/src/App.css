@@ -2408,8 +2408,8 @@ fieldset legend,
 }
 
 /* Form labels outside the 3 excluded pages in WHITE */
-label:not(.preview-shell label):not(.cms-paper-wrapper label):not(.admission-paper-sheet label):not(.excel-docs-table label):not(.documents-table-wrapper label):not(.fees-step label):not(.fee-summary-card label):not(.payment-verification-box label):not(.parent-panel-card label):not(.parents-two-panel-grid label):not(.pickup-location-label):not(label[for="boardingStop"]):not(.declaration-panel label),
-.field-group > label:not(.preview-shell label):not(.cms-paper-wrapper label):not(.admission-paper-sheet label):not(.excel-docs-table label):not(.documents-table-wrapper label):not(.fees-step label):not(.payment-verification-box label):not(.parent-panel-card label):not(.parents-two-panel-grid label):not(.pickup-location-label):not(label[for="boardingStop"]):not(.declaration-panel label),
+label:not(.preview-shell label):not(.cms-paper-wrapper label):not(.admission-paper-sheet label):not(.excel-docs-table label):not(.documents-table-wrapper label):not(.fees-step label):not(.fee-summary-card label):not(.payment-verification-box label):not(.parent-panel-card label):not(.parents-two-panel-grid label):not(.pickup-location-label):not(label[for="boardingStop"]):not(.declaration-panel label):not(.auth-form label):not(.auth-card label):not(.dashboard-filters label):not(.officer-correction-box label),
+.field-group > label:not(.preview-shell label):not(.cms-paper-wrapper label):not(.admission-paper-sheet label):not(.excel-docs-table label):not(.documents-table-wrapper label):not(.fees-step label):not(.payment-verification-box label):not(.parent-panel-card label):not(.parents-two-panel-grid label):not(.pickup-location-label):not(label[for="boardingStop"]):not(.declaration-panel label):not(.auth-form label):not(.auth-card label):not(.dashboard-filters label):not(.officer-correction-box label),
 .field-label:not(.preview-shell *):not(.cms-paper-wrapper *):not(.excel-docs-table *):not(.fees-step *):not(.payment-verification-box *):not(.parent-panel-card *):not(.parents-two-panel-grid *) {
   font-size: 1.08rem !important;
   font-weight: 800 !important;
@@ -2722,5 +2722,58 @@ label[for="boardingStop"] {
 .success-detail,
 .success-card .success-detail {
   color: #2563eb !important;
+  text-shadow: none !important;
+}
+
+/* Admin UI Specific Enhancements */
+.auth-form label,
+.auth-form label span,
+.auth-card label,
+.auth-card label span {
+  color: #000000 !important;
+  text-shadow: none !important;
+}
+
+.dashboard-filters label,
+.dashboard-filters .field-group > label {
+  color: #000000 !important;
+  text-shadow: none !important;
+}
+
+.officer-shell .stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 16px;
+  margin-bottom: 24px;
+  width: 100%;
+  align-items: stretch;
+}
+
+.officer-shell .stats-grid .stat-card {
+  min-height: 84px !important;
+  height: 84px !important;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+  border-radius: 18px;
+}
+
+.officer-shell .stats-grid .stat-card span,
+.officer-shell .stats-grid .stat-card strong {
+  color: #000000 !important;
+  text-shadow: none !important;
+}
+
+.officer-shell .table-card h3,
+.officer-shell .table-card .section-header h3 {
+  color: #000000 !important;
+  text-shadow: none !important;
+}
+
+.officer-correction-box h3,
+.officer-correction-box label {
+  color: #000000 !important;
   text-shadow: none !important;
 }

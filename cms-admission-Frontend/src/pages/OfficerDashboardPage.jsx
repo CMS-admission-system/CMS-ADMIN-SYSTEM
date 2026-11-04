@@ -253,7 +253,7 @@ export default function OfficerDashboardPage() {
         {/* 2. Search Box & Filter Controls */}
         <div className="content-panel dashboard-filters" style={{ marginBottom: '20px' }}>
           <div className="field-group" style={{ marginBottom: 0 }}>
-            <label htmlFor="applicationSearch" style={{ fontWeight: 700, color: '#0f172a', marginBottom: '6px' }}>
+            <label htmlFor="applicationSearch" style={{ fontWeight: 700, color: '#000000', marginBottom: '6px', textShadow: 'none' }}>
               Search Applications
             </label>
             <div className="search-input-wrapper">
@@ -277,7 +277,7 @@ export default function OfficerDashboardPage() {
             </div>
           </div>
           <div className="field-group" style={{ marginBottom: 0 }}>
-            <label htmlFor="categoryFilter" style={{ fontWeight: 700, color: '#0f172a', marginBottom: '6px' }}>
+            <label htmlFor="categoryFilter" style={{ fontWeight: 700, color: '#000000', marginBottom: '6px', textShadow: 'none' }}>
               Admission Category
             </label>
             <select
@@ -291,7 +291,7 @@ export default function OfficerDashboardPage() {
             </select>
           </div>
           <div className="field-group" style={{ marginBottom: 0 }}>
-            <label htmlFor="courseFilter" style={{ fontWeight: 700, color: '#0f172a', marginBottom: '6px' }}>
+            <label htmlFor="courseFilter" style={{ fontWeight: 700, color: '#000000', marginBottom: '6px', textShadow: 'none' }}>
               Course
             </label>
             <select
@@ -306,19 +306,19 @@ export default function OfficerDashboardPage() {
           </div>
         </div>
 
-        {/* Status Counts Grid */}
-        <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '24px', width: '100%' }}>
-          <div className="stat-card">
-            <span>Enquiring</span>
-            <strong>{applications.filter((app) => app.status === 'Enquiring').length}</strong>
+        {/* Status Counts Grid - Aligned with green box height (84px) */}
+        <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '24px', width: '100%', alignItems: 'stretch' }}>
+          <div className="stat-card" style={{ minHeight: '84px', height: '84px', color: '#000000', boxSizing: 'border-box' }}>
+            <span style={{ color: '#000000', fontWeight: 700, fontSize: '1rem' }}>Enquiring</span>
+            <strong style={{ color: '#000000', fontWeight: 800, fontSize: '1.4rem' }}>{applications.filter((app) => app.status === 'Enquiring').length}</strong>
           </div>
-          <div className="stat-card">
-            <span>Confirmed</span>
-            <strong>{applications.filter((app) => (app.status === 'Confirmed' || app.status === 'Confirm') && app.status !== 'Sent to VC').length}</strong>
+          <div className="stat-card" style={{ minHeight: '84px', height: '84px', color: '#000000', boxSizing: 'border-box' }}>
+            <span style={{ color: '#000000', fontWeight: 700, fontSize: '1rem' }}>Confirm</span>
+            <strong style={{ color: '#000000', fontWeight: 800, fontSize: '1.4rem' }}>{applications.filter((app) => (app.status === 'Confirmed' || app.status === 'Confirm') && app.status !== 'Sent to VC').length}</strong>
           </div>
-          <div className="stat-card">
-            <span>Sent to VC</span>
-            <strong>{applications.filter((app) => app.status === 'Sent to VC' || app.status === 'Forwarded to VC').length}</strong>
+          <div className="stat-card" style={{ minHeight: '84px', height: '84px', color: '#000000', boxSizing: 'border-box' }}>
+            <span style={{ color: '#000000', fontWeight: 700, fontSize: '1rem' }}>Sent to VC</span>
+            <strong style={{ color: '#000000', fontWeight: 800, fontSize: '1.4rem' }}>{applications.filter((app) => app.status === 'Sent to VC' || app.status === 'Forwarded to VC').length}</strong>
           </div>
         </div>
 
@@ -326,7 +326,7 @@ export default function OfficerDashboardPage() {
         <div className="content-panel table-card" style={{ marginBottom: '24px' }}>
           <div className="section-header space-between">
             <div>
-              <h3 style={{ margin: 0 }}>Enquiring List ({enquiring.length})</h3>
+              <h3 style={{ margin: 0, color: '#000000' }}>Enquiring List ({enquiring.length})</h3>
               <p style={{ margin: 0, fontSize: '0.82rem', color: '#6b7280' }}>Candidates inquiring / awaiting seat confirmation payment</p>
             </div>
             <button type="button" className="secondary-btn compact" onClick={() => downloadApplicationsCsv(enquiring, 'cms-enquiring-applications.csv')}><Download size={14} /> Export CSV</button>
@@ -413,7 +413,7 @@ export default function OfficerDashboardPage() {
         <div className="content-panel table-card" style={{ marginBottom: '24px' }}>
           <div className="section-header space-between">
             <div>
-              <h3 style={{ margin: 0 }}>Confirmed List ({confirmed.length})</h3>
+              <h3 style={{ margin: 0, color: '#000000' }}>Confirmed List ({confirmed.length})</h3>
               <p style={{ margin: 0, fontSize: '0.82rem', color: '#6b7280' }}>Payment completed &amp; seat confirmed candidates ready for VC dispatch</p>
             </div>
             <button type="button" className="secondary-btn compact" onClick={() => downloadApplicationsCsv(confirmed, 'cms-confirmed-applications.csv')}><Download size={14} /> Export CSV</button>
@@ -502,7 +502,7 @@ export default function OfficerDashboardPage() {
         <div className="content-panel table-card">
           <div className="section-header space-between">
             <div>
-              <h3 style={{ margin: 0 }}>Sent to VC List ({sentToVC.length})</h3>
+              <h3 style={{ margin: 0, color: '#000000' }}>Sent to VC List ({sentToVC.length})</h3>
               <p style={{ margin: 0, fontSize: '0.82rem', color: '#6b7280' }}>Applications forwarded to Vice-Chairman portal</p>
             </div>
             <button type="button" className="secondary-btn compact" onClick={() => downloadApplicationsCsv(sentToVC, 'cms-sent-to-vc-applications.csv')}><Download size={14} /> Export CSV</button>
