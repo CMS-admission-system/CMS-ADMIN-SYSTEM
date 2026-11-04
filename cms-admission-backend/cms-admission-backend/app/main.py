@@ -14,6 +14,7 @@ from .database import Base, SessionLocal, engine
 from .realtime import set_main_loop, sio
 from .routers import auth, courses, documents, fees, kiosk, payments, portal, signatures, staff, uploads
 from .seed import run_all_seeds
+from .fee_engine import seed_dynamic_fees
 
 
 @asynccontextmanager
@@ -23,6 +24,7 @@ async def lifespan(app: FastAPI):
     db = SessionLocal()
     try:
         run_all_seeds(db)  # courses, fee rows, bootstrap admin login
+        seed_dynamic_fees(db)  # 2026-2027 dynamic fee configuration
     finally:
         db.close()
     yield
@@ -47,6 +49,7 @@ core_app.include_router(payments.router)
 core_app.include_router(staff.router)
 core_app.include_router(documents.router)
 core_app.include_router(fees.router)
+core_app.include_router(fees.portal_fees_router)
 core_app.include_router(portal.router)
 
 

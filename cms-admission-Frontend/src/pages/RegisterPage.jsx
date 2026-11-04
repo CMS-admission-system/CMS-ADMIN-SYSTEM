@@ -6,6 +6,7 @@ import SignaturePadBox from '../components/SignaturePadBox';
 import { fetchDemoStudent } from '../services/emisService';
 import { calculateCutoff, PROGRAMME_COURSES } from '../utils/helpers';
 import CameraCaptureModal from '../components/CameraCaptureModal';
+import DynamicFeePreview from '../components/DynamicFeePreview';
 
 const steps = [
   'Admission category & Quota',
@@ -2346,9 +2347,8 @@ export default function RegisterPage() {
   const renderFeeStructureStep = () => {
     return (
       <section className="fee-structure-preview">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '14px' }}>
-          <h3 style={{ margin: 0 }}>College Fee Structure</h3>
-          {paymentSettings?.feeStructure?.dataUrl ? (
+        {paymentSettings?.feeStructure?.dataUrl ? (
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
             <a
               href={paymentSettings.feeStructure.dataUrl}
               download={paymentSettings.feeStructure.name || 'CMS_College_Fee_Structure.pdf'}
@@ -2360,35 +2360,11 @@ export default function RegisterPage() {
             >
               <Download size={14} /> Download Official Fee Sheet ({paymentSettings.feeStructure.name})
             </a>
-          ) : null}
-        </div>
-        <div className="table-scroll">
-          <table className="fee-table">
-            <thead>
-              <tr><th>Fee item</th><th>Amount (₹)</th><th>Frequency / details</th></tr>
-            </thead>
-            <tbody>
-              <tr><td>Admission fees</td><td>5,000</td><td>One time</td></tr>
-              <tr><td>Consortium fees</td><td>550</td><td>One time</td></tr>
-              <tr><td>RRA amount (Anna University)</td><td>2,500</td><td>One time</td></tr>
-              <tr><td>Sports fees (Anna University)</td><td>625</td><td>One time · Four years</td></tr>
-              <tr><td>Group insurance</td><td>100</td><td>One time</td></tr>
-              <tr><td>Syllabus fees (Anna University)</td><td>200</td><td>One time</td></tr>
-              <tr><td>NSS fees (Anna University)</td><td>25</td><td>Frequency not specified</td></tr>
-              <tr><td>Lab coat</td><td>500</td><td>Frequency not specified</td></tr>
-              <tr><td>ID card</td><td>100</td><td>Frequency not specified</td></tr>
-              <tr><td>Book fees &amp; exam paper fees</td><td>Not specified</td><td>Every semester</td></tr>
-              <tr><td>Tuition fees — First Graduate (OC/BC/BC(M)/MBC &amp; DNC)</td><td>Not specified</td><td>Category-based</td></tr>
-              <tr><td>Tuition fees — Non-First Graduate (OC/BC/BC(M)/MBC &amp; DNC)</td><td>Not specified</td><td>Category-based</td></tr>
-              <tr><td>Tuition fees — SC/SC(A)/ST/SCC</td><td>Not specified</td><td>Category-based</td></tr>
-              <tr><td>Hostel fees (OC/BC/BC(M)/MBC &amp; DNC)</td><td>Not specified</td><td>Category-based</td></tr>
-              <tr><td>Hostel fees — SC/SC(A)/ST/SCC</td><td>Not specified</td><td>Category-based</td></tr>
-              <tr><td>Hostel / transport application form</td><td>50</td><td>Frequency not specified</td></tr>
-              <tr><td>Transport fees</td><td>Not specified</td><td>Per year</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <p className="fee-structure-note">This page is for viewing only. Amounts not listed on the supplied fee sheet are marked “Not specifiedâ€; please confirm those amounts with the college office.</p>
+          </div>
+        ) : null}
+
+        {/* Dynamic Database-Connected Fee Calculation Preview */}
+        <DynamicFeePreview formData={formData} />
       </section>
     );
   };

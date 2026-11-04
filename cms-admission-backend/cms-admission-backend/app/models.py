@@ -236,3 +236,100 @@ class ApplicationSequence(Base):
     year: Mapped[int] = mapped_column(Integer, primary_key=True)  # e.g., 2026
     last_number: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
+
+class DynamicFeeConfig(Base):
+    """Master Fee Calculator Configuration for Academic Years (2026-2027 onwards)."""
+
+    __tablename__ = "dynamic_fee_configs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    academic_year: Mapped[str] = mapped_column(String(20), default="2026-2027", index=True)
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    calculation_mode: Mapped[str] = mapped_column(String(30), default="department")  # "department" (Mode A) or "package" (Mode B)
+    admission_fee: Mapped[float] = mapped_column(Float, default=5000.0)
+    hostel_fee: Mapped[float] = mapped_column(Float, default=45000.0)
+    apply_cutoff_in_package_mode: Mapped[bool] = mapped_column(Boolean, default=False)
+    allow_hostel_transport: Mapped[bool] = mapped_column(Boolean, default=False)
+    package_included_components: Mapped[str] = mapped_column(Text, default='["tuition", "hostel"]')
+    concession_rules_json: Mapped[str] = mapped_column(Text, default="{}")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class DepartmentFeeConfig(Base):
+    """Tuition Fee per Department for NFG and FG students."""
+
+    __tablename__ = "department_fee_configs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    academic_year: Mapped[str] = mapped_column(String(20), default="2026-2027", index=True)
+    department_code: Mapped[str] = mapped_column(String(40), index=True)
+    department_name: Mapped[str] = mapped_column(String(120))
+    nfg_fee: Mapped[float] = mapped_column(Float, default=80000.0)
+    fg_fee: Mapped[float] = mapped_column(Float, default=55000.0)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class CommunityPackageConfig(Base):
+    """Community-wise Packages for Mode B (SC/SCC/SCA, ST, BC/MBC FG)."""
+
+    __tablename__ = "community_package_configs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    academic_year: Mapped[str] = mapped_column(String(20), default="2026-2027", index=True)
+    community_group: Mapped[str] = mapped_column(String(40), index=True)
+    hostel_package: Mapped[float] = mapped_column(Float)
+    dayscholar_package: Mapped[float] = mapped_column(Float)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class CutoffConcessionSlab(Base):
+    """Cut-off Mark concession slabs."""
+
+    __tablename__ = "cutoff_concession_slabs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    academic_year: Mapped[str] = mapped_column(String(20), default="2026-2027", index=True)
+    min_cutoff: Mapped[float] = mapped_column(Float)
+    max_cutoff: Mapped[float] = mapped_column(Float)
+    concession_type: Mapped[str] = mapped_column(String(20))  # "percent" or "amount"
+    concession_value: Mapped[float] = mapped_column(Float)
+    label: Mapped[str] = mapped_column(String(80))
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class TransportFeeConfig(Base):
+    """Transport charges by category/distance."""
+
+    __tablename__ = "transport_fee_configs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    category_name: Mapped[str] = mapped_column(String(60), unique=True)
+    amount: Mapped[float] = mapped_column(Float)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class StudentFeeCalculationRecord(Base):
+    """Permanent immutable snapshot of fee calculation per submitted application."""
+
+    __tablename__ = "student_fee_calculations"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    application_id: Mapped[str] = mapped_column(String(60), index=True)
+    academic_year: Mapped[str] = mapped_column(String(20), default="2026-2027")
+    calculation_mode: Mapped[str] = mapped_column(String(30))
+    fee_version: Mapped[int] = mapped_column(Integer, default=1)
+    original_amount: Mapped[float] = mapped_column(Float)
+    total_concession: Mapped[float] = mapped_column(Float)
+    final_payable: Mapped[float] = mapped_column(Float)
+    pmss_status: Mapped[str] = mapped_column(String(50), default="Not Eligible")
+    pmss_pending_amount: Mapped[float] = mapped_column(Float, default=0.0)
+    pmss_approved_amount: Mapped[float] = mapped_column(Float, default=0.0)
+    breakdown_json: Mapped[str] = mapped_column(Text)
+    input_snapshot_json: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+

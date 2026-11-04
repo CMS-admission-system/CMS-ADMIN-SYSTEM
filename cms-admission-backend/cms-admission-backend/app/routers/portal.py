@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from .. import models
 from ..database import get_db
 from ..email_template import render_full_admission_email_html
+from ..fee_engine import calculate_student_fee
 from ..realtime import emit_realtime_event
 from ..security import create_staff_token, verify_password
 
@@ -279,6 +280,13 @@ def create_portal_application(
     course_pref = payload.get("coursePreference")
     course_name = course_pref.get("firstPreference") if isinstance(course_pref, dict) else str(course_pref or "")
 
+    # Authoritative server-side Dynamic Fee Calculation Snapshot
+    try:
+        fee_calc = calculate_student_fee(payload, db, save_snapshot=True, application_id=app_id)
+        payload["feeCalculation"] = fee_calc
+    except Exception as fee_err:
+        logger.warning("Fee calculation on submission error: %s", fee_err)
+
     if existing:
         existing.student_name = student_name
         existing.emis_id = emis_id
@@ -413,6 +421,13 @@ def update_portal_application(
         }
         history = data.get("correctionHistory", [])
         data["correctionHistory"] = [history_entry] + history
+
+    # Recalculate and update fee calculation snapshot on record update
+    try:
+        fee_calc = calculate_student_fee(data, db, save_snapshot=True, application_id=app_id)
+        data["feeCalculation"] = fee_calc
+    except Exception as fee_err:
+        logger.warning("Fee recalculation on update error: %s", fee_err)
 
     record.data_json = json.dumps(data)
     # 1. Database update is committed successfully first

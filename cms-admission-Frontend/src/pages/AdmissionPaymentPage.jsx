@@ -212,6 +212,24 @@ export default function AdmissionPaymentPage() {
           </div>
         </div>
 
+        {/* Dynamic Fee Calculation Verified Banner */}
+        {currentRecord?.feeCalculation?.fee_breakdown ? (
+          <div style={{ background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: '12px', padding: '12px 16px', margin: '14px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+            <div>
+              <span style={{ fontSize: '0.74rem', fontWeight: 700, color: '#166534', textTransform: 'uppercase', display: 'block' }}>
+                Verified Dynamic Fee Structure ({currentRecord.feeCalculation.academic_year || '2026–2027'})
+              </span>
+              <span style={{ fontSize: '0.84rem', color: '#14532d' }}>
+                Tuition: <strong>{currentRecord.feeCalculation.formatted?.final_tuition}</strong> · Concession: <strong style={{ color: '#15803d' }}>{currentRecord.feeCalculation.formatted?.total_concession}</strong>
+              </span>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <span style={{ fontSize: '0.74rem', color: '#166534', display: 'block' }}>Total Annual Fee:</span>
+              <strong style={{ fontSize: '1.25rem', color: '#166534' }}>{currentRecord.feeCalculation.formatted?.final_payable_amount}</strong>
+            </div>
+          </div>
+        ) : null}
+
         {/* Method Switcher Header */}
         <div style={{ margin: '24px 0 12px' }}>
           <p style={{ margin: '0 0 12px', fontSize: '1.15rem', fontWeight: 800, color: '#ffffff' }}>

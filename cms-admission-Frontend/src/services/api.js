@@ -163,3 +163,48 @@ export async function sendApplicationStatusEmail({
     body: JSON.stringify(payload),
   });
 }
+
+// ---- Dynamic Fee Calculator 2026-2027 API Services ----
+export async function calculateStudentFeeApi(studentPayload) {
+  const result = await safeFetch('/portal/fees/calculate', {
+    method: 'POST',
+    body: JSON.stringify(studentPayload),
+  });
+  if (result.ok && result.data) {
+    return result.data;
+  }
+  return null;
+}
+
+export async function fetchFeeConfigApi(year = '2026-2027') {
+  const result = await safeFetch(`/portal/fees/config?year=${encodeURIComponent(year)}`);
+  if (result.ok && result.data) {
+    return result.data;
+  }
+  return null;
+}
+
+export async function updateFeeConfigApi(configPayload) {
+  const result = await safeFetch('/portal/fees/config', {
+    method: 'PUT',
+    body: JSON.stringify(configPayload),
+  });
+  return result;
+}
+
+export async function fetchStudentFeeCalculationApi(applicationId) {
+  const result = await safeFetch(`/portal/fees/calculation/${encodeURIComponent(applicationId)}`);
+  if (result.ok && result.data) {
+    return result.data;
+  }
+  return null;
+}
+
+export async function approveScholarshipApi(applicationId, { approvedAmount, status = 'Approved', notes = '' }) {
+  const result = await safeFetch(`/portal/fees/calculation/${encodeURIComponent(applicationId)}/scholarship`, {
+    method: 'POST',
+    body: JSON.stringify({ approved_amount: Number(approvedAmount), status, notes }),
+  });
+  return result;
+}
+

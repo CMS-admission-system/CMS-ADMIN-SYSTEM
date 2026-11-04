@@ -1,6 +1,7 @@
 import {
   Building2,
   Bus,
+  DollarSign,
   Download,
   Eye,
   FileEdit,
@@ -17,6 +18,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { downloadApplicationsCsv, formatDate, calculateCutoff, downloadElementAsPdf } from '../utils/helpers';
 import AdmissionPaperView from '../components/AdmissionPaperView';
+import AdminFeeManagementModal from '../components/AdminFeeManagementModal';
 
 export default function OfficerDashboardPage() {
   const navigate = useNavigate();
@@ -34,6 +36,7 @@ export default function OfficerDashboardPage() {
   const [activeCategoryModal, setActiveCategoryModal] = useState(null);
   const [pdfRenderStudent, setPdfRenderStudent] = useState(null);
   const [downloadingId, setDownloadingId] = useState(null);
+  const [isFeeManagementOpen, setIsFeeManagementOpen] = useState(false);
 
   const handleDownloadPdf = async (student) => {
     if (!student) return;
@@ -192,11 +195,20 @@ export default function OfficerDashboardPage() {
             </button>
           </div>
 
-          {/* Navigation Items: Home, Logout with suitable icons */}
+          {/* Navigation Items: Home, Fee Management, Logout with suitable icons */}
           <nav className="admin-nav">
             <Link to="/officer/dashboard" className="nav-item active" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
               <Home size={15} /> Home
             </Link>
+            <button
+              type="button"
+              className="nav-item button-link"
+              onClick={() => setIsFeeManagementOpen(true)}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              title="Dynamic Fee Calculator & 2026-2027 Fee Management"
+            >
+              <DollarSign size={15} /> Fee Management
+            </button>
             <button
               type="button"
               className="nav-item button-link"
@@ -688,6 +700,13 @@ export default function OfficerDashboardPage() {
           />
         )}
       </div>
+      {/* Dynamic Fee Calculator 2026-2027 Admin Management Modal */}
+      <AdminFeeManagementModal
+        isOpen={isFeeManagementOpen}
+        onClose={() => setIsFeeManagementOpen(false)}
+        applications={applications}
+        onConfigUpdated={() => refreshFromDatabase()}
+      />
     </main>
   );
 }

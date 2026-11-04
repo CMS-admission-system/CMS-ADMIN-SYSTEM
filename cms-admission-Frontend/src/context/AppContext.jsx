@@ -11,6 +11,9 @@ import {
   fetchCourseSeatsApi,
   updateCourseSeatsApi,
   sendApplicationStatusEmail,
+  calculateStudentFeeApi,
+  fetchFeeConfigApi,
+  updateFeeConfigApi,
 } from '../services/api';
 import { getSocket, subscribeToRealtimeEvents } from '../services/socket';
 
@@ -49,6 +52,33 @@ export function AppProvider({ children }) {
     }
     return initial;
   });
+
+  const [feeConfig, setFeeConfig] = useState(null);
+  const [activeFeeBreakdown, setActiveFeeBreakdown] = useState(null);
+
+  const refreshFeeConfig = useCallback(async () => {
+    try {
+      const cfg = await fetchFeeConfigApi('2026-2027');
+      if (cfg) {
+        setFeeConfig(cfg);
+      }
+    } catch (err) {
+      console.warn('Failed to load dynamic fee config from server:', err);
+    }
+  }, []);
+
+  const calculateLiveFee = useCallback(async (studentData) => {
+    try {
+      const breakdown = await calculateStudentFeeApi(studentData);
+      if (breakdown) {
+        setActiveFeeBreakdown(breakdown);
+        return breakdown;
+      }
+    } catch (err) {
+      console.warn('Live fee calculation error:', err);
+    }
+    return null;
+  }, []);
 
   // Calculate live filled and balance counts given seat quotas and current applications
   const computeSeatBalances = useCallback((seatMap, appsList) => {
@@ -98,7 +128,8 @@ export function AppProvider({ children }) {
 
   useEffect(() => {
     refreshFromDatabase();
-  }, [refreshFromDatabase, auth.role]);
+    refreshFeeConfig();
+  }, [refreshFromDatabase, refreshFeeConfig, auth.role]);
 
   // Recalculate seat balances whenever applications change locally
   useEffect(() => {
@@ -436,7 +467,11 @@ export function AppProvider({ children }) {
     setDraft,
     setBackgroundSettings: updateBackgroundSettings,
     setPaymentSettings: updatePaymentSettings,
-  }), [auth, draft, applications, isLiveConnected, backgroundSettings, paymentSettings, courseSeats, getSeatInfo, correctionHistory, lastSubmitted, saveDraft, refreshFromDatabase]);
+    feeConfig,
+    refreshFeeConfig,
+    calculateLiveFee,
+    activeFeeBreakdown,
+  }), [auth, draft, applications, isLiveConnected, backgroundSettings, paymentSettings, courseSeats, getSeatInfo, correctionHistory, lastSubmitted, saveDraft, refreshFromDatabase, feeConfig, refreshFeeConfig, calculateLiveFee, activeFeeBreakdown]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
