@@ -265,15 +265,36 @@ def render_full_admission_email_html(
         </tr>
         """
 
-    # Build fees rows
-    fees_rows_html = ""
-    for item, amt in FEE_STRUCTURE_ROWS:
-        fees_rows_html += f"""
+    # Build fees rows: Show Admission Fee separately and Total Amount only
+    fee_calc = application_details.get("feeCalculation") or {}
+    fmt_fees = fee_calc.get("formatted") or {}
+    total_fee_str = fmt_fees.get("final_payable_amount") or fmt_fees.get("total_fees")
+    if not total_fee_str:
+        fb = fee_calc.get("fee_breakdown") or {}
+        tot_num = fb.get("final_payable_amount")
+        if tot_num is not None:
+            total_fee_str = f"₹{int(tot_num):,}"
+    if not total_fee_str:
+        total_fee_str = "₹55,000"
+
+    adm_fee_str = fmt_fees.get("admission_fee") or "₹5,000"
+
+    fees_rows_html = f"""
         <tr>
-          <td style="padding: 4px 10px; border: 1px solid #e2e8f0; font-size: 11px; color: #334155;">{item}</td>
-          <td style="padding: 4px 10px; border: 1px solid #e2e8f0; font-size: 11px; font-weight: 600; text-align: right; color: #0f172a;">{amt}</td>
+          <td style="padding: 6px 10px; border: 1px solid #e2e8f0; font-size: 11px; color: #334155;">
+            <strong>Admission Fee (One-Time)</strong>
+            <div style="font-size: 9.5px; color: #64748b;">One-time registration fee (Paid separately · Not added to total fees)</div>
+          </td>
+          <td style="padding: 6px 10px; border: 1px solid #e2e8f0; font-size: 11px; font-weight: 600; text-align: right; color: #0f172a;">{adm_fee_str}</td>
         </tr>
-        """
+        <tr style="background: #f8fafc;">
+          <td style="padding: 6px 10px; border: 1px solid #e2e8f0; font-size: 11px; color: #000000;">
+            <strong style="font-size: 12px;">TOTAL FEES</strong>
+            <div style="font-size: 9.5px; color: #64748b;">Admin-configured total fees (Excluding admission fee)</div>
+          </td>
+          <td style="padding: 6px 10px; border: 1px solid #e2e8f0; font-size: 12px; font-weight: 800; text-align: right; color: #006747;">{total_fee_str}</td>
+        </tr>
+    """
 
     # Student signature display
     if student_sig_data:

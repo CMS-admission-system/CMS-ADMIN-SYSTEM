@@ -2366,7 +2366,15 @@ export default function RegisterPage() {
         ) : null}
 
         {/* Dynamic Database-Connected Fee Calculation Preview */}
-        <DynamicFeePreview formData={formData} />
+        <DynamicFeePreview
+          formData={formData}
+          onFeeCalculated={(res) => {
+            setFormData((prev) => {
+              if (prev.feeCalculation === res) return prev;
+              return { ...prev, feeCalculation: res };
+            });
+          }}
+        />
       </section>
     );
   };

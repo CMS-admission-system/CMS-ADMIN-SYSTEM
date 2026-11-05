@@ -382,9 +382,10 @@ def calculate_student_fee(
     # Step 8 & 9: Final Tuition & Payable Amount
     if calculation_mode == "department":
         final_tuition = max(0.0, applicable_tuition - cutoff_concession_amount - pmss_approved_amount)
-        total_original_amount = admission_fee + original_tuition + (default_hostel_fee if accommodation == "Hostel" else 0.0) + transport_fee
+        # Admission Fee must NOT be added to Total Fees
+        total_original_amount = original_tuition + (default_hostel_fee if accommodation == "Hostel" else 0.0) + transport_fee
         total_concession = fg_reduction + cutoff_concession_amount + pmss_approved_amount
-        final_payable_amount = max(0.0, admission_fee + final_tuition + hostel_fee + transport_fee)
+        final_payable_amount = max(0.0, final_tuition + hostel_fee + transport_fee)
         pmss_pending_amount = max(0.0, applicable_tuition - cutoff_concession_amount) if pmss_eligible else 0.0
     else:
         # Package Mode
@@ -435,6 +436,7 @@ def calculate_student_fee(
             "total_original_amount": total_original_amount,
             "total_concession": total_concession,
             "final_payable_amount": final_payable_amount,
+            "total_fees": final_payable_amount,
         },
         "formatted": {
             "original_tuition": f"₹{int(original_tuition):,}",
@@ -451,6 +453,7 @@ def calculate_student_fee(
             "total_original_amount": f"₹{int(total_original_amount):,}",
             "total_concession": f"₹{int(total_concession):,}",
             "final_payable_amount": f"₹{int(final_payable_amount):,}",
+            "total_fees": f"₹{int(final_payable_amount):,}",
         },
         "calculated_at": datetime.now(IST).strftime("%Y-%m-%dT%H:%M:%S+05:30"),
     }

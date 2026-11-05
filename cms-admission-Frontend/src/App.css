@@ -2803,3 +2803,9 @@ label[for="boardingStop"] {
   min-height: 84px !important;
   box-sizing: border-box !important;
 }
+
+/* Student and Parent Signature Ink & Display Color */
+.signature-preview-img,
+.cms-signature-img {
+  filter: grayscale(100%) contrast(150%) !important;
+}

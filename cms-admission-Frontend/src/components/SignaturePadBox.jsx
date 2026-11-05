@@ -42,7 +42,7 @@ export default function SignaturePadBox({
     ctx.scale(dpr, dpr);
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    ctx.strokeStyle = '#0f172a';
+    ctx.strokeStyle = '#000000';
     ctx.lineWidth = 2.5;
 
     // If an existing drawn signature is provided as dataUrl and not in uploaded-image mode
@@ -75,6 +75,7 @@ export default function SignaturePadBox({
     if (!ctx) return;
 
     const { x, y } = getCoordinates(e);
+    ctx.strokeStyle = '#000000';
     ctx.beginPath();
     ctx.moveTo(x, y);
     setIsDrawing(true);
@@ -91,6 +92,7 @@ export default function SignaturePadBox({
     if (!ctx) return;
 
     const { x, y } = getCoordinates(e);
+    ctx.strokeStyle = '#000000';
     ctx.lineTo(x, y);
     ctx.stroke();
   };

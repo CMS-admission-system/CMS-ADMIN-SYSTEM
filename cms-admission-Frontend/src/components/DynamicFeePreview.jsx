@@ -3,7 +3,7 @@ import { Award, CheckCircle2, Clock, Info, ShieldCheck, Sparkles } from 'lucide-
 import { calculateStudentFeeApi } from '../services/api';
 import { calculateCutoff } from '../utils/helpers';
 
-export default function DynamicFeePreview({ formData = {}, initialBreakdown = null }) {
+export default function DynamicFeePreview({ formData = {}, initialBreakdown = null, onFeeCalculated = null }) {
   const [breakdown, setBreakdown] = useState(initialBreakdown || formData.feeCalculation || null);
   const [loading, setLoading] = useState(false);
 
@@ -35,6 +35,7 @@ export default function DynamicFeePreview({ formData = {}, initialBreakdown = nu
         const res = await calculateStudentFeeApi(payload);
         if (isMounted && res) {
           setBreakdown(res);
+          onFeeCalculated?.(res);
         }
       } catch (err) {
         console.warn('Failed to calculate fee live:', err);
@@ -215,14 +216,14 @@ export default function DynamicFeePreview({ formData = {}, initialBreakdown = nu
                     </td>
                   </tr>
 
-                  {/* Admission Fee */}
-                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  {/* Admission Fee (Paid Separately) */}
+                  <tr style={{ borderBottom: '1px solid #f1f5f9', background: '#f8fafc' }}>
                     <td style={{ padding: '9px 12px' }}>
-                      <strong>Admission Fee</strong>
-                      <span style={{ fontSize: '0.74rem', color: '#64748b', marginLeft: '6px' }}>(One-time registration)</span>
+                      <strong>Admission Fee (Paid Separately)</strong>
+                      <span style={{ fontSize: '0.74rem', color: '#64748b', marginLeft: '6px' }}>(One-time registration · Excluded from Total Fees)</span>
                     </td>
                     <td style={{ padding: '9px 12px', textAlign: 'right' }}>{fmt.admission_fee}</td>
-                    <td style={{ padding: '9px 12px', textAlign: 'right', color: '#94a3b8' }}>—</td>
+                    <td style={{ padding: '9px 12px', textAlign: 'right', color: '#64748b' }}>Paid separately</td>
                     <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700 }}>{fmt.admission_fee}</td>
                   </tr>
 
@@ -276,10 +277,10 @@ export default function DynamicFeePreview({ formData = {}, initialBreakdown = nu
         <div style={{ background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)', border: '2px solid #059669', borderRadius: '12px', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
           <div>
             <div style={{ fontSize: '0.82rem', color: '#065f46', fontWeight: 700, textTransform: 'uppercase' }}>
-              Final Amount Payable at Admission
+              Total Fees (Excluding Admission Fee)
             </div>
             <div style={{ fontSize: '0.78rem', color: '#047857' }}>
-              Total Original: <span style={{ textDecoration: 'line-through' }}>{fmt.total_original_amount}</span> · Total Concession / Waiver: <strong style={{ color: '#15803d' }}>{fmt.total_concession}</strong>
+              Total Base: <span style={{ textDecoration: 'line-through' }}>{fmt.total_original_amount}</span> · Total Concession / Waiver: <strong style={{ color: '#15803d' }}>{fmt.total_concession}</strong>
             </div>
           </div>
           <div style={{ textAlign: 'right' }}>
@@ -287,7 +288,7 @@ export default function DynamicFeePreview({ formData = {}, initialBreakdown = nu
               {fmt.final_payable_amount}
             </div>
             <div style={{ fontSize: '0.72rem', color: '#059669', fontWeight: 600, marginTop: '4px' }}>
-              Zero duplicate charges applied
+              Admission Fee ({fmt.admission_fee}) paid separately · Zero duplicate charges
             </div>
           </div>
         </div>

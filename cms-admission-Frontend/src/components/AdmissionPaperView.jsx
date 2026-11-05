@@ -47,24 +47,80 @@ export function isCourseChosen(courseItem, selectedCourse) {
   return false;
 }
 
+export function getCalculatedTotalFees(draft = {}, cutoff = 0) {
+  // If draft has authoritative backend feeCalculation snapshot
+  const calc = draft?.feeCalculation;
+  if (calc?.fee_breakdown?.final_payable_amount !== undefined || calc?.formatted?.final_payable_amount) {
+    const fmt = calc.formatted || {};
+    const fb = calc.fee_breakdown || {};
+    const totalVal = fmt.final_payable_amount || fmt.total_fees || (fb.final_payable_amount !== undefined ? `₹${Number(fb.final_payable_amount).toLocaleString('en-IN')}` : null);
+    const admVal = fmt.admission_fee || '₹5,000';
+    if (totalVal) {
+      return {
+        admissionFee: admVal,
+        totalFees: totalVal,
+      };
+    }
+  }
+
+  // Fallback calculation using official 2026-2027 fee rules
+  const dept = String(draft?.coursePreference?.firstPreference || draft?.department || '').toUpperCase();
+  const isLowCostDept = dept.includes('EEE') || dept.includes('MECH') || dept.includes('ELECTRICAL AND ELECTRONICS') || dept.includes('MECHANICAL');
+  const isFg = String(draft?.firstGraduate || '').toLowerCase() === 'yes';
+
+  // Base tuition: 80,000 / 55,000 or 60,000 / 35,000
+  let tuition = isLowCostDept ? (isFg ? 35000 : 60000) : (isFg ? 55000 : 80000);
+
+  // Cut-off Concession
+  const cutoffVal = Number(cutoff) || 0;
+  let concession = 0;
+  if (cutoffVal >= 170) {
+    concession = tuition;
+  } else if (cutoffVal >= 160) {
+    concession = tuition * 0.75;
+  } else if (cutoffVal >= 150) {
+    concession = tuition * 0.50;
+  } else if (cutoffVal >= 140) {
+    concession = tuition * 0.25;
+  } else if (cutoffVal >= 130) {
+    concession = 10000;
+  } else if (cutoffVal >= 125) {
+    concession = 5000;
+  }
+  const finalTuition = Math.max(0, tuition - concession);
+
+  // Hostel (₹45,000 if Hostel, 0 if Day Scholar)
+  const isHostel = draft?.accommodation === 'Hostel';
+  const hostelFee = isHostel ? 45000 : 0;
+
+  // Transport
+  let transportFee = 0;
+  const transportReq = String(draft?.transportRequired || '').toLowerCase() === 'yes';
+  const pickup = String(draft?.pickupPoint || draft?.boardingStop || '').toLowerCase();
+  if (transportReq || pickup) {
+    if (pickup.includes('local') || pickup.includes('namakkal')) {
+      transportFee = 5000;
+    } else if (pickup.includes('above 25') || pickup.includes('>25')) {
+      transportFee = 12500;
+    } else if (pickup.includes('25') || pickup.includes('within')) {
+      transportFee = 7500;
+    } else if (!isHostel) {
+      transportFee = 5000;
+    }
+  }
+
+  // Total Fees excludes Admission Fee (₹5,000)
+  const totalFees = finalTuition + hostelFee + transportFee;
+
+  return {
+    admissionFee: '₹5,000',
+    totalFees: `₹${totalFees.toLocaleString('en-IN')}`,
+  };
+}
+
 export const feeStructureRows = [
   { item: 'ADMISSION FEES (one time)', amount: '5000' },
-  { item: 'CONSORTIUM FEES (one time)', amount: '550' },
-  { item: 'RRA AMOUNT – ONE TIME (ANNA UNIVERSITY)', amount: '2500' },
-  { item: 'SPORTS FEES – ONE TIME (ANNA UNIVERSITY) (Four Years)', amount: '625' },
-  { item: 'GROUP INSURANCE – ONE TIME', amount: '100' },
-  { item: 'SYLLABUS FEES ONE TIME (ANNA UNIVERSITY)', amount: '200' },
-  { item: 'NSS FEES (ANNAUNIVERSITY)', amount: '25' },
-  { item: 'LAB COAT', amount: '500' },
-  { item: 'ID CARD', amount: '100' },
-  { item: 'BOOK FEES & EXAM PAPER FEES (IN EVERY SEMESTER)', amount: '—' },
-  { item: 'TUITION FEES – FIRST GRADUATE (OC/BC/BC(M)/MBC & DNC)', amount: 'Category based' },
-  { item: 'TUITION FEES – NON-FIRST GRADUATE (OC/BC/BC(M)/MBC& DNC)', amount: 'Category based' },
-  { item: 'TUITION FEES – SC/SC(A)/ST/SCC', amount: 'Category based' },
-  { item: 'HOSTEL FEES – (OC/BC/BC(M)/MBC& DNC)', amount: 'Category based' },
-  { item: 'HOSTEL FEES – SC/SC(A)/ST/SCC', amount: 'Category based' },
-  { item: 'HOSTEL / TRANSPORT APPLICATION FORM', amount: '50' },
-  { item: 'TRANSPORT FEES (PER YEAR)', amount: '—' },
+  { item: 'TOTAL FEES', amount: 'Category based' },
 ];
 
 export default function AdmissionPaperView({
@@ -84,6 +140,8 @@ export default function AdmissionPaperView({
     physics: draft?.physicsMarks,
     chemistry: draft?.chemistryMarks,
   });
+
+  const feeInfo = getCalculatedTotalFees(draft, cutoff);
 
   const admCat = String(draft.admissionCategory || draft.category || '').toUpperCase();
   const isGQ = admCat.includes('GQ') || admCat.includes('COUNSELL') || admCat.includes('GOVERNMENT');
@@ -437,12 +495,22 @@ export default function AdmissionPaperView({
           </tr>
         </thead>
         <tbody>
-          {feeStructureRows.map((row) => (
-            <tr key={row.item}>
-              <td>{row.item}</td>
-              <td style={{ textAlign: 'right', fontWeight: 600 }}>{row.amount}</td>
-            </tr>
-          ))}
+          <tr>
+            <td>
+              <strong>Admission Fee (One-Time)</strong>
+              <div style={{ fontSize: '0.68rem', color: '#64748b' }}>One-time registration fee (Paid separately · Not added to total fees)</div>
+            </td>
+            <td style={{ textAlign: 'right', fontWeight: 600 }}>{feeInfo.admissionFee}</td>
+          </tr>
+          <tr style={{ background: '#f8fafc' }}>
+            <td>
+              <strong style={{ fontSize: '0.85rem', color: '#000000' }}>TOTAL FEES</strong>
+              <div style={{ fontSize: '0.68rem', color: '#64748b' }}>Admin-configured total fees (Excluding admission fee)</div>
+            </td>
+            <td style={{ textAlign: 'right', fontWeight: 900, fontSize: '0.95rem', color: '#004d38' }}>
+              {feeInfo.totalFees}
+            </td>
+          </tr>
         </tbody>
       </table>
 

@@ -75,6 +75,7 @@ export default function VCDashboardPage() {
   const navigate = useNavigate();
   const {
     applications,
+    deleteApplication,
     logoutDemoUser,
     courseSeats,
     updateCourseSeats,
@@ -137,12 +138,25 @@ export default function VCDashboardPage() {
     }
   };
 
-  // Ensure VC can view all applications forwarded by Admin/AO
+  const handleDeleteApplication = async (id, studentName) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete application "${id}" (${studentName || 'Student'})? This action cannot be undone.`
+    );
+    if (!confirmed) return;
+    try {
+      await deleteApplication(id);
+      if (selectedStudentPreview?.id === id) {
+        setSelectedStudentPreview(null);
+      }
+    } catch (err) {
+      window.alert('Failed to delete student application.');
+    }
+  };
+
+  // Ensure VC can view ONLY applications forwarded by Admin/AO ("Sent to VC")
   const sentToVC = applications.filter((app) => (
     app.status === 'Sent to VC' ||
-    app.status === 'Forwarded to VC' ||
-    app.status === 'Confirmed' ||
-    app.status === 'Confirm'
+    app.status === 'Forwarded to VC'
   ));
 
   const normalizedSearch = searchTerm.trim().toLocaleLowerCase();
@@ -186,10 +200,9 @@ export default function VCDashboardPage() {
     return { totalCap, totalFilled, totalBal, aidsBal };
   }, [editableSeats, courseSeats, applications]);
 
-  // Category counts calculated exclusively from confirmed & paid student records from the database
+  // Category counts calculated exclusively from forwarded student records ("Sent to VC")
   const confirmedStudents = applications.filter(
-    (app) => (app.status === 'Confirmed' || app.status === 'Confirm' || app.status === 'Sent to VC')
-      && app.paymentStatus !== 'Unpaid'
+    (app) => (app.status === 'Sent to VC' || app.status === 'Forwarded to VC')
   );
 
   const transportList = confirmedStudents.filter(
@@ -624,6 +637,15 @@ export default function VCDashboardPage() {
                         >
                           <Download size={13} /> {downloadingStudentId === app.id ? 'Saving...' : 'PDF'}
                         </button>
+                        <button
+                          type="button"
+                          className="btn-review"
+                          onClick={() => handleDeleteApplication(app.id, app.studentName)}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#dc2626', color: '#ffffff', fontWeight: 700, border: 'none', cursor: 'pointer' }}
+                          title="Delete student application"
+                        >
+                          <Trash2 size={13} /> Delete
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -934,6 +956,15 @@ export default function VCDashboardPage() {
                                 title="Download Complete Student Application Form PDF"
                               >
                                 <Download size={13} /> {downloadingStudentId === app.id ? 'Saving...' : 'PDF'}
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-review"
+                                onClick={() => handleDeleteApplication(app.id, app.studentName)}
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#dc2626', color: '#ffffff', fontWeight: 700, border: 'none', cursor: 'pointer' }}
+                                title="Delete student application"
+                              >
+                                <Trash2 size={13} /> Delete
                               </button>
                             </div>
                           </td>
