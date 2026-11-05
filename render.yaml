@@ -24,10 +24,10 @@ services:
       - key: SMTP_PORT
         value: "587"
       - key: SMTP_USER
-        value: cmsadsystem@gmail.com
+        value: cmsadmissionoffice1@gmail.com
       - key: SMTP_PASSWORD
         value: ohhl usqb hwso fjco
       - key: SMTP_FROM
-        value: cmsadsystem@gmail.com
+        value: cmsadmissionoffice1@gmail.com
       - key: SMTP_TLS
         value: "true"

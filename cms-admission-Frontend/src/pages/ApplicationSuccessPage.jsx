@@ -70,7 +70,7 @@ export default function ApplicationSuccessPage() {
 
         {studentEmail ? (
           <p style={{ margin: '14px 0 0', fontSize: '0.88rem', color: '#166534', background: '#dcfce7', padding: '10px 14px', borderRadius: '10px', fontWeight: 600 }}>
-            ✉ A copy of your admission application has been sent to <strong>{studentEmail}</strong> from cmsadsystem@gmail.com.
+            ✉ A copy of your admission application has been sent to <strong>{studentEmail}</strong> from cmsadmissionoffice1@gmail.com.
           </p>
         ) : null}
 

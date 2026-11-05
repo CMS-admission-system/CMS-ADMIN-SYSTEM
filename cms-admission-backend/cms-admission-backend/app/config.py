@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     SMTP_PORT: int = 587
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
-    SMTP_FROM: str = "cmsadsystem@gmail.com"
+    SMTP_FROM: str = "cmsadmissionoffice1@gmail.com"
     SMTP_TLS: bool = True
     FRONTEND_BASE_URL: str = "http://localhost:5173"
 
