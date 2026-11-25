@@ -178,7 +178,8 @@ legend {
 }
 
 .error-text {
-  color: #a34040;
+  color: #991b1b;
+  font-weight: 600;
 }
 
 .success-text {

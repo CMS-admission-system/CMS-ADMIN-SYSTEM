@@ -71,23 +71,9 @@ export function getCalculatedTotalFees(draft = {}, cutoff = 0) {
   // Base tuition: 80,000 / 55,000 or 60,000 / 35,000
   let tuition = isLowCostDept ? (isFg ? 35000 : 60000) : (isFg ? 55000 : 80000);
 
-  // Cut-off Concession
-  const cutoffVal = Number(cutoff) || 0;
-  let concession = 0;
-  if (cutoffVal >= 170) {
-    concession = tuition;
-  } else if (cutoffVal >= 160) {
-    concession = tuition * 0.75;
-  } else if (cutoffVal >= 150) {
-    concession = tuition * 0.50;
-  } else if (cutoffVal >= 140) {
-    concession = tuition * 0.25;
-  } else if (cutoffVal >= 130) {
-    concession = 10000;
-  } else if (cutoffVal >= 125) {
-    concession = 5000;
-  }
-  const finalTuition = Math.max(0, tuition - concession);
+  // Cut-off does not reduce or alter fees
+  const concession = 0;
+  const finalTuition = tuition;
 
   // Hostel (₹45,000 if Hostel, 0 if Day Scholar)
   const isHostel = draft?.accommodation === 'Hostel';

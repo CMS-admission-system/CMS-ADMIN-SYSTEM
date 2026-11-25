@@ -80,7 +80,6 @@ export default function ApplicationPreviewPage() {
   const navigate = useNavigate();
   const { draft, saveDraft, submitApplication } = useAppContext();
   const [staffViewName, setStaffViewName] = useState(draft?.staffViewName || '');
-  const [staffViewCategory, setStaffViewCategory] = useState(draft?.staffViewCategory || '');
   const [consultantName, setConsultantName] = useState(draft?.consultantName || '');
   const [organizationName, setOrganizationName] = useState(draft?.organizationName || '');
   const [selectedFilePreview, setSelectedFilePreview] = useState(null);
@@ -143,9 +142,6 @@ export default function ApplicationPreviewPage() {
     if (!String(staffViewName || '').trim()) {
       nextErrors.name = 'Staff name is mandatory. Please enter staff name.';
     }
-    if (!String(staffViewCategory || '').trim()) {
-      nextErrors.category = 'Staff category is mandatory. Please enter staff category.';
-    }
     setStaffErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
@@ -201,14 +197,12 @@ export default function ApplicationPreviewPage() {
       return;
     }
     const sName = String(staffViewName || '').trim();
-    const sCat = String(staffViewCategory || '').trim();
     const application = await submitApplication({
       ...draft,
       id: adminNumber,
       formNumber: adminNumber,
       status: 'Enquiring',
       staffViewName: sName,
-      staffViewCategory: sCat,
       consultantName,
       organizationName,
       cutOffMarks: cutoff ?? '',
@@ -236,13 +230,11 @@ export default function ApplicationPreviewPage() {
       return;
     }
     const sName = String(staffViewName || '').trim();
-    const sCat = String(staffViewCategory || '').trim();
     saveDraft({
       ...draft,
       id: adminNumber,
       formNumber: adminNumber,
       staffViewName: sName,
-      staffViewCategory: sCat,
       consultantName,
       organizationName,
       cutOffMarks: cutoff ?? '',
@@ -274,7 +266,7 @@ export default function ApplicationPreviewPage() {
         <section className="staff-view-section screen-only" style={{ marginTop: '16px' }}>
           <h3>Staff view</h3>
           <div className="staff-view-fields">
-            <div className="field-group">
+            <div className="field-group" style={{ maxWidth: '420px' }}>
               <label htmlFor="staff-view-name">
                 Staff name <span className="required-indicator" style={{ color: '#006747' }}>*</span>
               </label>
@@ -289,24 +281,7 @@ export default function ApplicationPreviewPage() {
                 }}
                 placeholder="Type staff name"
               />
-              {staffErrors.name ? <small className="error-text" style={{ color: '#dc2626', fontWeight: 600, display: 'block', marginTop: '4px' }}>{staffErrors.name}</small> : null}
-            </div>
-            <div className="field-group">
-              <label htmlFor="staff-view-category">
-                Staff category <span className="required-indicator" style={{ color: '#006747' }}>*</span>
-              </label>
-              <input
-                id="staff-view-category"
-                type="text"
-                required
-                value={staffViewCategory}
-                onChange={(event) => {
-                  setStaffViewCategory(event.target.value);
-                  if (staffErrors.category) setStaffErrors((prev) => ({ ...prev, category: '' }));
-                }}
-                placeholder="Type staff category"
-              />
-              {staffErrors.category ? <small className="error-text" style={{ color: '#dc2626', fontWeight: 600, display: 'block', marginTop: '4px' }}>{staffErrors.category}</small> : null}
+              {staffErrors.name ? <small className="error-text" style={{ color: '#991b1b', fontWeight: 600, display: 'block', marginTop: '4px' }}>{staffErrors.name}</small> : null}
             </div>
           </div>
         </section>

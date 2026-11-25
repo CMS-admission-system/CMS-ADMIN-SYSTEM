@@ -43,6 +43,45 @@ export function normalizeCourseName(name = '') {
   return String(name).trim();
 }
 
+export function getDobValidationError(dob) {
+  if (!dob || !String(dob).trim()) {
+    return 'This field is required.';
+  }
+  const str = String(dob).trim();
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(str);
+  if (!match) {
+    return 'Year of birth must contain exactly 4 digits (YYYY-MM-DD).';
+  }
+  const yearStr = match[1];
+  const month = parseInt(match[2], 10);
+  const day = parseInt(match[3], 10);
+  const year = parseInt(yearStr, 10);
+
+  if (yearStr.length !== 4) {
+    return 'Year of birth must contain exactly 4 digits.';
+  }
+
+  const currentYear = new Date().getFullYear();
+  if (year >= currentYear) {
+    return 'Date of birth cannot be in the current year or a future year.';
+  }
+
+  if (year < 1900) {
+    return 'Please enter a valid Date of Birth.';
+  }
+
+  const testDate = new Date(year, month - 1, day);
+  if (
+    testDate.getFullYear() !== year ||
+    testDate.getMonth() !== month - 1 ||
+    testDate.getDate() !== day
+  ) {
+    return 'Please enter a valid calendar date.';
+  }
+
+  return null;
+}
+
 export function calculateCutoff({ mathematics, physics, chemistry }) {
   const marks = [mathematics, physics, chemistry];
   const validMarks = marks.every((mark) => (
@@ -107,7 +146,6 @@ export function exportApplicationsCsv(rows = []) {
     'Application ID',
     'Student Name',
     'Email ID',
-    'EMIS ID',
     'Date of Birth',
     'Gender',
     'Aadhaar Number',
@@ -144,7 +182,6 @@ export function exportApplicationsCsv(rows = []) {
     'State',
     'PIN Code',
     'Staff View Name',
-    'Staff View Category',
     'Student Declaration',
     'Parent Declaration',
     'Student Signature',
@@ -169,7 +206,6 @@ export function exportApplicationsCsv(rows = []) {
       row.id,
       row.studentName,
       row.email || '',
-      row.emisId || '',
       row.dateOfBirth || '',
       row.gender || '',
       row.aadhaar || '',
@@ -206,7 +242,6 @@ export function exportApplicationsCsv(rows = []) {
       row.state || '',
       row.pinCode || '',
       row.staffViewName || '',
-      row.staffViewCategory || '',
       row.declaration ? 'Accepted' : 'Not accepted',
       row.parentDeclaration ? 'Accepted' : 'Not accepted',
       (row.studentSignature?.dataUrl || row.signature?.dataUrl) ? 'Uploaded' : 'Not Uploaded',
@@ -255,9 +290,7 @@ export function getInitialDraft() {
     community: '',
     category: '',
     staffViewName: '',
-    staffViewCategory: '',
     bloodGroup: '',
-    emisId: '',
     communicationAddress: '',
     district: '',
     state: '',

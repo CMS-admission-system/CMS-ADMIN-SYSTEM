@@ -518,13 +518,6 @@ export default function OfficerApplicationDetailPage() {
                 />
               </div>
               <div className="field-group">
-                <label style={{ color: '#000000', fontWeight: 700, textShadow: 'none' }}>EMIS ID</label>
-                <input
-                  value={draftApplication.emisId || ''}
-                  onChange={(event) => setDraftApplication((prev) => ({ ...prev, emisId: event.target.value }))}
-                />
-              </div>
-              <div className="field-group">
                 <label style={{ color: '#000000', fontWeight: 700, textShadow: 'none' }}>Student Mobile</label>
                 <input
                   value={draftApplication.studentMobile || ''}

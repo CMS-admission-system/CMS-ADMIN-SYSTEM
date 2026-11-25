@@ -3,8 +3,7 @@ import { ArrowLeft, ArrowRight, Camera, CheckCircle2, Download, Eye, ImagePlus, 
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import SignaturePadBox from '../components/SignaturePadBox';
-import { fetchDemoStudent } from '../services/emisService';
-import { calculateCutoff, PROGRAMME_COURSES } from '../utils/helpers';
+import { calculateCutoff, getDobValidationError, PROGRAMME_COURSES } from '../utils/helpers';
 import CameraCaptureModal from '../components/CameraCaptureModal';
 import DynamicFeePreview from '../components/DynamicFeePreview';
 
@@ -560,9 +559,7 @@ export default function RegisterPage() {
   ));
   const [todayDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [errors, setErrors] = useState({});
-  const [emisStatus, setEmisStatus] = useState('idle');
-  const [emisMessage, setEmisMessage] = useState('');
-  const [isFetchingEmis, setIsFetchingEmis] = useState(false);
+
   const [previewDocModal, setPreviewDocModal] = useState(null);
   const [cameraModalDocKey, setCameraModalDocKey] = useState(null);
   const isMobile = typeof navigator !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent || '');
@@ -644,7 +641,7 @@ export default function RegisterPage() {
           'studentMobile', 'communicationAddress', 'district', 'state', 'pinCode']
           .every((field) => String(formData[field] || '').trim())
         && (formData.bloodGroup !== 'Others' || String(formData.bloodGroupOther || '').trim())
-        && formData.dateOfBirth <= todayDate
+        && !getDobValidationError(formData.dateOfBirth)
         && !getIndianMobileError(formData.studentMobile)
         && formData.email
         && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(formData.email || '').trim())
@@ -907,8 +904,9 @@ export default function RegisterPage() {
         nextErrors.bloodGroupOther = 'Please specify your blood group.';
       }
 
-      if (formData.dateOfBirth && new Date(`${formData.dateOfBirth}T00:00:00`) > new Date()) {
-        nextErrors.dateOfBirth = 'Date of birth cannot be in the future.';
+      const dobError = getDobValidationError(formData.dateOfBirth);
+      if (dobError) {
+        nextErrors.dateOfBirth = dobError;
       }
       if (formData.studentMobile) {
         const mobileError = getIndianMobileError(formData.studentMobile);
@@ -1046,60 +1044,6 @@ export default function RegisterPage() {
   const handleSaveDraft = () => {
     saveDraft({ ...formData, cutOffMarks: cutOffValue ?? '', workflowStep: currentStep, workflowVersion: 2 });
     window.alert('Draft saved locally in this browser.');
-  };
-
-  const handleFetchEmis = async () => {
-    setIsFetchingEmis(true);
-    setEmisStatus('loading');
-    setEmisMessage('Loading demo EMIS data...');
-
-    try {
-      const result = await fetchDemoStudent(formData.emisId);
-      const record = result?.student;
-      if (result.ok && record) {
-        setFormData((previous) => ({
-          ...previous,
-          studentName: record.studentName,
-          fatherName: record.fatherName,
-          fatherOccupation: record.fatherOccupation,
-          motherName: record.motherName,
-          motherOccupation: record.motherOccupation,
-          dateOfBirth: record.dateOfBirth,
-          gender: record.gender,
-          aadhaar: formatAadhaar(record.aadhaar),
-          studentMobile: record.studentMobile,
-          email: record.email || previous.email || '',
-          parentMobile: record.parentMobile,
-          fatherMobile: record.parentMobile,
-          community: record.community,
-          bloodGroup: record.bloodGroup,
-          communicationAddress: record.communicationAddress,
-          state: record.state || 'Tamil Nadu',
-          district: record.district,
-          pinCode: record.pinCode,
-          schoolName: record.schoolName,
-          schoolAddress: record.schoolAddress,
-          mathematics: record.mathematics,
-          physicsTheory: record.physicsTheory,
-          physicsPractical: record.physicsPractical,
-          chemistryTheory: record.chemistryTheory,
-          chemistryPractical: record.chemistryPractical,
-          physicsMarks: getLegacySubjectMarks(record.physicsTheory, record.physicsPractical),
-          chemistryMarks: getLegacySubjectMarks(record.chemistryTheory, record.chemistryPractical),
-          firstGraduate: record.firstGraduate,
-        }));
-        setEmisStatus('success');
-        setEmisMessage(result.message);
-      } else {
-        setEmisStatus('error');
-        setEmisMessage(result.error || 'No matching EMIS record found.');
-      }
-    } catch {
-      setEmisStatus('error');
-      setEmisMessage('Unable to fetch the demo EMIS details. Manual entry is still available.');
-    } finally {
-      setIsFetchingEmis(false);
-    }
   };
 
   const updateCoursePreference = (course) => {
@@ -1266,23 +1210,13 @@ export default function RegisterPage() {
   const renderPersonalStep = () => (
     <div className="form-grid two-column">
       <div className="field-group full-width">
-        <label htmlFor="emisId">EMIS ID (optional)</label>
-        <div className="inline-field-row">
-          <input id="emisId" value={formData.emisId || ''} onChange={(event) => updateField('emisId', event.target.value.toUpperCase())} />
-          <button type="button" className="secondary-btn compact" onClick={handleFetchEmis} disabled={isFetchingEmis}>
-            <Search size={16} /> {isFetchingEmis ? 'Fetching...' : 'Fetch demo details'}
-          </button>
-        </div>
-        {emisStatus !== 'idle' ? <small className={emisStatus === 'success' ? 'success-text' : 'error-text'} role="status">{emisMessage}</small> : null}
-      </div>
-      <div className="field-group full-width">
         <label htmlFor="studentName">Full Name <span className="required-indicator">*</span></label>
         <input id="studentName" required autoComplete="name" value={formData.studentName || ''} onChange={(event) => updateField('studentName', event.target.value)} />
         {errors.studentName ? <small className="error-text">{errors.studentName}</small> : null}
       </div>
       <div className="field-group">
         <label htmlFor="dateOfBirth">Date of Birth <span className="required-indicator">*</span></label>
-        <input id="dateOfBirth" type="date" required value={formData.dateOfBirth || ''} onChange={(event) => updateField('dateOfBirth', event.target.value)} />
+        <input id="dateOfBirth" type="date" required max={`${new Date().getFullYear() - 1}-12-31`} value={formData.dateOfBirth || ''} onChange={(event) => updateField('dateOfBirth', event.target.value)} />
         {errors.dateOfBirth ? <small className="error-text">{errors.dateOfBirth}</small> : null}
       </div>
       <div className="field-group">
@@ -2196,10 +2130,10 @@ export default function RegisterPage() {
                     <td>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                         <span style={{ fontWeight: 600, color: '#0f172a' }}>
-                          {label} {isCompulsory ? <span className="required-indicator" style={{ color: '#dc2626', fontWeight: 800 }}>* (Compulsory)</span> : null}
+                          {label} {isCompulsory ? <span className="required-indicator" style={{ color: '#991b1b', fontWeight: 800 }}>* (Compulsory)</span> : null}
                         </span>
                         {errors[key] ? (
-                          <small className="error-text" style={{ color: '#dc2626', fontWeight: 700, margin: 0 }}>
+                          <small className="error-text" style={{ color: '#991b1b', fontWeight: 700, margin: 0 }}>
                             {errors[key]}
                           </small>
                         ) : null}
@@ -2428,7 +2362,7 @@ export default function RegisterPage() {
           <span style={{ width: `${(completedStepCount / steps.length) * 100}%` }} />
         </div>
         {currentStep !== steps.length ? (
-          <p className="required-fields-note"><span className="required-indicator">*</span> Required fields. EMIS ID, guardian details, and document uploads are optional; Student Email ID and signatures are required.</p>
+          <p className="required-fields-note"><span className="required-indicator">*</span> Required fields. Guardian details and document uploads are optional; Student Email ID and signatures are required.</p>
         ) : null}
 
         {renderedSteps[currentStep - 1]()}

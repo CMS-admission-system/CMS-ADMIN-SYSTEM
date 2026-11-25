@@ -299,27 +299,9 @@ def calculate_student_fee(
         applicable_tuition = nfg_fee
         fg_reduction = 0.0
 
-    # Step 5: Calculate Highest Cut-off Concession
-    slabs = db.scalars(
-        select(models.CutoffConcessionSlab)
-        .where(models.CutoffConcessionSlab.academic_year == year, models.CutoffConcessionSlab.is_active.is_(True))
-        .order_by(models.CutoffConcessionSlab.sort_order.asc())
-    ).all()
-
+    # Step 5: Cut-off Concession Calculation (Enforced: Cut-off does not reduce or alter fees)
     cutoff_concession_amount = 0.0
-    cutoff_concession_label = "Nil (Below 125)"
-
-    for slab in slabs:
-        if slab.min_cutoff <= cutoff <= slab.max_cutoff or (slab.max_cutoff >= 200.0 and cutoff >= slab.min_cutoff):
-            if slab.concession_type == "percent":
-                cutoff_concession_amount = (slab.concession_value / 100.0) * applicable_tuition
-            else:
-                cutoff_concession_amount = min(slab.concession_value, applicable_tuition)
-            cutoff_concession_label = slab.label
-            break
-
-    # Prevent negative tuition
-    cutoff_concession_amount = min(cutoff_concession_amount, applicable_tuition)
+    cutoff_concession_label = "Nil (Cut-off does not alter fees)"
 
     # Step 7: Accommodation & Transport Charges
     if accommodation == "Hostel":

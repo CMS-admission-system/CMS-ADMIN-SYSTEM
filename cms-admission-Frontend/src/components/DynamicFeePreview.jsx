@@ -151,113 +151,71 @@ export default function DynamicFeePreview({ formData = {}, initialBreakdown = nu
             </thead>
             <tbody style={{ divideY: '1px solid #f1f5f9' }}>
               
-              {/* Row 1: Tuition or Community Package */}
-              {!isPackageMode ? (
-                <>
-                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '9px 12px' }}>
-                      <strong>Tuition Fee (Per Year)</strong>
-                      <div style={{ fontSize: '0.74rem', color: '#64748b' }}>{s.department} · {s.first_graduate}</div>
-                    </td>
-                    <td style={{ padding: '9px 12px', textAlign: 'right' }}>{fmt.original_tuition}</td>
-                    <td style={{ padding: '9px 12px', textAlign: 'right', color: '#16a34a', fontWeight: 600 }}>
-                      {f.fg_reduction > 0 ? `- ${fmt.fg_reduction} (FG)` : '—'}
-                    </td>
-                    <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700 }}>{fmt.applicable_tuition}</td>
-                  </tr>
+              {/* 1. Tuition Fees */}
+              <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                <td style={{ padding: '9px 12px' }}>
+                  <strong>Tuition Fees</strong>
+                  <div style={{ fontSize: '0.74rem', color: '#64748b' }}>{s.department} · Standard Annual Tuition</div>
+                </td>
+                <td style={{ padding: '9px 12px', textAlign: 'right' }}>{fmt.original_tuition}</td>
+                <td style={{ padding: '9px 12px', textAlign: 'right', color: '#94a3b8' }}>—</td>
+                <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700 }}>{fmt.original_tuition}</td>
+              </tr>
 
-                  {/* Cut-off Concession Row */}
-                  {f.cutoff_concession_amount > 0 ? (
-                    <tr style={{ background: '#f0fdf4', borderBottom: '1px solid #dcfce7' }}>
-                      <td style={{ padding: '9px 12px' }}>
-                        <span style={{ color: '#15803d', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                          <Award size={14} /> Cut-off Merit Concession
-                        </span>
-                        <div style={{ fontSize: '0.74rem', color: '#166534' }}>{f.cutoff_concession_label} (Cut-off: {s.cutoff_mark})</div>
-                      </td>
-                      <td style={{ padding: '9px 12px', textAlign: 'right', color: '#94a3b8' }}>—</td>
-                      <td style={{ padding: '9px 12px', textAlign: 'right', color: '#15803d', fontWeight: 700 }}>
-                        - {fmt.cutoff_concession}
-                      </td>
-                      <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: '#15803d' }}>
-                        - {fmt.cutoff_concession}
-                      </td>
-                    </tr>
-                  ) : null}
+              {/* 2. Hostel Fees */}
+              <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                <td style={{ padding: '9px 12px' }}>
+                  <strong>Hostel Fees</strong>
+                  <div style={{ fontSize: '0.74rem', color: '#64748b' }}>
+                    {s.accommodation === 'Hostel' ? 'Hostel & Mess Charges (Annual)' : 'Day Scholar (No hostel charges)'}
+                  </div>
+                </td>
+                <td style={{ padding: '9px 12px', textAlign: 'right' }}>
+                  {s.accommodation === 'Hostel' ? fmt.hostel_fee : '₹0'}
+                </td>
+                <td style={{ padding: '9px 12px', textAlign: 'right', color: '#94a3b8' }}>—</td>
+                <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700 }}>
+                  {s.accommodation === 'Hostel' ? fmt.hostel_fee : '₹0'}
+                </td>
+              </tr>
 
-                  {/* PMSS Scholarship Row */}
-                  {f.pmss_status?.includes('Eligible') || f.pmss_status === 'Approved' ? (
-                    <tr style={{ background: f.pmss_approved_amount > 0 ? '#f0fdf4' : '#fffbeb', borderBottom: '1px solid #fef3c7' }}>
-                      <td style={{ padding: '9px 12px' }}>
-                        <strong>PMSS Scholarship (SC/SCA/SCC/ST)</strong>
-                        <div style={{ fontSize: '0.74rem', color: '#92400e' }}>
-                          Status: {f.pmss_status} {f.pmss_approved_amount === 0 ? '(Approved upon official college office verification)' : ''}
-                        </div>
-                      </td>
-                      <td style={{ padding: '9px 12px', textAlign: 'right', color: '#94a3b8' }}>—</td>
-                      <td style={{ padding: '9px 12px', textAlign: 'right', color: f.pmss_approved_amount > 0 ? '#15803d' : '#d97706', fontWeight: 600 }}>
-                        {f.pmss_approved_amount > 0 ? `- ${fmt.pmss_approved}` : 'Pending Verification'}
-                      </td>
-                      <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700 }}>
-                        {f.pmss_approved_amount > 0 ? `- ${fmt.pmss_approved}` : '₹0'}
-                      </td>
-                    </tr>
-                  ) : null}
+              {/* 3. FG Scholarship */}
+              <tr style={{ borderBottom: '1px solid #f1f5f9', background: f.fg_reduction > 0 ? '#f0fdf4' : 'transparent' }}>
+                <td style={{ padding: '9px 12px' }}>
+                  <strong style={{ color: f.fg_reduction > 0 ? '#15803d' : '#0f172a' }}>FG Scholarship</strong>
+                  <div style={{ fontSize: '0.74rem', color: f.fg_reduction > 0 ? '#166534' : '#64748b' }}>
+                    {s.first_graduate === 'First Graduate (FG)' ? 'First Graduate Govt Scheme Eligible (₹25,000 concession)' : 'Non-First Graduate'}
+                  </div>
+                </td>
+                <td style={{ padding: '9px 12px', textAlign: 'right', color: '#94a3b8' }}>—</td>
+                <td style={{ padding: '9px 12px', textAlign: 'right', color: f.fg_reduction > 0 ? '#15803d' : '#94a3b8', fontWeight: 700 }}>
+                  {f.fg_reduction > 0 ? `- ${fmt.fg_reduction}` : 'Nil'}
+                </td>
+                <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: f.fg_reduction > 0 ? '#15803d' : '#0f172a' }}>
+                  {f.fg_reduction > 0 ? `- ${fmt.fg_reduction}` : '₹0'}
+                </td>
+              </tr>
 
-                  {/* Net Final Tuition */}
-                  <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                    <td style={{ padding: '9px 12px', fontWeight: 700, color: '#0f172a' }}>Net Tuition Payable</td>
-                    <td style={{ padding: '9px 12px', textAlign: 'right', color: '#64748b' }}>{fmt.original_tuition}</td>
-                    <td style={{ padding: '9px 12px', textAlign: 'right', color: '#16a34a', fontWeight: 700 }}>
-                      - ₹{int(f.fg_reduction + f.cutoff_concession_amount + f.pmss_approved_amount).toLocaleString('en-IN')}
-                    </td>
-                    <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 800, color: '#006747' }}>
-                      {fmt.final_tuition}
-                    </td>
-                  </tr>
+              {/* 4. Category Fees Structure */}
+              <tr style={{ borderBottom: '1px solid #f1f5f9', background: '#f8fafc' }}>
+                <td style={{ padding: '9px 12px' }}>
+                  <strong>Category Fees Structure</strong>
+                  <div style={{ fontSize: '0.74rem', color: '#64748b' }}>
+                    Community: {s.community} · {s.scholarship_category || 'General'}
+                    {isPackageMode ? ` · ${f.community_package_name || s.community} Package` : ''}
+                    {f.pmss_status?.includes('Eligible') || f.pmss_status === 'Approved' ? ` (PMSS: ${f.pmss_status})` : ''}
+                  </div>
+                </td>
+                <td style={{ padding: '9px 12px', textAlign: 'right', color: '#64748b' }}>Category based</td>
+                <td style={{ padding: '9px 12px', textAlign: 'right', color: f.pmss_approved_amount > 0 ? '#15803d' : '#94a3b8', fontWeight: 600 }}>
+                  {f.pmss_approved_amount > 0 ? `- ${fmt.pmss_approved} (PMSS)` : (f.pmss_status?.includes('Eligible') ? 'Pending PMSS verification' : '—')}
+                </td>
+                <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 800, color: '#006747' }}>
+                  {isPackageMode ? fmt.community_package : fmt.final_tuition}
+                </td>
+              </tr>
 
-                  {/* Admission Fee (Paid Separately) */}
-                  <tr style={{ borderBottom: '1px solid #f1f5f9', background: '#f8fafc' }}>
-                    <td style={{ padding: '9px 12px' }}>
-                      <strong>Admission Fee (Paid Separately)</strong>
-                      <span style={{ fontSize: '0.74rem', color: '#64748b', marginLeft: '6px' }}>(One-time registration · Excluded from Total Fees)</span>
-                    </td>
-                    <td style={{ padding: '9px 12px', textAlign: 'right' }}>{fmt.admission_fee}</td>
-                    <td style={{ padding: '9px 12px', textAlign: 'right', color: '#64748b' }}>Paid separately</td>
-                    <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700 }}>{fmt.admission_fee}</td>
-                  </tr>
-
-                  {/* Hostel Fee (if applicable) */}
-                  {s.accommodation === 'Hostel' ? (
-                    <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={{ padding: '9px 12px' }}>
-                        <strong>Hostel &amp; Mess Charges</strong>
-                        <span style={{ fontSize: '0.74rem', color: '#64748b', marginLeft: '6px' }}>(Annual)</span>
-                      </td>
-                      <td style={{ padding: '9px 12px', textAlign: 'right' }}>{fmt.hostel_fee}</td>
-                      <td style={{ padding: '9px 12px', textAlign: 'right', color: '#94a3b8' }}>—</td>
-                      <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700 }}>{fmt.hostel_fee}</td>
-                    </tr>
-                  ) : null}
-                </>
-              ) : (
-                /* Mode B: Community Package Row */
-                <>
-                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '9px 12px' }}>
-                      <strong>Community Package ({f.community_package_name || s.community})</strong>
-                      <div style={{ fontSize: '0.74rem', color: '#64748b' }}>
-                        Includes Tuition + {s.accommodation} (No duplicate hostel or tuition charges)
-                      </div>
-                    </td>
-                    <td style={{ padding: '9px 12px', textAlign: 'right' }}>{fmt.community_package}</td>
-                    <td style={{ padding: '9px 12px', textAlign: 'right', color: '#94a3b8' }}>—</td>
-                    <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700 }}>{fmt.community_package}</td>
-                  </tr>
-                </>
-              )}
-
-              {/* Transport Fee Row (if applicable) */}
+              {/* Transport Fee Row (if selected) */}
               {f.transport_fee > 0 ? (
                 <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
                   <td style={{ padding: '9px 12px' }}>
@@ -269,6 +227,17 @@ export default function DynamicFeePreview({ formData = {}, initialBreakdown = nu
                   <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700 }}>{fmt.transport_fee}</td>
                 </tr>
               ) : null}
+
+              {/* Admission Fee Note (Paid Separately) */}
+              <tr style={{ borderBottom: '1px solid #f1f5f9', background: '#fafafa' }}>
+                <td style={{ padding: '9px 12px' }}>
+                  <strong>Admission Fee (Paid Separately)</strong>
+                  <div style={{ fontSize: '0.74rem', color: '#64748b' }}>One-time registration fee · Excluded from Total Fees</div>
+                </td>
+                <td style={{ padding: '9px 12px', textAlign: 'right' }}>{fmt.admission_fee}</td>
+                <td style={{ padding: '9px 12px', textAlign: 'right', color: '#64748b' }}>Paid separately</td>
+                <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700 }}>{fmt.admission_fee}</td>
+              </tr>
             </tbody>
           </table>
         </div>

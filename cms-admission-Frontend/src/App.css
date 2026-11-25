@@ -498,7 +498,7 @@
 }
 
 .required-indicator {
-  color: #a34040;
+  color: #991b1b;
   font-weight: 800;
 }
 
@@ -2808,4 +2808,12 @@ label[for="boardingStop"] {
 .signature-preview-img,
 .cms-signature-img {
   filter: grayscale(100%) contrast(150%) !important;
+}
+
+/* Clearly Visible Dark Red Validation Errors and Indicators */
+.error-text,
+small.error-text,
+.required-indicator,
+span.required-indicator {
+  color: #991b1b !important;
 }

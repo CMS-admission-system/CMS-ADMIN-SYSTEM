@@ -398,7 +398,7 @@ export default function AdmissionPaymentPage() {
                     borderRadius: '8px',
                     background: cashStatus === 'Unpaid' ? '#fef2f2' : '#ffffff',
                     color: cashStatus === 'Unpaid' ? '#991b1b' : '#1e293b',
-                    border: `1.5px solid ${cashStatus === 'Unpaid' ? '#ef4444' : '#cbd5e1'}`,
+                    border: `1.5px solid ${cashStatus === 'Unpaid' ? '#991b1b' : '#cbd5e1'}`,
                   }}
                 >
                   ✗ Unpaid
@@ -557,7 +557,7 @@ export default function AdmissionPaymentPage() {
                     borderRadius: '8px',
                     background: gpayStatus === 'Unpaid' ? '#fef2f2' : '#ffffff',
                     color: gpayStatus === 'Unpaid' ? '#991b1b' : '#1e293b',
-                    border: `1.5px solid ${gpayStatus === 'Unpaid' ? '#ef4444' : '#cbd5e1'}`,
+                    border: `1.5px solid ${gpayStatus === 'Unpaid' ? '#991b1b' : '#cbd5e1'}`,
                   }}
                 >
                   ✗ Unpaid
@@ -591,7 +591,7 @@ export default function AdmissionPaymentPage() {
         </div>
 
         {paymentError ? (
-          <div style={{ background: '#fef2f2', border: '1.5px solid #ef4444', borderRadius: '10px', padding: '12px 16px', color: '#b91c1c', fontSize: '0.88rem', fontWeight: 700, marginTop: '20px' }}>
+          <div style={{ background: '#fef2f2', border: '1.5px solid #991b1b', borderRadius: '10px', padding: '12px 16px', color: '#991b1b', fontSize: '0.88rem', fontWeight: 700, marginTop: '20px' }}>
             {paymentError}
           </div>
         ) : null}

@@ -164,7 +164,6 @@ export default function VCDashboardPage() {
     app.id,
     app.formNumber,
     app.studentName,
-    app.emisId,
     app.coursePreference?.firstPreference,
     app.admissionCategory,
   ].some((field) => String(field || '').toLocaleLowerCase().includes(normalizedSearch)));
@@ -235,7 +234,6 @@ export default function VCDashboardPage() {
     app.id,
     app.formNumber,
     app.studentName,
-    app.emisId,
     app.coursePreference?.firstPreference,
     app.busNumber,
     app.busRoute,
@@ -575,7 +573,7 @@ export default function VCDashboardPage() {
                 <input
                   value={searchTerm}
                   onChange={(event) => setSearchTerm(event.target.value)}
-                  placeholder="Search forwarded students by name, admin no, course, EMIS..."
+                  placeholder="Search forwarded students by name, admin no, course..."
                   aria-label="Search forwarded students"
                 />
                 {searchTerm ? (
@@ -597,7 +595,6 @@ export default function VCDashboardPage() {
                   <th style={{ width: '56px' }}>S.No</th>
                   <th>Admin No</th>
                   <th>Student Name</th>
-                  <th>EMIS ID</th>
                   <th>Course</th>
                   <th>Category</th>
                   <th>Confirmation Date</th>
@@ -611,7 +608,6 @@ export default function VCDashboardPage() {
                     <td><strong>{index + 1}</strong></td>
                     <td>{app.formNumber || app.id}</td>
                     <td><strong>{app.studentName}</strong></td>
-                    <td>{app.emisId || '—'}</td>
                     <td>{app.coursePreference?.firstPreference || '—'}</td>
                     <td>{app.admissionCategory || '—'}</td>
                     <td>{formatDate(app.forwardedAt || app.confirmedAt || app.submittedAt)}</td>
@@ -884,7 +880,6 @@ export default function VCDashboardPage() {
                         <th style={{ width: '56px' }}>S.No</th>
                         <th>Admin No</th>
                         <th>Student Name</th>
-                        <th>EMIS ID</th>
                         <th>Course</th>
                         <th>
                           {selectedCategory === 'Transport'
@@ -906,7 +901,6 @@ export default function VCDashboardPage() {
                           <td><strong>{index + 1}</strong></td>
                           <td>{app.formNumber || app.id}</td>
                           <td><strong>{app.studentName}</strong></td>
-                          <td>{app.emisId || '—'}</td>
                           <td>{app.coursePreference?.firstPreference || '—'}</td>
                           <td>
                             {selectedCategory === 'Transport' && (

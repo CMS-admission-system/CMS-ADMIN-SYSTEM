@@ -77,7 +77,6 @@ export default function OfficerDashboardPage() {
       app.id,
       app.formNumber,
       app.studentName,
-      app.emisId,
       app.coursePreference?.firstPreference,
       app.admissionCategory,
     ];
@@ -262,7 +261,7 @@ export default function OfficerDashboardPage() {
                 id="applicationSearch"
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder="Search by student name, admin no, EMIS, course..."
+                placeholder="Search by student name, admin no, course..."
               />
               {searchTerm ? (
                 <button
@@ -338,7 +337,6 @@ export default function OfficerDashboardPage() {
                 <th style={{ width: '60px' }}>S.No</th>
                 <th>Admin No</th>
                 <th>Student</th>
-                <th>EMIS ID</th>
                 <th>Course</th>
                 <th>Date</th>
                 <th>Status</th>
@@ -351,7 +349,6 @@ export default function OfficerDashboardPage() {
                   <td><strong>{index + 1}</strong></td>
                   <td>{app.formNumber || app.id}</td>
                   <td><strong>{app.studentName}</strong></td>
-                  <td>{app.emisId || '—'}</td>
                   <td>{app.coursePreference?.firstPreference || '—'}</td>
                   <td>{formatDate(app.submittedAt)}</td>
                   <td><span className="badge badge-warning">{app.status}</span></td>
