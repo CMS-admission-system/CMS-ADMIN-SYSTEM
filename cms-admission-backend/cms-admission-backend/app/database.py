@@ -13,15 +13,24 @@ elif "aivencloud.com" in settings.db_url or "tidbcloud.com" in settings.db_url:
 
 def _init_engine():
     target_url = settings.db_url
-    target_engine = create_engine(
-        target_url,
-        connect_args=dict(_connect_args),
-        pool_pre_ping=True,
-    )
-    if not _is_sqlite:
-        with target_engine.connect():
-            pass
-    return target_engine
+    try:
+        target_engine = create_engine(
+            target_url,
+            connect_args=dict(_connect_args),
+            pool_pre_ping=True,
+        )
+        if not _is_sqlite:
+            with target_engine.connect():
+                pass
+        return target_engine
+    except Exception as e:
+        import sys
+        print(f"Primary Cloud Database unavailable ({e}). Resiliently falling back to local SQLite database (./admission.db).", file=sys.stderr)
+        return create_engine(
+            "sqlite:///./admission.db",
+            connect_args={"check_same_thread": False},
+            pool_pre_ping=True,
+        )
 
 
 engine = _init_engine()
