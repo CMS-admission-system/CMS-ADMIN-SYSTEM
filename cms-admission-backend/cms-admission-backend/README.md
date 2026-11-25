@@ -22,12 +22,17 @@ pip install -r requirements.txt
 copy .env.example .env           # Windows   (Linux/Mac: cp .env.example .env)
 ```
 Fill in `.env`:
-- `DATABASE_URL` – your cloud Postgres string (empty = local SQLite file, fine for dev/testing only)
+- `DATABASE_URL` – your Neon pooled PostgreSQL connection string, including `?sslmode=require` (empty = local SQLite file, for dev/testing only)
 - `JWT_SECRET` – `python -c "import secrets;print(secrets.token_hex(32))"`
 - `AADHAAR_ENC_KEY` – `python -c "from cryptography.fernet import Fernet;print(Fernet.generate_key().decode())"`
 - `MOBILE_UPLOAD_BASE_URL` – the frontend page a *phone* opens when it scans the kiosk QR
   (must be reachable from a phone on the campus network — not `localhost`, in production)
 - `ADMIN_USERNAME` / `ADMIN_PASSWORD` – bootstrap login, auto-created on first run if no staff exist
+
+Keep `.env` out of source control. For Render, set `DATABASE_URL` in the service's
+Environment settings; `render.yaml` intentionally leaves it unsynced so credentials
+are not stored in the repository. Rotate any database credential shared in chat
+or another public place in the Neon console.
 
 ## 3. Create the database tables
 ```bash
