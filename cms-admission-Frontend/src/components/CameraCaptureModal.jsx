@@ -214,12 +214,12 @@ export default function CameraCaptureModal({ isOpen, onClose, onPhotoCaptured, t
                 textAlign: 'center',
                 maxWidth: '420px',
                 padding: '24px',
-                background: 'rgba(239, 68, 68, 0.15)',
-                border: '1px solid #ef4444',
+                background: 'rgba(153, 27, 27, 0.15)',
+                border: '1.5px solid #991b1b',
                 borderRadius: '12px',
               }}
             >
-              <AlertCircle size={40} color="#f87171" style={{ margin: '0 auto 12px' }} />
+              <AlertCircle size={40} color="#991b1b" style={{ margin: '0 auto 12px' }} />
               <strong style={{ display: 'block', fontSize: '1.1rem', marginBottom: '8px', color: '#fca5a5' }}>
                 Camera Error
               </strong>

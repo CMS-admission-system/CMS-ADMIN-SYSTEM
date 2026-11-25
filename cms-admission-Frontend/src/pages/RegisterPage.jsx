@@ -1216,7 +1216,18 @@ export default function RegisterPage() {
       </div>
       <div className="field-group">
         <label htmlFor="dateOfBirth">Date of Birth <span className="required-indicator">*</span></label>
-        <input id="dateOfBirth" type="date" required max={`${new Date().getFullYear() - 1}-12-31`} value={formData.dateOfBirth || ''} onChange={(event) => updateField('dateOfBirth', event.target.value)} />
+        <input
+          id="dateOfBirth"
+          type="date"
+          required
+          max={`${new Date().getFullYear() - 1}-12-31`}
+          value={formData.dateOfBirth || ''}
+          onChange={(event) => updateField('dateOfBirth', event.target.value)}
+          onBlur={() => {
+            const err = getDobValidationError(formData.dateOfBirth);
+            if (err) setErrors((prev) => ({ ...prev, dateOfBirth: err }));
+          }}
+        />
         {errors.dateOfBirth ? <small className="error-text">{errors.dateOfBirth}</small> : null}
       </div>
       <div className="field-group">
@@ -1373,7 +1384,7 @@ export default function RegisterPage() {
   const renderParentsStep = () => (
     <div style={{ marginTop: '16px' }}>
       {errors.parentSelection ? (
-        <div style={{ background: '#fef2f2', border: '1.5px solid #ef4444', borderRadius: '10px', padding: '12px 16px', color: '#b91c1c', fontWeight: 700, marginBottom: '16px' }}>
+        <div style={{ background: '#fef2f2', border: '1.5px solid #991b1b', borderRadius: '10px', padding: '12px 16px', color: '#991b1b', fontWeight: 700, marginBottom: '16px' }}>
           {errors.parentSelection}
         </div>
       ) : null}
