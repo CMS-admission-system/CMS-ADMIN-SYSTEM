@@ -32,6 +32,8 @@ import {
   DEFAULT_COURSE_SEAT_QUOTAS,
   normalizeCourseName,
   calculateCutoff,
+  ALL_PORTAL_COURSES,
+  matchesPortalCategory,
 } from '../utils/helpers';
 
 const COURSE_GROUPS = [
@@ -87,8 +89,10 @@ export default function VCDashboardPage() {
 
   // Navigation tab state: 'home' (Overall Forwarded Student List), 'overview' (Category Overview), 'seats' (Course Seats Quotas), or 'edit' (VC Portal Settings)
   const [activeTab, setActiveTab] = useState('home');
-  const [selectedCategory, setSelectedCategory] = useState('Transport');
+  const [selectedCategory, setSelectedCategory] = useState('FG');
   const [searchTerm, setSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [courseFilter, setCourseFilter] = useState('');
   const [categorySearchTerm, setCategorySearchTerm] = useState('');
   const [selectedStudentPreview, setSelectedStudentPreview] = useState(null);
   const [selectedFileModal, setSelectedFileModal] = useState(null);
@@ -160,13 +164,50 @@ export default function VCDashboardPage() {
   ));
 
   const normalizedSearch = searchTerm.trim().toLocaleLowerCase();
-  const filteredSentToVC = sentToVC.filter((app) => [
-    app.id,
-    app.formNumber,
-    app.studentName,
-    app.coursePreference?.firstPreference,
-    app.admissionCategory,
-  ].some((field) => String(field || '').toLocaleLowerCase().includes(normalizedSearch)));
+  const filteredSentToVC = sentToVC.filter((app) => {
+    const searchableFields = [
+      app.id,
+      app.formNumber,
+      app.studentName,
+      app.coursePreference?.firstPreference,
+      app.admissionCategory,
+      app.community,
+    ];
+    const matchesSearch = !normalizedSearch || searchableFields.some((field) => (
+      String(field || '').toLocaleLowerCase().includes(normalizedSearch)
+    ));
+
+    let matchesCategory = true;
+    if (categoryFilter) {
+      if (categoryFilter === 'FG') {
+        matchesCategory = matchesPortalCategory(app, 'fg');
+      } else if (categoryFilter === 'Management') {
+        matchesCategory = matchesPortalCategory(app, 'management');
+      } else if (categoryFilter === '7.5% Reservation') {
+        matchesCategory = matchesPortalCategory(app, '7.5% Reservation');
+      } else if (categoryFilter === 'PMSS') {
+        matchesCategory = matchesPortalCategory(app, 'pmss');
+      } else if (categoryFilter === 'ST') {
+        matchesCategory = matchesPortalCategory(app, 'st');
+      } else if (categoryFilter === 'Transport') {
+        matchesCategory = matchesPortalCategory(app, 'transport');
+      } else if (categoryFilter === 'Hostel') {
+        matchesCategory = matchesPortalCategory(app, 'hostel');
+      } else {
+        matchesCategory = app.admissionCategory === categoryFilter ||
+          String(app.admissionCategory || '').toLowerCase().includes(categoryFilter.toLowerCase());
+      }
+    }
+
+    let matchesCourse = true;
+    if (courseFilter) {
+      const appCourse = app.coursePreference?.firstPreference || '';
+      matchesCourse = appCourse === courseFilter ||
+        normalizeCourseName(appCourse) === normalizeCourseName(courseFilter);
+    }
+
+    return matchesSearch && matchesCategory && matchesCourse;
+  });
 
   const allSeatStats = useMemo(() => {
     let totalCap = 0;
@@ -204,20 +245,22 @@ export default function VCDashboardPage() {
     (app) => (app.status === 'Sent to VC' || app.status === 'Forwarded to VC')
   );
 
-  const transportList = confirmedStudents.filter(
-    (a) => a.accommodation === 'Day Scholar' && (
-      a.transportRequired === 'Yes' || a.transportApplication === 'Yes' || a.pickupPoint || a.busRoute
-    )
-  );
-  const transportCount = transportList.length;
+  const fgList = confirmedStudents.filter((a) => matchesPortalCategory(a, 'fg'));
+  const managementList = confirmedStudents.filter((a) => matchesPortalCategory(a, 'management'));
+  const reservation75List = confirmedStudents.filter((a) => matchesPortalCategory(a, '7.5% Reservation'));
+  const pmssList = confirmedStudents.filter((a) => matchesPortalCategory(a, 'pmss'));
+  const stList = confirmedStudents.filter((a) => matchesPortalCategory(a, 'st'));
+  const transportList = confirmedStudents.filter((a) => matchesPortalCategory(a, 'transport'));
+  const hostelList = confirmedStudents.filter((a) => matchesPortalCategory(a, 'hostel'));
+  const sportsList = confirmedStudents.filter((a) => matchesPortalCategory(a, 'sports'));
 
-  const hostelList = confirmedStudents.filter((a) => a.accommodation === 'Hostel');
-  const hostelCount = hostelList.length;
-
-  const fgList = confirmedStudents.filter((a) => String(a.firstGraduate || '').toLowerCase() === 'yes');
   const fgCount = fgList.length;
-
-  const sportsList = confirmedStudents.filter((a) => String(a.sportsCategory || '').toLowerCase() === 'yes');
+  const managementCount = managementList.length;
+  const reservation75Count = reservation75List.length;
+  const pmssCount = pmssList.length;
+  const stCount = stList.length;
+  const transportCount = transportList.length;
+  const hostelCount = hostelList.length;
   const sportsCount = sportsList.length;
 
   // Active category student list based on selected category
@@ -227,6 +270,14 @@ export default function VCDashboardPage() {
     ? hostelList
     : selectedCategory === 'FG'
     ? fgList
+    : selectedCategory === 'Management Quota'
+    ? managementList
+    : selectedCategory === '7.5% Reservation'
+    ? reservation75List
+    : selectedCategory === 'PMSS Students'
+    ? pmssList
+    : selectedCategory === 'ST Students'
+    ? stList
     : sportsList;
 
   const normalizedCatSearch = categorySearchTerm.trim().toLowerCase();
@@ -235,6 +286,8 @@ export default function VCDashboardPage() {
     app.formNumber,
     app.studentName,
     app.coursePreference?.firstPreference,
+    app.admissionCategory,
+    app.community,
     app.busNumber,
     app.busRoute,
     app.boardingStop,
@@ -566,26 +619,84 @@ export default function VCDashboardPage() {
               </div>
             </div>
 
-            {/* Search Box */}
-            <div style={{ margin: '14px 0' }}>
-              <div className="search-input-wrapper">
-                <Search size={18} color="#006747" style={{ flexShrink: 0 }} />
-                <input
-                  value={searchTerm}
-                  onChange={(event) => setSearchTerm(event.target.value)}
-                  placeholder="Search forwarded students by name, admin no, course..."
-                  aria-label="Search forwarded students"
-                />
-                {searchTerm ? (
-                  <button
-                    type="button"
-                    onClick={() => setSearchTerm('')}
-                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px', color: '#64748b' }}
-                    title="Clear search"
-                  >
-                    <X size={16} />
-                  </button>
-                ) : null}
+            {/* Search Box & Filters (Integrated from Admin Dashboard) */}
+            <div className="content-panel dashboard-filters" style={{ margin: '14px 0 20px', padding: '16px 20px', borderRadius: '16px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+              <div className="field-group" style={{ marginBottom: 0 }}>
+                <label htmlFor="vcApplicationSearch" style={{ fontWeight: 700, color: '#000000', marginBottom: '6px', textShadow: 'none' }}>
+                  Search Forwarded Applications
+                </label>
+                <div className="search-input-wrapper">
+                  <Search size={18} color="#006747" style={{ flexShrink: 0 }} />
+                  <input
+                    id="vcApplicationSearch"
+                    value={searchTerm}
+                    onChange={(event) => setSearchTerm(event.target.value)}
+                    placeholder="Search by student name, admin no, course..."
+                    aria-label="Search forwarded students"
+                  />
+                  {searchTerm ? (
+                    <button
+                      type="button"
+                      onClick={() => setSearchTerm('')}
+                      style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px', color: '#64748b' }}
+                      title="Clear search"
+                    >
+                      <X size={16} />
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="field-group" style={{ marginBottom: 0 }}>
+                <label htmlFor="vcCategoryFilter" style={{ fontWeight: 700, color: '#000000', marginBottom: '6px', textShadow: 'none' }}>
+                  Admission Category
+                </label>
+                <select
+                  id="vcCategoryFilter"
+                  value={categoryFilter}
+                  onChange={(event) => setCategoryFilter(event.target.value)}
+                  style={{ minHeight: '48px' }}
+                >
+                  <option value="">All Categories</option>
+                  <option value="Management">Management Quota</option>
+                  <option value="Government / Counselling">Government / Counselling</option>
+                  <option value="7.5% Reservation">7.5% Reservation</option>
+                  <option value="FG">First Graduate (FG)</option>
+                  <option value="PMSS">PMSS Students</option>
+                  <option value="ST">ST Students</option>
+                  <option value="Transport">Transport (Day Scholar)</option>
+                  <option value="Hostel">Hostel</option>
+                  <option value="General">General</option>
+                </select>
+              </div>
+
+              <div className="field-group" style={{ marginBottom: 0 }}>
+                <label htmlFor="vcCourseFilter" style={{ fontWeight: 700, color: '#000000', marginBottom: '6px', textShadow: 'none' }}>
+                  Course / Department
+                </label>
+                <select
+                  id="vcCourseFilter"
+                  value={courseFilter}
+                  onChange={(event) => setCourseFilter(event.target.value)}
+                  style={{ minHeight: '48px' }}
+                >
+                  <option value="">All Courses ({ALL_PORTAL_COURSES.length})</option>
+                  <optgroup label="Undergraduate (UG) — B.Tech Programmes">
+                    {ALL_PORTAL_COURSES.filter((c) => c.label.includes('B.Tech')).map((course) => (
+                      <option key={course.code} value={course.code}>{course.label}</option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Undergraduate (UG) — B.E Programmes">
+                    {ALL_PORTAL_COURSES.filter((c) => c.label.includes('B.E')).map((course) => (
+                      <option key={course.code} value={course.code}>{course.label}</option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Postgraduate (PG) — M.E Programmes">
+                    {ALL_PORTAL_COURSES.filter((c) => c.label.includes('M.E')).map((course) => (
+                      <option key={course.code} value={course.code}>{course.label}</option>
+                    ))}
+                  </optgroup>
+                </select>
               </div>
             </div>
 
@@ -678,83 +789,13 @@ export default function VCDashboardPage() {
                     </span>
                   </div>
 
-                  {/* The 4 Selectable Category Cards */}
+                  {/* Selectable Category Cards (Includes all 7 Categories from Admin + Sports) */}
                   <div style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-                    gap: '16px',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
+                    gap: '14px',
                   }}>
-                    {/* Card 1: Transport */}
-                    <div
-                      style={{
-                        background: '#ffffff',
-                        border: selectedCategory === 'Transport' ? '2.5px solid #004d38' : '1.5px solid #e2e8f0',
-                        borderRadius: '16px',
-                        padding: '16px 20px',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                        boxShadow: selectedCategory === 'Transport' ? '0 4px 14px rgba(0, 77, 56, 0.12)' : '0 2px 4px rgba(0,0,0,0.03)',
-                      }}
-                      onClick={() => {
-                        setSelectedCategory('Transport');
-                        setCategorySearchTerm('');
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#004d38' }}>
-                          <Bus size={22} color="#004d38" />
-                          <strong style={{ fontSize: '1.05rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>Transport</strong>
-                        </div>
-                        {selectedCategory === 'Transport' && (
-                          <span style={{ fontSize: '0.72rem', background: '#004d38', color: '#ffffff', padding: '2px 8px', borderRadius: '999px', fontWeight: 800 }}>
-                            Active
-                          </span>
-                        )}
-                      </div>
-                      <strong style={{ display: 'block', fontSize: '2rem', color: '#004d38', fontWeight: 850 }}>
-                        {transportCount}
-                      </strong>
-                      <small style={{ color: '#475569', fontSize: '0.8rem', fontWeight: 600 }}>
-                        Bus Route &amp; Boarding Stop Confirmed
-                      </small>
-                    </div>
-
-                    {/* Card 2: Hostel */}
-                    <div
-                      style={{
-                        background: '#ffffff',
-                        border: selectedCategory === 'Hostel' ? '2.5px solid #004d38' : '1.5px solid #e2e8f0',
-                        borderRadius: '16px',
-                        padding: '16px 20px',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                        boxShadow: selectedCategory === 'Hostel' ? '0 4px 14px rgba(0, 77, 56, 0.12)' : '0 2px 4px rgba(0,0,0,0.03)',
-                      }}
-                      onClick={() => {
-                        setSelectedCategory('Hostel');
-                        setCategorySearchTerm('');
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#004d38' }}>
-                          <Building2 size={22} color="#004d38" />
-                          <strong style={{ fontSize: '1.05rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>Hostel</strong>
-                        </div>
-                        {selectedCategory === 'Hostel' && (
-                          <span style={{ fontSize: '0.72rem', background: '#004d38', color: '#ffffff', padding: '2px 8px', borderRadius: '999px', fontWeight: 800 }}>
-                            Active
-                          </span>
-                        )}
-                      </div>
-                      <strong style={{ display: 'block', fontSize: '2rem', color: '#004d38', fontWeight: 850 }}>
-                        {hostelCount}
-                      </strong>
-                      <small style={{ color: '#475569', fontSize: '0.8rem', fontWeight: 600 }}>
-                        Campus Resident Accommodation
-                      </small>
-                    </div>
-
-                    {/* Card 3: First Graduate (FG) */}
+                    {/* Card 1: First Graduate (FG) */}
                     <div
                       style={{
                         background: '#ffffff',
@@ -773,7 +814,7 @@ export default function VCDashboardPage() {
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#004d38' }}>
                           <GraduationCap size={22} color="#004d38" />
-                          <strong style={{ fontSize: '1.05rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>First Graduate (FG)</strong>
+                          <strong style={{ fontSize: '1.02rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>FG</strong>
                         </div>
                         {selectedCategory === 'FG' && (
                           <span style={{ fontSize: '0.72rem', background: '#004d38', color: '#ffffff', padding: '2px 8px', borderRadius: '999px', fontWeight: 800 }}>
@@ -781,15 +822,225 @@ export default function VCDashboardPage() {
                           </span>
                         )}
                       </div>
-                      <strong style={{ display: 'block', fontSize: '2rem', color: '#004d38', fontWeight: 850 }}>
+                      <strong style={{ display: 'block', fontSize: '1.9rem', color: '#004d38', fontWeight: 850 }}>
                         {fgCount}
                       </strong>
                       <small style={{ color: '#475569', fontSize: '0.8rem', fontWeight: 600 }}>
-                        TNEA First Graduate Verified
+                        First Graduate Beneficiaries
                       </small>
                     </div>
 
-                    {/* Card 4: Sports */}
+                    {/* Card 2: Management Quota */}
+                    <div
+                      style={{
+                        background: '#ffffff',
+                        border: selectedCategory === 'Management Quota' ? '2.5px solid #004d38' : '1.5px solid #e2e8f0',
+                        borderRadius: '16px',
+                        padding: '16px 20px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        boxShadow: selectedCategory === 'Management Quota' ? '0 4px 14px rgba(0, 77, 56, 0.12)' : '0 2px 4px rgba(0,0,0,0.03)',
+                      }}
+                      onClick={() => {
+                        setSelectedCategory('Management Quota');
+                        setCategorySearchTerm('');
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#004d38' }}>
+                          <FileText size={22} color="#004d38" />
+                          <strong style={{ fontSize: '1.02rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>Management</strong>
+                        </div>
+                        {selectedCategory === 'Management Quota' && (
+                          <span style={{ fontSize: '0.72rem', background: '#004d38', color: '#ffffff', padding: '2px 8px', borderRadius: '999px', fontWeight: 800 }}>
+                            Active
+                          </span>
+                        )}
+                      </div>
+                      <strong style={{ display: 'block', fontSize: '1.9rem', color: '#004d38', fontWeight: 850 }}>
+                        {managementCount}
+                      </strong>
+                      <small style={{ color: '#475569', fontSize: '0.8rem', fontWeight: 600 }}>
+                        Management Quota Seats
+                      </small>
+                    </div>
+
+                    {/* Card 3: 7.5% Reservation */}
+                    <div
+                      style={{
+                        background: '#ffffff',
+                        border: selectedCategory === '7.5% Reservation' ? '2.5px solid #004d38' : '1.5px solid #e2e8f0',
+                        borderRadius: '16px',
+                        padding: '16px 20px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        boxShadow: selectedCategory === '7.5% Reservation' ? '0 4px 14px rgba(0, 77, 56, 0.12)' : '0 2px 4px rgba(0,0,0,0.03)',
+                      }}
+                      onClick={() => {
+                        setSelectedCategory('7.5% Reservation');
+                        setCategorySearchTerm('');
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#004d38' }}>
+                          <Trophy size={22} color="#004d38" />
+                          <strong style={{ fontSize: '1.02rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>7.5% Quota</strong>
+                        </div>
+                        {selectedCategory === '7.5% Reservation' && (
+                          <span style={{ fontSize: '0.72rem', background: '#004d38', color: '#ffffff', padding: '2px 8px', borderRadius: '999px', fontWeight: 800 }}>
+                            Active
+                          </span>
+                        )}
+                      </div>
+                      <strong style={{ display: 'block', fontSize: '1.9rem', color: '#004d38', fontWeight: 850 }}>
+                        {reservation75Count}
+                      </strong>
+                      <small style={{ color: '#475569', fontSize: '0.8rem', fontWeight: 600 }}>
+                        Govt School 7.5% Quota
+                      </small>
+                    </div>
+
+                    {/* Card 4: PMSS Students */}
+                    <div
+                      style={{
+                        background: '#ffffff',
+                        border: selectedCategory === 'PMSS Students' ? '2.5px solid #004d38' : '1.5px solid #e2e8f0',
+                        borderRadius: '16px',
+                        padding: '16px 20px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        boxShadow: selectedCategory === 'PMSS Students' ? '0 4px 14px rgba(0, 77, 56, 0.12)' : '0 2px 4px rgba(0,0,0,0.03)',
+                      }}
+                      onClick={() => {
+                        setSelectedCategory('PMSS Students');
+                        setCategorySearchTerm('');
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#004d38' }}>
+                          <GraduationCap size={22} color="#004d38" />
+                          <strong style={{ fontSize: '1.02rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>PMSS</strong>
+                        </div>
+                        {selectedCategory === 'PMSS Students' && (
+                          <span style={{ fontSize: '0.72rem', background: '#004d38', color: '#ffffff', padding: '2px 8px', borderRadius: '999px', fontWeight: 800 }}>
+                            Active
+                          </span>
+                        )}
+                      </div>
+                      <strong style={{ display: 'block', fontSize: '1.9rem', color: '#004d38', fontWeight: 850 }}>
+                        {pmssCount}
+                      </strong>
+                      <small style={{ color: '#475569', fontSize: '0.8rem', fontWeight: 600 }}>
+                        PMSS Scholarship Scheme
+                      </small>
+                    </div>
+
+                    {/* Card 5: ST Students */}
+                    <div
+                      style={{
+                        background: '#ffffff',
+                        border: selectedCategory === 'ST Students' ? '2.5px solid #004d38' : '1.5px solid #e2e8f0',
+                        borderRadius: '16px',
+                        padding: '16px 20px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        boxShadow: selectedCategory === 'ST Students' ? '0 4px 14px rgba(0, 77, 56, 0.12)' : '0 2px 4px rgba(0,0,0,0.03)',
+                      }}
+                      onClick={() => {
+                        setSelectedCategory('ST Students');
+                        setCategorySearchTerm('');
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#004d38' }}>
+                          <Building2 size={22} color="#004d38" />
+                          <strong style={{ fontSize: '1.02rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>ST Students</strong>
+                        </div>
+                        {selectedCategory === 'ST Students' && (
+                          <span style={{ fontSize: '0.72rem', background: '#004d38', color: '#ffffff', padding: '2px 8px', borderRadius: '999px', fontWeight: 800 }}>
+                            Active
+                          </span>
+                        )}
+                      </div>
+                      <strong style={{ display: 'block', fontSize: '1.9rem', color: '#004d38', fontWeight: 850 }}>
+                        {stCount}
+                      </strong>
+                      <small style={{ color: '#475569', fontSize: '0.8rem', fontWeight: 600 }}>
+                        Scheduled Tribe Candidates
+                      </small>
+                    </div>
+
+                    {/* Card 6: Transport */}
+                    <div
+                      style={{
+                        background: '#ffffff',
+                        border: selectedCategory === 'Transport' ? '2.5px solid #004d38' : '1.5px solid #e2e8f0',
+                        borderRadius: '16px',
+                        padding: '16px 20px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        boxShadow: selectedCategory === 'Transport' ? '0 4px 14px rgba(0, 77, 56, 0.12)' : '0 2px 4px rgba(0,0,0,0.03)',
+                      }}
+                      onClick={() => {
+                        setSelectedCategory('Transport');
+                        setCategorySearchTerm('');
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#004d38' }}>
+                          <Bus size={22} color="#004d38" />
+                          <strong style={{ fontSize: '1.02rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>Transport</strong>
+                        </div>
+                        {selectedCategory === 'Transport' && (
+                          <span style={{ fontSize: '0.72rem', background: '#004d38', color: '#ffffff', padding: '2px 8px', borderRadius: '999px', fontWeight: 800 }}>
+                            Active
+                          </span>
+                        )}
+                      </div>
+                      <strong style={{ display: 'block', fontSize: '1.9rem', color: '#004d38', fontWeight: 850 }}>
+                        {transportCount}
+                      </strong>
+                      <small style={{ color: '#475569', fontSize: '0.8rem', fontWeight: 600 }}>
+                        Bus Route &amp; Stop Confirmed
+                      </small>
+                    </div>
+
+                    {/* Card 7: Hostel */}
+                    <div
+                      style={{
+                        background: '#ffffff',
+                        border: selectedCategory === 'Hostel' ? '2.5px solid #004d38' : '1.5px solid #e2e8f0',
+                        borderRadius: '16px',
+                        padding: '16px 20px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        boxShadow: selectedCategory === 'Hostel' ? '0 4px 14px rgba(0, 77, 56, 0.12)' : '0 2px 4px rgba(0,0,0,0.03)',
+                      }}
+                      onClick={() => {
+                        setSelectedCategory('Hostel');
+                        setCategorySearchTerm('');
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#004d38' }}>
+                          <Building2 size={22} color="#004d38" />
+                          <strong style={{ fontSize: '1.02rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>Hostel</strong>
+                        </div>
+                        {selectedCategory === 'Hostel' && (
+                          <span style={{ fontSize: '0.72rem', background: '#004d38', color: '#ffffff', padding: '2px 8px', borderRadius: '999px', fontWeight: 800 }}>
+                            Active
+                          </span>
+                        )}
+                      </div>
+                      <strong style={{ display: 'block', fontSize: '1.9rem', color: '#004d38', fontWeight: 850 }}>
+                        {hostelCount}
+                      </strong>
+                      <small style={{ color: '#475569', fontSize: '0.8rem', fontWeight: 600 }}>
+                        Campus Resident Accommodation
+                      </small>
+                    </div>
+
+                    {/* Card 8: Sports */}
                     <div
                       style={{
                         background: '#ffffff',
@@ -808,7 +1059,7 @@ export default function VCDashboardPage() {
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#004d38' }}>
                           <Trophy size={22} color="#004d38" />
-                          <strong style={{ fontSize: '1.05rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>Sports Quota</strong>
+                          <strong style={{ fontSize: '1.02rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>Sports Quota</strong>
                         </div>
                         {selectedCategory === 'Sports' && (
                           <span style={{ fontSize: '0.72rem', background: '#004d38', color: '#ffffff', padding: '2px 8px', borderRadius: '999px', fontWeight: 800 }}>
@@ -816,7 +1067,7 @@ export default function VCDashboardPage() {
                           </span>
                         )}
                       </div>
-                      <strong style={{ display: 'block', fontSize: '2rem', color: '#004d38', fontWeight: 850 }}>
+                      <strong style={{ display: 'block', fontSize: '1.9rem', color: '#004d38', fontWeight: 850 }}>
                         {sportsCount}
                       </strong>
                       <small style={{ color: '#475569', fontSize: '0.8rem', fontWeight: 600 }}>
@@ -833,10 +1084,14 @@ export default function VCDashboardPage() {
                       {selectedCategory === 'Transport' && <Bus size={24} color="#166534" />}
                       {selectedCategory === 'Hostel' && <Building2 size={24} color="#166534" />}
                       {selectedCategory === 'FG' && <GraduationCap size={24} color="#166534" />}
+                      {selectedCategory === 'Management Quota' && <FileText size={24} color="#166534" />}
+                      {selectedCategory === '7.5% Reservation' && <Trophy size={24} color="#166534" />}
+                      {selectedCategory === 'PMSS Students' && <GraduationCap size={24} color="#166534" />}
+                      {selectedCategory === 'ST Students' && <Building2 size={24} color="#166534" />}
                       {selectedCategory === 'Sports' && <Trophy size={24} color="#166534" />}
                       <div>
                         <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>
-                          Confirmed {selectedCategory === 'FG' ? 'First Graduate' : selectedCategory} Students ({activeCategoryStudents.length})
+                          Confirmed {selectedCategory === 'FG' ? 'First Graduate (FG)' : selectedCategory} Students ({activeCategoryStudents.length})
                         </h3>
                         <p style={{ margin: '2px 0 0', fontSize: '0.82rem', color: '#64748b' }}>
                           Displaying confirmed student records with all details, photos, and documents
@@ -888,6 +1143,14 @@ export default function VCDashboardPage() {
                             ? 'Hostel Accommodation'
                             : selectedCategory === 'FG'
                             ? 'First Graduate'
+                            : selectedCategory === 'Management Quota'
+                            ? 'Management Seat'
+                            : selectedCategory === '7.5% Reservation'
+                            ? '7.5% Reservation'
+                            : selectedCategory === 'PMSS Students'
+                            ? 'PMSS Scholarship'
+                            : selectedCategory === 'ST Students'
+                            ? 'Community'
                             : 'Sports Quota'}
                         </th>
                         <th>Status</th>
@@ -916,6 +1179,26 @@ export default function VCDashboardPage() {
                             {selectedCategory === 'FG' && (
                               <span style={{ fontSize: '0.85rem', color: '#166534', fontWeight: 600 }}>
                                 Yes (Certificate Verified)
+                              </span>
+                            )}
+                            {selectedCategory === 'Management Quota' && (
+                              <span style={{ fontSize: '0.85rem', color: '#0369a1', fontWeight: 600 }}>
+                                Management Quota Verified
+                              </span>
+                            )}
+                            {selectedCategory === '7.5% Reservation' && (
+                              <span style={{ fontSize: '0.85rem', color: '#0369a1', fontWeight: 600 }}>
+                                Govt School 7.5% Quota
+                              </span>
+                            )}
+                            {selectedCategory === 'PMSS Students' && (
+                              <span style={{ fontSize: '0.85rem' }}>
+                                Community: <strong>{app.community || 'SC/ST'}</strong> (PMSS Scheme)
+                              </span>
+                            )}
+                            {selectedCategory === 'ST Students' && (
+                              <span style={{ fontSize: '0.85rem', color: '#166534', fontWeight: 600 }}>
+                                ST (Scheduled Tribe)
                               </span>
                             )}
                             {selectedCategory === 'Sports' && (
@@ -965,8 +1248,8 @@ export default function VCDashboardPage() {
                         </tr>
                       )) : (
                         <tr>
-                          <td colSpan="9" style={{ textAlign: 'center', padding: '26px', color: '#64748b' }}>
-                            {categorySearchTerm ? 'No students found matching your search in this category.' : `No confirmed students currently in ${selectedCategory} category.`}
+                          <td colSpan="8" style={{ textAlign: 'center', padding: '24px' }}>
+                            No confirmed students found under {selectedCategory}.
                           </td>
                         </tr>
                       )}

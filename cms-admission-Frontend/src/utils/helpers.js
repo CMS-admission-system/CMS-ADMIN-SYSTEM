@@ -24,6 +24,71 @@ export const DEFAULT_COURSE_SEAT_QUOTAS = {
   'M.E - BME': 200,
 };
 
+export const ALL_PORTAL_COURSES = [
+  // Undergraduate (UG) - B.Tech
+  { code: 'AI&DS', label: 'B.Tech - Artificial Intelligence & Data Science' },
+  // Undergraduate (UG) - B.E
+  { code: 'CSE', label: 'B.E - Computer Science & Engineering' },
+  { code: 'AIML', label: 'B.E - Artificial Intelligence & Machine Learning' },
+  { code: 'CS', label: 'B.E - CSE (Cyber Security)' },
+  { code: 'ECE', label: 'B.E - Electronics & Communication Engineering' },
+  { code: 'BME', label: 'B.E - Bio-Medical Engineering' },
+  { code: 'MECH', label: 'B.E - Mechanical Engineering' },
+  { code: 'EEE (Electrical and Electronics Engineering)', label: 'B.E - Electrical & Electronics Engineering' },
+  { code: 'Electrical and Computer Engineering', label: 'B.E - Electrical and Computer Engineering' },
+  // Postgraduate (PG) - M.E
+  { code: 'M.E - CSE', label: 'M.E - Computer Science & Engineering' },
+  { code: 'M.E - BME', label: 'M.E - Bio-Medical Engineering' },
+  { code: 'VLSI', label: 'M.E - VLSI Design' },
+  { code: 'ISE', label: 'M.E - Industrial Safety Engineering' },
+];
+
+export function matchesPortalCategory(app, category) {
+  if (!app || !category) return false;
+  const cat = String(category).trim().toLowerCase();
+
+  if (cat === 'fg' || cat === 'first graduate') {
+    return String(app.firstGraduate || '').toLowerCase() === 'yes' ||
+      String(app.first_graduate || '').toLowerCase() === 'yes';
+  }
+  if (cat === 'management' || cat === 'management quota' || cat === 'mq') {
+    const ac = String(app.admissionCategory || '').toLowerCase();
+    const q = String(app.quota || '').toLowerCase();
+    return ac.includes('management') || ac === 'mq' || q.includes('management');
+  }
+  if (cat.includes('7.5') || cat.includes('reservation')) {
+    const ac = String(app.admissionCategory || '');
+    const c = String(app.category || '');
+    const q = String(app.quota || '');
+    const st = String(app.schoolType || '').toLowerCase();
+    const res = String(app.reservation || app.specialReservation || '');
+    return ac.includes('7.5') || c.includes('7.5') || q.includes('7.5') || res.includes('7.5') || st.includes('govt');
+  }
+  if (cat === 'pmss' || cat.includes('pmss')) {
+    const sc = String(app.scholarshipCategory || '').toUpperCase();
+    const comm = String(app.community || '').trim().toUpperCase();
+    return sc.includes('PMSS') || ['SC', 'SCA', 'SCC', 'ST', 'SC(A)'].some((p) => comm === p || comm.startsWith(p));
+  }
+  if (cat === 'st' || cat === 'st students') {
+    return String(app.community || '').trim().toUpperCase() === 'ST';
+  }
+  if (cat === 'transport') {
+    return app.accommodation === 'Day Scholar' && (
+      String(app.transportRequired || '').toLowerCase() === 'yes' ||
+      String(app.transportApplication || '').toLowerCase() === 'yes' ||
+      Boolean(app.pickupPoint || app.busRoute || app.busNumber)
+    );
+  }
+  if (cat === 'hostel') {
+    return String(app.accommodation || '').toLowerCase() === 'hostel';
+  }
+  if (cat === 'sports' || cat.includes('sports')) {
+    return String(app.sportsCategory || '').toLowerCase() === 'yes' ||
+      String(app.quota || '').toLowerCase().includes('sports');
+  }
+  return false;
+}
+
 export function normalizeCourseName(name = '') {
   if (!name) return '';
   const n = String(name).trim().toLowerCase();
