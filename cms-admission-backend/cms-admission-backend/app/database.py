@@ -1,34 +1,28 @@
-import logging
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 from .config import settings
 
-logger = logging.getLogger("admission.database")
-
 _is_sqlite = settings.db_url.startswith("sqlite")
 _connect_args = {}
 if _is_sqlite:
     _connect_args["check_same_thread"] = False
-elif "aivencloud.com" in settings.db_url or "tidbcloud.com" in settings.db_url or "ssl" in settings.DATABASE_URL.lower():
+elif "aivencloud.com" in settings.db_url or "tidbcloud.com" in settings.db_url:
     _connect_args["ssl"] = {}
+
 
 def _init_engine():
     target_url = settings.db_url
-    target_connect_args = dict(_connect_args)
+    target_engine = create_engine(
+        target_url,
+        connect_args=dict(_connect_args),
+        pool_pre_ping=True,
+    )
     if not _is_sqlite:
-        try:
-            test_engine = create_engine(target_url, connect_args=target_connect_args, pool_pre_ping=True)
-            with test_engine.connect():
-                pass
-            return test_engine
-        except Exception as exc:
-            logger.warning(
-                "Primary Cloud Database unavailable (%s). Resiliently falling back to local SQLite database (./admission.db).",
-                exc,
-            )
-            return create_engine("sqlite:///./admission.db", connect_args={"check_same_thread": False})
-    return create_engine(target_url, connect_args=target_connect_args, pool_pre_ping=True)
+        with target_engine.connect():
+            pass
+    return target_engine
+
 
 engine = _init_engine()
 
