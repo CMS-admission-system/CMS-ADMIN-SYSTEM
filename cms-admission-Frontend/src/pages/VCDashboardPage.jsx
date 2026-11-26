@@ -12,6 +12,7 @@ import {
   Home,
   Image,
   LayoutGrid,
+  List,
   LogOut,
   Printer,
   Save,
@@ -93,6 +94,8 @@ export default function VCDashboardPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [courseFilter, setCourseFilter] = useState('');
+  const [vcListFilter, setVcListFilter] = useState('Sent by AO'); // 'Sent by AO' | 'Enquiry List' | 'Confirmed List'
+  const [isListMenuOpen, setIsListMenuOpen] = useState(false);
   const [categorySearchTerm, setCategorySearchTerm] = useState('');
   const [selectedStudentPreview, setSelectedStudentPreview] = useState(null);
   const [selectedFileModal, setSelectedFileModal] = useState(null);
@@ -157,14 +160,22 @@ export default function VCDashboardPage() {
     }
   };
 
-  // Ensure VC can view ONLY applications forwarded by Admin/AO ("Sent to VC")
-  const sentToVC = applications.filter((app) => (
-    app.status === 'Sent to VC' ||
-    app.status === 'Forwarded to VC'
-  ));
+  // Applications list filtered by VC List option (Requirement 5)
+  // Options: 'Sent by AO' | 'Enquiry List' | 'Confirmed List'
+  const baseVCApplications = applications.filter((app) => {
+    if (!app) return false;
+    if (vcListFilter === 'Enquiry List') {
+      return app.status === 'Enquiring';
+    }
+    if (vcListFilter === 'Confirmed List') {
+      return (app.status === 'Confirmed' || app.status === 'Confirm' || app.paymentStatus === 'Paid') && app.status !== 'Sent to VC';
+    }
+    // Default: 'Sent by AO'
+    return app.status === 'Sent to VC' || app.status === 'Forwarded to VC';
+  });
 
   const normalizedSearch = searchTerm.trim().toLocaleLowerCase();
-  const filteredSentToVC = sentToVC.filter((app) => {
+  const filteredSentToVC = baseVCApplications.filter((app) => {
     const searchableFields = [
       app.id,
       app.formNumber,
@@ -300,7 +311,8 @@ export default function VCDashboardPage() {
   };
 
   const handleCsvExport = () => {
-    downloadApplicationsCsv(filteredSentToVC, 'cms-vc-applications.csv');
+    const filename = `cms-vc-${vcListFilter.toLowerCase().replace(/\s+/g, '-')}-applications.csv`;
+    downloadApplicationsCsv(filteredSentToVC, filename);
   };
 
   const handleCategoryCsvExport = () => {
@@ -606,10 +618,14 @@ export default function VCDashboardPage() {
               <div>
                 <p className="eyebrow accent" style={{ margin: 0 }}>Vice Chairman View</p>
                 <h3 style={{ margin: '4px 0 0', fontSize: '1.25rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>
-                  Overall Student List Sent by Admin ({filteredSentToVC.length})
+                  {vcListFilter === 'Sent by AO' ? 'Sent by AO (Forwarded Applications)' : vcListFilter === 'Enquiry List' ? 'Enquiry Student List' : 'Confirmed Student List'} ({filteredSentToVC.length})
                 </h3>
                 <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: '#6b7280' }}>
-                  Complete list of student applications verified and forwarded by Admission Office to Vice Chairman
+                  {vcListFilter === 'Sent by AO'
+                    ? 'Complete list of student applications verified and forwarded by Admission Office to Vice Chairman'
+                    : vcListFilter === 'Enquiry List'
+                    ? 'Candidates currently inquiring / awaiting seat confirmation payment'
+                    : 'Candidates with payment completed and seat confirmed'}
                 </p>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -623,16 +639,89 @@ export default function VCDashboardPage() {
             <div className="content-panel dashboard-filters" style={{ margin: '14px 0 20px', padding: '16px 20px', borderRadius: '16px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
               <div className="field-group" style={{ marginBottom: 0 }}>
                 <label htmlFor="vcApplicationSearch" style={{ fontWeight: 700, color: '#000000', marginBottom: '6px', textShadow: 'none' }}>
-                  Search Forwarded Applications
+                  Search {vcListFilter}
                 </label>
-                <div className="search-input-wrapper">
+                <div className="search-input-wrapper" style={{ position: 'relative' }}>
                   <Search size={18} color="#006747" style={{ flexShrink: 0 }} />
+                  {/* List Icon & Dropdown next to Search (Requirement 5) */}
+                  <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+                    <button
+                      type="button"
+                      onClick={() => setIsListMenuOpen((prev) => !prev)}
+                      style={{
+                        background: isListMenuOpen ? '#e2e8f0' : '#f1f5f9',
+                        border: '1.5px solid #006747',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        padding: '4px 8px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        color: '#006747',
+                        fontSize: '0.8rem',
+                        fontWeight: 700,
+                        marginRight: '6px',
+                        flexShrink: 0,
+                      }}
+                      title="Select list: Sent by AO, Enquiry List, or Confirmed List"
+                      aria-label="List options"
+                    >
+                      <List size={16} color="#006747" />
+                      <span>{vcListFilter}</span>
+                    </button>
+
+                    {isListMenuOpen && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: '100%',
+                          left: 0,
+                          marginTop: '4px',
+                          background: '#ffffff',
+                          border: '1.5px solid #006747',
+                          borderRadius: '8px',
+                          boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                          zIndex: 9999,
+                          minWidth: '160px',
+                          overflow: 'hidden',
+                        }}
+                      >
+                        {['Sent by AO', 'Enquiry List', 'Confirmed List'].map((option) => (
+                          <button
+                            key={option}
+                            type="button"
+                            onClick={() => {
+                              setVcListFilter(option);
+                              setIsListMenuOpen(false);
+                            }}
+                            style={{
+                              width: '100%',
+                              textAlign: 'left',
+                              padding: '8px 14px',
+                              background: vcListFilter === option ? '#f0fdf4' : 'transparent',
+                              color: vcListFilter === option ? '#006747' : '#1e293b',
+                              fontWeight: vcListFilter === option ? 800 : 500,
+                              border: 'none',
+                              cursor: 'pointer',
+                              fontSize: '0.82rem',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                            }}
+                          >
+                            <span>{option}</span>
+                            {vcListFilter === option && <CheckCircle2 size={13} color="#006747" />}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                   <input
                     id="vcApplicationSearch"
                     value={searchTerm}
                     onChange={(event) => setSearchTerm(event.target.value)}
-                    placeholder="Search by student name, admin no, course..."
-                    aria-label="Search forwarded students"
+                    placeholder={`Search within ${vcListFilter} by name, admin no, course...`}
+                    aria-label={`Search ${vcListFilter}`}
                   />
                   {searchTerm ? (
                     <button
@@ -759,7 +848,9 @@ export default function VCDashboardPage() {
                 )) : (
                   <tr>
                     <td colSpan="9" style={{ textAlign: 'center', padding: '24px' }}>
-                      {sentToVC.length ? 'No forwarded applications match your search.' : 'No applications have been sent to VC yet.'}
+                      {baseVCApplications.length
+                        ? (categoryFilter ? `No applications found matching category "${categoryFilter}" in ${vcListFilter}.` : `No applications match your search in ${vcListFilter}.`)
+                        : `No applications found in ${vcListFilter}.`}
                     </td>
                   </tr>
                 )}
@@ -814,7 +905,7 @@ export default function VCDashboardPage() {
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#004d38' }}>
                           <GraduationCap size={22} color="#004d38" />
-                          <strong style={{ fontSize: '1.02rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>FG</strong>
+                          <strong className="category-card-heading" style={{ fontSize: '1.02rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>FG</strong>
                         </div>
                         {selectedCategory === 'FG' && (
                           <span style={{ fontSize: '0.72rem', background: '#004d38', color: '#ffffff', padding: '2px 8px', borderRadius: '999px', fontWeight: 800 }}>
@@ -849,7 +940,7 @@ export default function VCDashboardPage() {
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#004d38' }}>
                           <FileText size={22} color="#004d38" />
-                          <strong style={{ fontSize: '1.02rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>Management</strong>
+                          <strong className="category-card-heading" style={{ fontSize: '1.02rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>Management</strong>
                         </div>
                         {selectedCategory === 'Management Quota' && (
                           <span style={{ fontSize: '0.72rem', background: '#004d38', color: '#ffffff', padding: '2px 8px', borderRadius: '999px', fontWeight: 800 }}>
@@ -884,7 +975,7 @@ export default function VCDashboardPage() {
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#004d38' }}>
                           <Trophy size={22} color="#004d38" />
-                          <strong style={{ fontSize: '1.02rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>7.5% Quota</strong>
+                          <strong className="category-card-heading" style={{ fontSize: '1.02rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>7.5% Quota</strong>
                         </div>
                         {selectedCategory === '7.5% Reservation' && (
                           <span style={{ fontSize: '0.72rem', background: '#004d38', color: '#ffffff', padding: '2px 8px', borderRadius: '999px', fontWeight: 800 }}>
@@ -919,7 +1010,7 @@ export default function VCDashboardPage() {
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#004d38' }}>
                           <GraduationCap size={22} color="#004d38" />
-                          <strong style={{ fontSize: '1.02rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>PMSS</strong>
+                          <strong className="category-card-heading" style={{ fontSize: '1.02rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>PMSS</strong>
                         </div>
                         {selectedCategory === 'PMSS Students' && (
                           <span style={{ fontSize: '0.72rem', background: '#004d38', color: '#ffffff', padding: '2px 8px', borderRadius: '999px', fontWeight: 800 }}>
@@ -954,7 +1045,7 @@ export default function VCDashboardPage() {
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#004d38' }}>
                           <Building2 size={22} color="#004d38" />
-                          <strong style={{ fontSize: '1.02rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>ST Students</strong>
+                          <strong className="category-card-heading" style={{ fontSize: '1.02rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>ST Students</strong>
                         </div>
                         {selectedCategory === 'ST Students' && (
                           <span style={{ fontSize: '0.72rem', background: '#004d38', color: '#ffffff', padding: '2px 8px', borderRadius: '999px', fontWeight: 800 }}>
@@ -989,7 +1080,7 @@ export default function VCDashboardPage() {
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#004d38' }}>
                           <Bus size={22} color="#004d38" />
-                          <strong style={{ fontSize: '1.02rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>Transport</strong>
+                          <strong className="category-card-heading" style={{ fontSize: '1.02rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>Transport</strong>
                         </div>
                         {selectedCategory === 'Transport' && (
                           <span style={{ fontSize: '0.72rem', background: '#004d38', color: '#ffffff', padding: '2px 8px', borderRadius: '999px', fontWeight: 800 }}>
@@ -1024,7 +1115,7 @@ export default function VCDashboardPage() {
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#004d38' }}>
                           <Building2 size={22} color="#004d38" />
-                          <strong style={{ fontSize: '1.02rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>Hostel</strong>
+                          <strong className="category-card-heading" style={{ fontSize: '1.02rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>Hostel</strong>
                         </div>
                         {selectedCategory === 'Hostel' && (
                           <span style={{ fontSize: '0.72rem', background: '#004d38', color: '#ffffff', padding: '2px 8px', borderRadius: '999px', fontWeight: 800 }}>
@@ -1059,7 +1150,7 @@ export default function VCDashboardPage() {
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#004d38' }}>
                           <Trophy size={22} color="#004d38" />
-                          <strong style={{ fontSize: '1.02rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>Sports Quota</strong>
+                          <strong className="category-card-heading" style={{ fontSize: '1.02rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>Sports Quota</strong>
                         </div>
                         {selectedCategory === 'Sports' && (
                           <span style={{ fontSize: '0.72rem', background: '#004d38', color: '#ffffff', padding: '2px 8px', borderRadius: '999px', fontWeight: 800 }}>

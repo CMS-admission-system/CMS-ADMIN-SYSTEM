@@ -77,6 +77,19 @@ export default function DynamicFeePreview({ formData = {}, initialBreakdown = nu
   const fmt = breakdown.formatted || {};
   const isPackageMode = breakdown.calculation_mode === 'package';
 
+  const isHostelEligible = (s.accommodation === 'Hostel' || formData.accommodation === 'Hostel');
+  const rawCommunity = String(s.community || formData.community || '').toUpperCase().trim();
+  const rawScholarship = String(s.scholarship_category || formData.scholarshipCategory || '').toLowerCase().trim();
+  const isPmssEligible = (
+    rawCommunity === 'SC' ||
+    rawCommunity === 'ST' ||
+    rawCommunity === 'SCA' ||
+    rawCommunity === 'SCC' ||
+    rawScholarship.includes('pmss') ||
+    f.pmss_status === 'Approved' ||
+    (typeof f.pmss_status === 'string' && f.pmss_status.includes('Eligible'))
+  );
+
   return (
     <div className="dynamic-fee-card" style={{ background: '#ffffff', borderRadius: '14px', border: '1.5px solid #006747', overflow: 'hidden', boxShadow: '0 4px 16px rgba(0, 103, 71, 0.08)', marginBottom: '20px' }}>
       
@@ -127,15 +140,18 @@ export default function DynamicFeePreview({ formData = {}, initialBreakdown = nu
             <span style={{ color: '#64748b', display: 'block', fontSize: '0.74rem' }}>Accommodation & Transport:</span>
             <strong style={{ color: '#0f172a' }}>{s.accommodation} · {s.transport_selection}</strong>
           </div>
-          <div style={{ gridColumn: '1 / -1' }}>
-            <span style={{ color: '#64748b', display: 'block', fontSize: '0.74rem' }}>Scholarship Category:</span>
-            <span style={{ fontWeight: 700, color: f.pmss_status === 'Approved' ? '#15803d' : (f.pmss_status?.includes('Eligible') ? '#b45309' : '#475569') }}>
-              {s.scholarship_category} — 
-              <span style={{ marginLeft: '4px', padding: '1px 6px', borderRadius: '4px', background: f.pmss_status?.includes('Eligible') ? '#fef3c7' : '#f1f5f9' }}>
-                {f.pmss_status}
+          {/* Scholarship Category / PMSS block (Displayed ONLY when student is PMSS eligible) */}
+          {isPmssEligible ? (
+            <div style={{ gridColumn: '1 / -1' }}>
+              <span style={{ color: '#64748b', display: 'block', fontSize: '0.74rem' }}>Scholarship Category:</span>
+              <span style={{ fontWeight: 700, color: f.pmss_status === 'Approved' ? '#15803d' : '#b45309' }}>
+                PMSS Scholarship — 
+                <span style={{ marginLeft: '4px', padding: '1px 6px', borderRadius: '4px', background: '#fef3c7' }}>
+                  {f.pmss_status || 'Eligible'}
+                </span>
               </span>
-            </span>
-          </div>
+            </div>
+          ) : null}
         </div>
 
         {/* Detailed Itemized Fee Breakdown Table */}
@@ -162,22 +178,24 @@ export default function DynamicFeePreview({ formData = {}, initialBreakdown = nu
                 <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700 }}>{fmt.original_tuition}</td>
               </tr>
 
-              {/* 2. Hostel Fees */}
-              <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                <td style={{ padding: '9px 12px' }}>
-                  <strong>Hostel Fees</strong>
-                  <div style={{ fontSize: '0.74rem', color: '#64748b' }}>
-                    {s.accommodation === 'Hostel' ? 'Hostel & Mess Charges (Annual)' : 'Day Scholar (No hostel charges)'}
-                  </div>
-                </td>
-                <td style={{ padding: '9px 12px', textAlign: 'right' }}>
-                  {s.accommodation === 'Hostel' ? fmt.hostel_fee : '₹0'}
-                </td>
-                <td style={{ padding: '9px 12px', textAlign: 'right', color: '#94a3b8' }}>—</td>
-                <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700 }}>
-                  {s.accommodation === 'Hostel' ? fmt.hostel_fee : '₹0'}
-                </td>
-              </tr>
+              {/* 2. Hostel Fees (Displayed ONLY when student is staying in Hostel / eligible) */}
+              {isHostelEligible ? (
+                <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  <td style={{ padding: '9px 12px' }}>
+                    <strong>Hostel Fees</strong>
+                    <div style={{ fontSize: '0.74rem', color: '#64748b' }}>
+                      Hostel &amp; Mess Charges (Annual)
+                    </div>
+                  </td>
+                  <td style={{ padding: '9px 12px', textAlign: 'right' }}>
+                    {fmt.hostel_fee}
+                  </td>
+                  <td style={{ padding: '9px 12px', textAlign: 'right', color: '#94a3b8' }}>—</td>
+                  <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700 }}>
+                    {fmt.hostel_fee}
+                  </td>
+                </tr>
+              ) : null}
 
               {/* 3. FG Scholarship */}
               <tr style={{ borderBottom: '1px solid #f1f5f9', background: f.fg_reduction > 0 ? '#f0fdf4' : 'transparent' }}>
@@ -201,14 +219,16 @@ export default function DynamicFeePreview({ formData = {}, initialBreakdown = nu
                 <td style={{ padding: '9px 12px' }}>
                   <strong>Category Fees Structure</strong>
                   <div style={{ fontSize: '0.74rem', color: '#64748b' }}>
-                    Community: {s.community} · {s.scholarship_category || 'General'}
+                    Community: {s.community || formData.community}
                     {isPackageMode ? ` · ${f.community_package_name || s.community} Package` : ''}
-                    {f.pmss_status?.includes('Eligible') || f.pmss_status === 'Approved' ? ` (PMSS: ${f.pmss_status})` : ''}
+                    {isPmssEligible && (f.pmss_status?.includes('Eligible') || f.pmss_status === 'Approved') ? ` (PMSS: ${f.pmss_status})` : ''}
                   </div>
                 </td>
                 <td style={{ padding: '9px 12px', textAlign: 'right', color: '#64748b' }}>Category based</td>
-                <td style={{ padding: '9px 12px', textAlign: 'right', color: f.pmss_approved_amount > 0 ? '#15803d' : '#94a3b8', fontWeight: 600 }}>
-                  {f.pmss_approved_amount > 0 ? `- ${fmt.pmss_approved} (PMSS)` : (f.pmss_status?.includes('Eligible') ? 'Pending PMSS verification' : '—')}
+                <td style={{ padding: '9px 12px', textAlign: 'right', color: (isPmssEligible && f.pmss_approved_amount > 0) ? '#15803d' : '#94a3b8', fontWeight: 600 }}>
+                  {isPmssEligible
+                    ? (f.pmss_approved_amount > 0 ? `- ${fmt.pmss_approved} (PMSS)` : 'Pending PMSS verification')
+                    : '—'}
                 </td>
                 <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 800, color: '#006747' }}>
                   {isPackageMode ? fmt.community_package : fmt.final_tuition}

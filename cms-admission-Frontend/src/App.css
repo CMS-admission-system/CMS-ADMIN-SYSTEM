@@ -2322,6 +2322,10 @@ input[type="number"] {
     size: A4 portrait;
     margin: 6mm 8mm;
   }
+  *, *::before, *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
   body, #root {
     background: #ffffff !important;
   }
@@ -2330,6 +2334,7 @@ input[type="number"] {
   .screen-only,
   .preview-actions,
   .staff-view-section,
+  .preview-note-box,
   .success-card,
   .success-actions {
     display: none !important;
@@ -2341,27 +2346,30 @@ input[type="number"] {
     background: transparent !important;
   }
   .cms-paper-wrapper {
-    max-width: none !important;
+    max-width: 860px !important;
     width: 100% !important;
+    margin: 0 auto !important;
   }
   .cms-paper-form {
-    border: none !important;
+    border: 1px solid #64748b !important;
     box-shadow: none !important;
-    padding: 0 !important;
+    padding: 14px 18px !important;
     width: 100% !important;
-    max-width: none !important;
+    max-width: 860px !important;
+    margin: 0 auto !important;
+    background: #ffffff !important;
+    box-sizing: border-box !important;
   }
   .cms-consultant-strip {
-    background: transparent !important;
-    border: none !important;
-    padding: 2px 0 !important;
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    padding: 6px 10px !important;
   }
   .cms-consultant-input {
-    border: none !important;
-    border-bottom: 1px solid #0f172a !important;
-    border-radius: 0 !important;
-    background: transparent !important;
-    padding: 0 4px !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 4px !important;
+    background: #ffffff !important;
+    padding: 2px 6px !important;
   }
   .paper-option.selected {
     -webkit-print-color-adjust: exact !important;
@@ -2381,8 +2389,13 @@ input[type="number"] {
     print-color-adjust: exact !important;
     background-color: rgba(0, 103, 71, 0.12) !important;
   }
-  table, tr, td, th {
-    page-break-inside: avoid;
+  table, tr, td, th,
+  .cms-signatures-row,
+  .cms-reference-box,
+  .cms-authorities-row,
+  .cms-refund-note-box {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 }
 
@@ -2820,4 +2833,20 @@ small.error-text,
 .required-indicator,
 span.required-indicator {
   color: #991b1b !important;
+}
+
+/* Category Selection Box Titles / Headings in Black (Admin & VC Dashboards) */
+.category-box-heading,
+.category-card-heading,
+.category-card-title,
+.cat-box-title,
+.cat-card-title,
+.officer-shell .category-card strong,
+.officer-shell .cat-box strong,
+.vc-shell .category-card strong,
+.vc-shell .cat-box strong,
+.admin-shell .cat-card-title,
+.category-card-title-black {
+  color: #000000 !important;
+  text-shadow: none !important;
 }

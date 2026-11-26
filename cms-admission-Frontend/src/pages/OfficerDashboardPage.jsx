@@ -280,67 +280,8 @@ export default function OfficerDashboardPage() {
           </div>
         </div>
 
-        {/* RIGHT SIDE of Green Box: Confirmed Category Summary Icons + Home, Category Overview, Fee Management, Logout */}
+        {/* RIGHT SIDE of Green Box: Home, Category Overview, Fee Management, Logout (Standalone Category pills removed per requirement 3) */}
         <div className="header-right-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginLeft: 'auto' }}>
-          {/* Confirmed Category Summary Icons */}
-          <div className="cat-summary-nav">
-            <button
-              type="button"
-              className="cat-summary-pill"
-              onClick={() => {
-                setActiveNavTab('category-overview');
-                setSelectedAdminCategory('Transport');
-              }}
-              title="Click to view Transport Students in Category Overview"
-            >
-              <Bus size={15} />
-              <span>Transport</span>
-              <strong>{transportCount}</strong>
-            </button>
-
-            <button
-              type="button"
-              className="cat-summary-pill"
-              onClick={() => {
-                setActiveNavTab('category-overview');
-                setSelectedAdminCategory('Hostel');
-              }}
-              title="Click to view Hostel Students in Category Overview"
-            >
-              <Building2 size={15} />
-              <span>Hostel</span>
-              <strong>{hostelCount}</strong>
-            </button>
-
-            <button
-              type="button"
-              className="cat-summary-pill"
-              onClick={() => {
-                setActiveNavTab('category-overview');
-                setSelectedAdminCategory('FG');
-              }}
-              title="Click to view First Graduate Students in Category Overview"
-            >
-              <GraduationCap size={15} />
-              <span>FG</span>
-              <strong>{fgCount}</strong>
-            </button>
-
-            <button
-              type="button"
-              className="cat-summary-pill"
-              onClick={() => {
-                setActiveNavTab('category-overview');
-                setSelectedAdminCategory('7.5% Reservation');
-              }}
-              title="Click to view 7.5% Reservation Students in Category Overview"
-            >
-              <Trophy size={15} />
-              <span>7.5%</span>
-              <strong>{reservation75Students.length}</strong>
-            </button>
-          </div>
-
           {/* Navigation Items: Home, Category Overview, Fee Management, Logout */}
           <nav className="admin-nav" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <button
@@ -493,7 +434,7 @@ export default function OfficerDashboardPage() {
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#004d38' }}>
                           {cat.icon}
-                          <strong style={{ fontSize: '1rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>{cat.label}</strong>
+                          <strong className="category-card-heading" style={{ fontSize: '1rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>{cat.label}</strong>
                         </div>
                         {isSelected && (
                           <span style={{ fontSize: '0.72rem', background: '#004d38', color: '#ffffff', padding: '2px 8px', borderRadius: '999px', fontWeight: 800 }}>
@@ -761,19 +702,28 @@ export default function OfficerDashboardPage() {
             <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '24px', width: '100%', alignItems: 'stretch' }}>
               <div className="stat-card" style={{ minHeight: '84px', height: '84px', color: '#000000', boxSizing: 'border-box' }}>
                 <span style={{ color: '#000000', fontWeight: 700, fontSize: '1rem' }}>Enquiring</span>
-                <strong style={{ color: '#000000', fontWeight: 800, fontSize: '1.4rem' }}>{applications.filter((app) => app.status === 'Enquiring').length}</strong>
+                <strong style={{ color: '#000000', fontWeight: 800, fontSize: '1.4rem' }}>{categoryFilter || courseFilter || normalizedSearch ? enquiring.length : applications.filter((app) => app && app.status === 'Enquiring').length}</strong>
               </div>
               <div className="stat-card" style={{ minHeight: '84px', height: '84px', color: '#000000', boxSizing: 'border-box' }}>
                 <span style={{ color: '#000000', fontWeight: 700, fontSize: '1rem' }}>Confirm</span>
-                <strong style={{ color: '#000000', fontWeight: 800, fontSize: '1.4rem' }}>{applications.filter((app) => (app.status === 'Confirmed' || app.status === 'Confirm') && app.status !== 'Sent to VC').length}</strong>
+                <strong style={{ color: '#000000', fontWeight: 800, fontSize: '1.4rem' }}>{categoryFilter || courseFilter || normalizedSearch ? confirmed.length : applications.filter((app) => app && (app.status === 'Confirmed' || app.status === 'Confirm') && app.status !== 'Sent to VC').length}</strong>
               </div>
               <div className="stat-card" style={{ minHeight: '84px', height: '84px', color: '#000000', boxSizing: 'border-box' }}>
                 <span style={{ color: '#000000', fontWeight: 700, fontSize: '1rem' }}>Sent to VC</span>
-                <strong style={{ color: '#000000', fontWeight: 800, fontSize: '1.4rem' }}>{applications.filter((app) => app.status === 'Sent to VC' || app.status === 'Forwarded to VC').length}</strong>
+                <strong style={{ color: '#000000', fontWeight: 800, fontSize: '1.4rem' }}>{categoryFilter || courseFilter || normalizedSearch ? sentToVC.length : applications.filter((app) => app && (app.status === 'Sent to VC' || app.status === 'Forwarded to VC')).length}</strong>
               </div>
             </div>
 
-            {/* Enquiring List */}
+            {/* Empty matching notice when a category is selected and has 0 applications across all lists */}
+            {categoryFilter && enquiring.length === 0 && confirmed.length === 0 && sentToVC.length === 0 ? (
+              <div className="content-panel table-card" style={{ textAlign: 'center', padding: '36px 20px', color: '#475569', marginBottom: '24px' }}>
+                <h3 style={{ color: '#000000', margin: '0 0 8px', fontWeight: 800 }}>No Applications Found</h3>
+                <p style={{ margin: 0, fontSize: '0.9rem' }}>No student applications match the selected category "{categoryFilter}".</p>
+              </div>
+            ) : null}
+
+            {/* Enquiring List (Hidden when Confirmed/Sent to VC status is selected, or if category has 0 enquiring students) */}
+            {(categoryFilter === 'Enquiring' || (!categoryFilter && true) || (categoryFilter !== 'Confirmed' && categoryFilter !== 'Sent to VC' && enquiring.length > 0)) ? (
             <div className="content-panel table-card" style={{ marginBottom: '24px' }}>
               <div className="section-header space-between">
                 <div>
@@ -857,8 +807,10 @@ export default function OfficerDashboardPage() {
                 </tbody>
               </table>
             </div>
+            ) : null}
 
-            {/* Confirmed List (With Selectable Checklist & Bulk Selection - Requirement 2) */}
+            {/* Confirmed List (Hidden when Enquiring/Sent to VC status is selected, or if category has 0 confirmed students) */}
+            {(categoryFilter === 'Confirmed' || (!categoryFilter && true) || (categoryFilter !== 'Enquiring' && categoryFilter !== 'Sent to VC' && confirmed.length > 0)) ? (
             <div className="content-panel table-card" style={{ marginBottom: '24px' }}>
               <div className="section-header space-between">
                 <div>
@@ -921,7 +873,7 @@ export default function OfficerDashboardPage() {
                         <td>{formatDate(app.confirmedAt || app.submittedAt)}</td>
                         <td><span className="badge badge-success">Confirmed</span></td>
                         <td>
-                          {/* Row actions: Review, Edit, Delete removed from rows per requirement 2 */}
+                          {/* Row actions */}
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                             <button
                               type="button"
@@ -1082,8 +1034,10 @@ export default function OfficerDashboardPage() {
                 </div>
               </div>
             </div>
+            ) : null}
 
-            {/* Sent to VC List */}
+            {/* Sent to VC List (Hidden when Enquiring/Confirmed status is selected, or if category has 0 sent to VC students) */}
+            {(categoryFilter === 'Sent to VC' || (!categoryFilter && true) || (categoryFilter !== 'Enquiring' && categoryFilter !== 'Confirmed' && sentToVC.length > 0)) ? (
             <div className="content-panel table-card">
               <div className="section-header space-between">
                 <div>
@@ -1148,6 +1102,7 @@ export default function OfficerDashboardPage() {
                 </tbody>
               </table>
             </div>
+            ) : null}
           </div>
         )}
       </section>
