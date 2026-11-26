@@ -466,7 +466,7 @@ export default function OfficerDashboardPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   {currentCategoryObj.icon}
                   <div>
-                    <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>
+                    <h3 className="category-box-heading" style={{ margin: 0, fontSize: '1.2rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>
                       {currentCategoryObj.fullName} ({displayedCategoryStudents.length})
                     </h3>
                     <p style={{ margin: '2px 0 0', fontSize: '0.82rem', color: '#64748b' }}>
@@ -733,7 +733,7 @@ export default function OfficerDashboardPage() {
             <div className="content-panel table-card" style={{ marginBottom: '24px' }}>
               <div className="section-header space-between">
                 <div>
-                  <h3 style={{ margin: 0, color: '#000000' }}>Enquiring List ({enquiring.length})</h3>
+                  <h3 className="category-box-heading" style={{ margin: 0, color: '#000000', fontWeight: 800, textShadow: 'none' }}>Enquiring List ({enquiring.length})</h3>
                   <p style={{ margin: 0, fontSize: '0.82rem', color: '#6b7280' }}>Candidates inquiring / awaiting seat confirmation payment</p>
                 </div>
                 <button type="button" className="secondary-btn compact" onClick={() => downloadApplicationsCsv(enquiring, 'cms-enquiring-applications.csv')}><Download size={14} /> Export CSV</button>
@@ -820,7 +820,7 @@ export default function OfficerDashboardPage() {
             <div className="content-panel table-card" style={{ marginBottom: '24px' }}>
               <div className="section-header space-between">
                 <div>
-                  <h3 style={{ margin: 0, color: '#000000' }}>Confirmed List ({confirmed.length})</h3>
+                  <h3 className="category-box-heading" style={{ margin: 0, color: '#000000', fontWeight: 800, textShadow: 'none' }}>Confirmed List ({confirmed.length})</h3>
                   <p style={{ margin: 0, fontSize: '0.82rem', color: '#6b7280' }}>Payment completed &amp; seat confirmed candidates ready for VC dispatch</p>
                 </div>
                 <button type="button" className="secondary-btn compact" onClick={() => downloadApplicationsCsv(confirmed, 'cms-confirmed-applications.csv')}><Download size={14} /> Export CSV</button>
@@ -1047,7 +1047,7 @@ export default function OfficerDashboardPage() {
             <div className="content-panel table-card">
               <div className="section-header space-between">
                 <div>
-                  <h3 style={{ margin: 0, color: '#000000' }}>Sent to VC List ({sentToVC.length})</h3>
+                  <h3 className="category-box-heading" style={{ margin: 0, color: '#000000', fontWeight: 800, textShadow: 'none' }}>Sent to VC List ({sentToVC.length})</h3>
                   <p style={{ margin: 0, fontSize: '0.82rem', color: '#6b7280' }}>Applications forwarded to Vice-Chairman portal</p>
                 </div>
                 <button type="button" className="secondary-btn compact" onClick={() => downloadApplicationsCsv(sentToVC, 'cms-sent-to-vc-applications.csv')}><Download size={14} /> Export CSV</button>
