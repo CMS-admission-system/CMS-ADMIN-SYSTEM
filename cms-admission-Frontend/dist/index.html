@@ -2,10 +2,25 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <link rel="icon" type="image/png" href="/cms-logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>admin-project</title>
-    <script type="module" crossorigin src="/assets/index-DSgvPsbC.js"></script>
+    <script>
+      // Automatically handle version updates & stale chunk errors seamlessly
+      window.addEventListener('vite:preloadError', function(e) {
+        e.preventDefault();
+        window.location.reload();
+      });
+      window.addEventListener('error', function(e) {
+        if (e.message && (e.message.indexOf('Loading chunk') !== -1 || e.message.indexOf('dynamically imported module') !== -1)) {
+          window.location.reload();
+        }
+      });
+    </script>
+    <script type="module" crossorigin src="/assets/index-DxYO9N5y.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-BLeNtWCf.css">
   </head>
   <body>
