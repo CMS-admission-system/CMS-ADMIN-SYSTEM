@@ -587,7 +587,7 @@ export default function RegisterPage() {
     documents: draft?.documents || {},
     fees: draft?.fees || {},
     accommodation: draft?.accommodation || '',
-    transportRequired: draft?.transportRequired || (draft?.transportApplication === 'Yes' ? 'Yes' : (draft?.accommodation === 'Day Scholar' ? 'Yes' : (draft?.accommodation === 'Hostel' ? 'No' : ''))),
+    transportRequired: draft?.transportRequired || '',
     pickupPoint: draft?.pickupPoint || '',
     busNumber: draft?.busNumber || '',
     busRoute: draft?.busRoute || '',
@@ -712,8 +712,28 @@ export default function RegisterPage() {
     saveDraft({ ...formData, cutOffMarks: cutOffValue ?? '', workflowStep: currentStep, workflowVersion: 2 });
   }, [formData, currentStep, cutOffValue, saveDraft]);
 
+  const NAME_OCCUPATION_FIELDS = [
+    'studentName',
+    'fatherName',
+    'fatherOccupation',
+    'motherName',
+    'motherOccupation',
+    'guardianName',
+    'guardianOccupation',
+  ];
+
   const updateField = (field, value) => {
-    setFormData((previous) => ({ ...previous, [field]: value }));
+    let sanitized = value;
+    if (NAME_OCCUPATION_FIELDS.includes(field) && typeof value === 'string') {
+      sanitized = value.replace(/[^a-zA-Z\s.]/g, '');
+    } else if (field === 'hscMarks' && value !== '' && value !== null && value !== undefined) {
+      const num = Number(value);
+      if (num > 600) sanitized = 0;
+    } else if (['mathematics', 'physicsMarks', 'chemistryMarks'].includes(field) && value !== '' && value !== null && value !== undefined) {
+      const num = Number(value);
+      if (num > 100) sanitized = 0;
+    }
+    setFormData((previous) => ({ ...previous, [field]: sanitized }));
     setErrors((previous) => ({ ...previous, [field]: '' }));
   };
 
@@ -904,6 +924,10 @@ export default function RegisterPage() {
         nextErrors.bloodGroupOther = 'Please specify your blood group.';
       }
 
+      if (formData.studentName && !/^[a-zA-Z\s.]+$/.test(formData.studentName.trim())) {
+        nextErrors.studentName = 'Name must contain alphabetic characters only.';
+      }
+
       const dobError = getDobValidationError(formData.dateOfBirth);
       if (dobError) {
         nextErrors.dateOfBirth = dobError;
@@ -934,6 +958,18 @@ export default function RegisterPage() {
         ['fatherName', 'fatherOccupation', 'motherName', 'motherOccupation', 'fatherMobile', 'motherMobile'].forEach((field) => {
           if (!String(formData[field] || '').trim()) nextErrors[field] = 'This field is required.';
         });
+        if (formData.fatherName && !/^[a-zA-Z\s.]+$/.test(formData.fatherName.trim())) {
+          nextErrors.fatherName = 'Father Name must contain alphabetic characters only.';
+        }
+        if (formData.fatherOccupation && !/^[a-zA-Z\s.]+$/.test(formData.fatherOccupation.trim())) {
+          nextErrors.fatherOccupation = 'Father Occupation must contain alphabetic characters only.';
+        }
+        if (formData.motherName && !/^[a-zA-Z\s.]+$/.test(formData.motherName.trim())) {
+          nextErrors.motherName = 'Mother Name must contain alphabetic characters only.';
+        }
+        if (formData.motherOccupation && !/^[a-zA-Z\s.]+$/.test(formData.motherOccupation.trim())) {
+          nextErrors.motherOccupation = 'Mother Occupation must contain alphabetic characters only.';
+        }
         if (formData.fatherMobile) {
           const mobileError = getIndianMobileError(formData.fatherMobile);
           if (mobileError) nextErrors.fatherMobile = mobileError;
@@ -948,6 +984,12 @@ export default function RegisterPage() {
         ['guardianName', 'guardianOccupation', 'guardianMobile'].forEach((field) => {
           if (!String(formData[field] || '').trim()) nextErrors[field] = 'This field is required.';
         });
+        if (formData.guardianName && !/^[a-zA-Z\s.]+$/.test(formData.guardianName.trim())) {
+          nextErrors.guardianName = 'Guardian Name must contain alphabetic characters only.';
+        }
+        if (formData.guardianOccupation && !/^[a-zA-Z\s.]+$/.test(formData.guardianOccupation.trim())) {
+          nextErrors.guardianOccupation = 'Guardian Occupation must contain alphabetic characters only.';
+        }
         if (formData.guardianMobile) {
           const mobileError = getIndianMobileError(formData.guardianMobile);
           if (mobileError) nextErrors.guardianMobile = mobileError;
@@ -1630,16 +1672,14 @@ export default function RegisterPage() {
                     accommodation,
                     hostelAccommodation: accommodation === 'Hostel' ? 'Yes' : 'No',
                     hostelApplication: accommodation === 'Hostel' ? 'Yes' : 'No',
-                    ...(accommodation === 'Hostel' ? {
-                      transportRequired: 'No',
-                      transportApplication: 'No',
-                      pickupPoint: '',
-                      busNumber: '',
-                      busRoute: '',
-                      boardingStop: '',
-                      startingPoint: '',
-                      endingPoint: '',
-                    } : {}),
+                    transportRequired: accommodation === 'Hostel' ? 'No' : '',
+                    transportApplication: accommodation === 'Hostel' ? 'No' : '',
+                    pickupPoint: '',
+                    busNumber: '',
+                    busRoute: '',
+                    boardingStop: '',
+                    startingPoint: '',
+                    endingPoint: '',
                   }));
                   setErrors((previous) => ({ ...previous, accommodation: '', transportRequired: '', pickupPoint: '', boardingStop: '' }));
                 }}
@@ -2033,12 +2073,17 @@ export default function RegisterPage() {
             } else {
               const num = Number(rawVal);
               if (num > 600) {
-                updateField('hscMarks', 600);
+                updateField('hscMarks', 0);
               } else if (num < 0) {
                 updateField('hscMarks', 0);
               } else {
                 updateField('hscMarks', rawVal);
               }
+            }
+          }}
+          onBlur={() => {
+            if (formData.hscMarks !== '' && formData.hscMarks !== null && Number(formData.hscMarks) > 600) {
+              updateField('hscMarks', 0);
             }
           }}
         />
@@ -2080,12 +2125,17 @@ export default function RegisterPage() {
                 } else {
                   const num = Number(rawVal);
                   if (num > 100) {
-                    updateField(field.key, 100);
+                    updateField(field.key, 0);
                   } else if (num < 0) {
                     updateField(field.key, 0);
                   } else {
                     updateField(field.key, rawVal);
                   }
+                }
+              }}
+              onBlur={() => {
+                if (formData[field.key] !== '' && formData[field.key] !== null && Number(formData[field.key]) > 100) {
+                  updateField(field.key, 0);
                 }
               }}
             />

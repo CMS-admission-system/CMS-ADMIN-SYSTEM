@@ -2408,9 +2408,9 @@ fieldset legend,
 }
 
 /* Form labels outside the 3 excluded pages in WHITE */
-label:not(.preview-shell label):not(.cms-paper-wrapper label):not(.admission-paper-sheet label):not(.excel-docs-table label):not(.documents-table-wrapper label):not(.fees-step label):not(.fee-summary-card label):not(.payment-verification-box label):not(.parent-panel-card label):not(.parents-two-panel-grid label):not(.pickup-location-label):not(label[for="boardingStop"]):not(.declaration-panel label):not(.auth-form label):not(.auth-card label):not(.dashboard-filters label):not(.officer-correction-box label),
-.field-group > label:not(.preview-shell label):not(.cms-paper-wrapper label):not(.admission-paper-sheet label):not(.excel-docs-table label):not(.documents-table-wrapper label):not(.fees-step label):not(.payment-verification-box label):not(.parent-panel-card label):not(.parents-two-panel-grid label):not(.pickup-location-label):not(label[for="boardingStop"]):not(.declaration-panel label):not(.auth-form label):not(.auth-card label):not(.dashboard-filters label):not(.officer-correction-box label),
-.field-label:not(.preview-shell *):not(.cms-paper-wrapper *):not(.excel-docs-table *):not(.fees-step *):not(.payment-verification-box *):not(.parent-panel-card *):not(.parents-two-panel-grid *) {
+label:not(.preview-shell label):not(.cms-paper-wrapper label):not(.admission-paper-sheet label):not(.excel-docs-table label):not(.documents-table-wrapper label):not(.fees-step label):not(.fee-summary-card label):not(.payment-verification-box label):not(.parent-panel-card label):not(.parents-two-panel-grid label):not(.pickup-location-label):not(label[for="boardingStop"]):not(.declaration-panel label):not(.auth-form label):not(.auth-card label):not(.dashboard-filters label):not(.officer-correction-box label):not(.signature-box-label):not(.signature-box-header label):not(.signature-box-card label):not(.signature-grid label),
+.field-group > label:not(.preview-shell label):not(.cms-paper-wrapper label):not(.admission-paper-sheet label):not(.excel-docs-table label):not(.documents-table-wrapper label):not(.fees-step label):not(.payment-verification-box label):not(.parent-panel-card label):not(.parents-two-panel-grid label):not(.pickup-location-label):not(label[for="boardingStop"]):not(.declaration-panel label):not(.auth-form label):not(.auth-card label):not(.dashboard-filters label):not(.officer-correction-box label):not(.signature-box-label):not(.signature-box-header label):not(.signature-box-card label):not(.signature-grid label),
+.field-label:not(.preview-shell *):not(.cms-paper-wrapper *):not(.excel-docs-table *):not(.fees-step *):not(.payment-verification-box *):not(.parent-panel-card *):not(.parents-two-panel-grid *):not(.signature-box-card *) {
   font-size: 1.08rem !important;
   font-weight: 800 !important;
   color: #ffffff !important;
@@ -2678,7 +2678,11 @@ label[for="boardingStop"] {
   text-shadow: none !important;
 }
 
-.signature-box-label {
+.signature-box-label,
+label.signature-box-label,
+.signature-box-header label,
+.signature-box-card label,
+.signature-grid label {
   font-size: 1.08rem !important;
   font-weight: 800 !important;
   color: #000000 !important;

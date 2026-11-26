@@ -90,6 +90,10 @@ export default function AdmissionPaymentPage() {
       setPaymentError(`Authorized Staff Name is required under ${selectedMethod} Payment verification.`);
       return;
     }
+    if (!/^[a-zA-Z\s.]+$/.test(activeStaff)) {
+      setPaymentError('Staff Name must contain alphabetic characters only.');
+      return;
+    }
 
     // 3. Validate Paid status (prevent unpaid payments from being marked Confirmed)
     if (activeStatus !== 'Paid') {
@@ -417,7 +421,7 @@ export default function AdmissionPaymentPage() {
                 required
                 value={cashStaffName}
                 onChange={(e) => {
-                  setCashStaffName(e.target.value);
+                  setCashStaffName(e.target.value.replace(/[^a-zA-Z\s.]/g, ''));
                   if (paymentError) setPaymentError('');
                 }}
                 placeholder="Type authorized staff name"
@@ -576,7 +580,7 @@ export default function AdmissionPaymentPage() {
                 required
                 value={gpayStaffName}
                 onChange={(e) => {
-                  setGpayStaffName(e.target.value);
+                  setGpayStaffName(e.target.value.replace(/[^a-zA-Z\s.]/g, ''));
                   if (paymentError) setPaymentError('');
                 }}
                 placeholder="Type authorized staff name"

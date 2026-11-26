@@ -141,6 +141,8 @@ export default function ApplicationPreviewPage() {
     const nextErrors = {};
     if (!String(staffViewName || '').trim()) {
       nextErrors.name = 'Staff name is mandatory. Please enter staff name.';
+    } else if (!/^[a-zA-Z\s.]+$/.test(String(staffViewName || '').trim())) {
+      nextErrors.name = 'Staff name must contain alphabetic characters only.';
     }
     setStaffErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
@@ -262,6 +264,25 @@ export default function ApplicationPreviewPage() {
           onViewFile={(fileInfo) => setSelectedFilePreview(fileInfo)}
         />
 
+        {/* Note Box */}
+        <div className="preview-note-box screen-only" style={{
+          marginTop: '16px',
+          background: '#fef2f2',
+          border: '2px solid #ef4444',
+          borderRadius: '12px',
+          padding: '14px 20px',
+          color: '#991b1b',
+          fontWeight: 700,
+          fontSize: '0.95rem',
+          boxShadow: '0 4px 12px rgba(239, 68, 68, 0.1)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+        }}>
+          <span style={{ fontSize: '1.2rem', color: '#dc2626' }}>⚠</span>
+          <span><strong>Note:</strong> Fees once paid will not be refunded.</span>
+        </div>
+
         {/* Staff View Section (Screen Only) */}
         <section className="staff-view-section screen-only" style={{ marginTop: '16px' }}>
           <h3>Staff view</h3>
@@ -276,7 +297,7 @@ export default function ApplicationPreviewPage() {
                 required
                 value={staffViewName}
                 onChange={(event) => {
-                  setStaffViewName(event.target.value);
+                  setStaffViewName(event.target.value.replace(/[^a-zA-Z\s.]/g, ''));
                   if (staffErrors.name) setStaffErrors((prev) => ({ ...prev, name: '' }));
                 }}
                 placeholder="Type staff name"

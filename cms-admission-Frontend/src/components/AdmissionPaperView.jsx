@@ -430,47 +430,6 @@ export default function AdmissionPaperView({
         </tbody>
       </table>
 
-      {/* Courses (B.E/B.TECH) Preferred */}
-      <div className="cms-section-header">
-        COURSES ({draft.degree || 'B.E/B.TECH'}) PREFERRED
-        {selectedCourse ? <span style={{ marginLeft: '10px', color: '#166534', fontWeight: 800 }}>— {draft.degree ? `${draft.degree} ` : ''}{selectedCourse}</span> : null}
-      </div>
-      <div className="cms-courses-grid">
-        <div>
-          {LEFT_COURSES.map((course) => {
-            const chosen = isCourseChosen(course, selectedCourse);
-            return (
-              <div key={course.id} className={`cms-course-item ${chosen ? 'selected' : ''}`}>
-                <span className="paper-checkbox" aria-hidden="true">{chosen ? '✓' : ''}</span>
-                <span>{course.label}</span>
-              </div>
-            );
-          })}
-        </div>
-        <div>
-          {RIGHT_COURSES.map((course) => {
-            const chosen = isCourseChosen(course, selectedCourse);
-            return (
-              <div key={course.id} className={`cms-course-item ${chosen ? 'selected' : ''}`}>
-                <span className="paper-checkbox" aria-hidden="true">{chosen ? '✓' : ''}</span>
-                <div>
-                  <span>{course.label}</span>
-                  {course.subtext ? <span style={{ display: 'block', fontSize: '0.68rem', color: '#64748b' }}>{course.subtext}</span> : null}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-      {selectedCourse && !LEFT_COURSES.some((c) => isCourseChosen(c, selectedCourse)) && !RIGHT_COURSES.some((c) => isCourseChosen(c, selectedCourse)) ? (
-        <div style={{ marginTop: '6px' }}>
-          <div className="cms-course-item selected">
-            <span className="paper-checkbox" aria-hidden="true">✓</span>
-            <span>{selectedCourse.toUpperCase()} ({draft.degree || 'Course'})</span>
-          </div>
-        </div>
-      ) : null}
-
       {/* Fees Structure */}
       <div className="cms-section-header" style={{ marginTop: '8px' }}>FEES STRUCTURE</div>
       <table className="cms-fees-table">
@@ -499,6 +458,23 @@ export default function AdmissionPaperView({
           </tr>
         </tbody>
       </table>
+
+      {/* Note Box */}
+      <div className="cms-refund-note-box" style={{
+        margin: '10px 0',
+        padding: '8px 14px',
+        border: '1.5px solid #dc2626',
+        borderRadius: '6px',
+        background: '#fef2f2',
+        color: '#991b1b',
+        fontWeight: 700,
+        fontSize: '0.82rem',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '6px',
+      }}>
+        <strong style={{ color: '#b91c1c' }}>Note:</strong> Fees once paid will not be refunded.
+      </div>
 
       {/* Digital Signatures for Student and Parent */}
       <div className="cms-signatures-row">
