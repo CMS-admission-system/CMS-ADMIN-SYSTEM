@@ -16,6 +16,7 @@ const defaultStorage = {
   },
   cmsLastSubmittedApplication: null,
   cmsCorrectionHistory: [],
+  cmsBusRoutesConfig: null,
 };
 
 export const STORAGE_KEYS = Object.keys(defaultStorage).reduce((acc, key) => {
@@ -27,7 +28,26 @@ export function readStorage(key, fallback) {
   try {
     const value = window.localStorage.getItem(key);
     if (value === null) return fallback;
-    return JSON.parse(value);
+    const parsed = JSON.parse(value);
+
+    // Sanitize applications array to prevent null-item crashes
+    if (key === STORAGE_KEYS.cmsApplications) {
+      if (!Array.isArray(parsed)) return Array.isArray(fallback) ? fallback : [];
+      return parsed.filter((item) => item && typeof item === 'object' && (item.id || item.formNumber));
+    }
+
+    // Sanitize payment settings structure
+    if (key === STORAGE_KEYS.cmsPaymentSettings && parsed && typeof parsed === 'object') {
+      return {
+        ...parsed,
+        upiId: parsed.upiId ?? 'cms@bank',
+        paymentQrs: Array.isArray(parsed.paymentQrs)
+          ? parsed.paymentQrs
+          : [parsed.paymentQr || null, null],
+      };
+    }
+
+    return parsed;
   } catch (error) {
     console.warn(`Unable to read storage key ${key}:`, error);
     return fallback;

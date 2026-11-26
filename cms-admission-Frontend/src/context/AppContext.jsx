@@ -55,6 +55,7 @@ export function AppProvider({ children }) {
 
   const [feeConfig, setFeeConfig] = useState(null);
   const [activeFeeBreakdown, setActiveFeeBreakdown] = useState(null);
+  const [busRoutesConfig, setBusRoutesConfig] = useState(() => readStorage(STORAGE_KEYS.cmsBusRoutesConfig, null));
 
   const refreshFeeConfig = useCallback(async () => {
     try {
@@ -83,7 +84,9 @@ export function AppProvider({ children }) {
   // Calculate live filled and balance counts given seat quotas and current applications
   const computeSeatBalances = useCallback((seatMap, appsList) => {
     const filledCounts = {};
-    for (const app of appsList) {
+    const safeApps = Array.isArray(appsList) ? appsList : [];
+    for (const app of safeApps) {
+      if (!app || typeof app !== 'object') continue;
       const cname = app.coursePreference?.firstPreference || app.courseName || app.firstPreference || '';
       const norm = normalizeCourseName(cname);
       if (norm) {
@@ -107,16 +110,33 @@ export function AppProvider({ children }) {
   // 1. Centralized Data System: Fetch latest authoritative state from central backend on mount & auth change
   const refreshFromDatabase = useCallback(async () => {
     const serverApps = await fetchApplicationsApi();
-    const activeApps = Array.isArray(serverApps) ? serverApps : applications;
+    const activeApps = Array.isArray(serverApps)
+      ? serverApps.filter((a) => a && typeof a === 'object' && (a.id || a.formNumber))
+      : (Array.isArray(applications) ? applications : []);
+
     if (Array.isArray(serverApps)) {
-      setApplications(serverApps);
+      setApplications(activeApps);
     }
 
     const payVal = await fetchSettingApi('paymentSettings');
-    if (payVal) setPaymentSettings(payVal);
+    if (payVal && typeof payVal === 'object') {
+      setPaymentSettings((prev) => ({
+        ...prev,
+        ...payVal,
+        paymentQrs: Array.isArray(payVal.paymentQrs)
+          ? payVal.paymentQrs
+          : [payVal.paymentQr || prev.paymentQrs?.[0] || null, prev.paymentQrs?.[1] || null],
+      }));
+    }
 
     const bgVal = await fetchSettingApi('backgroundSettings');
     if (bgVal) setBackgroundSettings(bgVal);
+
+    const busVal = await fetchSettingApi('busRoutesConfig');
+    if (busVal && typeof busVal === 'object') {
+      setBusRoutesConfig(busVal);
+      writeStorage(STORAGE_KEYS.cmsBusRoutesConfig, busVal);
+    }
 
     const serverSeats = await fetchCourseSeatsApi();
     if (serverSeats && typeof serverSeats === 'object') {
@@ -149,31 +169,36 @@ export function AppProvider({ children }) {
         refreshFromDatabase();
       },
       onApplicationCreated: (newApp) => {
+        if (!newApp || !newApp.id) return;
         console.log('[Socket.IO] Real-time: Application created:', newApp.id);
         setApplications((current) => {
-          const exists = current.some((a) => a.id === newApp.id);
+          const list = Array.isArray(current) ? current.filter(Boolean) : [];
+          const exists = list.some((a) => a.id === newApp.id);
           if (exists) {
-            return current.map((a) => (a.id === newApp.id ? { ...a, ...newApp } : a));
+            return list.map((a) => (a.id === newApp.id ? { ...a, ...newApp } : a));
           }
-          return [newApp, ...current];
+          return [newApp, ...list];
         });
       },
       onApplicationUpdated: (updatedApp) => {
+        if (!updatedApp || !updatedApp.id) return;
         console.log('[Socket.IO] Real-time: Application updated:', updatedApp.id);
         setApplications((current) => {
-          const exists = current.some((a) => a.id === updatedApp.id);
+          const list = Array.isArray(current) ? current.filter(Boolean) : [];
+          const exists = list.some((a) => a.id === updatedApp.id);
           if (!exists) {
-            return [updatedApp, ...current];
+            return [updatedApp, ...list];
           }
-          return current.map((a) => (a.id === updatedApp.id ? { ...a, ...updatedApp } : a));
+          return list.map((a) => (a.id === updatedApp.id ? { ...a, ...updatedApp } : a));
         });
         if (Array.isArray(updatedApp.correctionHistory)) {
           setCorrectionHistory(updatedApp.correctionHistory);
         }
       },
       onApplicationDeleted: ({ id }) => {
+        if (!id) return;
         console.log('[Socket.IO] Real-time: Application deleted:', id);
-        setApplications((current) => current.filter((a) => a.id !== id));
+        setApplications((current) => (Array.isArray(current) ? current.filter((a) => a && a.id !== id) : []));
       },
       onCourseSeatsUpdated: (newSeatsSummary) => {
         console.log('[Socket.IO] Real-time: Course seats updated:', newSeatsSummary);
@@ -183,10 +208,19 @@ export function AppProvider({ children }) {
       },
       onSettingUpdated: ({ key, value }) => {
         console.log('[Socket.IO] Real-time: Setting updated:', key);
-        if (key === 'paymentSettings' && value) {
-          setPaymentSettings(value);
+        if (key === 'paymentSettings' && value && typeof value === 'object') {
+          setPaymentSettings((prev) => ({
+            ...prev,
+            ...value,
+            paymentQrs: Array.isArray(value.paymentQrs)
+              ? value.paymentQrs
+              : [value.paymentQr || prev.paymentQrs?.[0] || null, prev.paymentQrs?.[1] || null],
+          }));
         } else if (key === 'backgroundSettings' && value) {
           setBackgroundSettings(value);
+        } else if (key === 'busRoutesConfig' && value) {
+          setBusRoutesConfig(value);
+          writeStorage(STORAGE_KEYS.cmsBusRoutesConfig, value);
         } else if (key === 'course_seats') {
           fetchCourseSeatsApi().then((seats) => {
             if (seats) setCourseSeats(seats);
@@ -245,6 +279,15 @@ export function AppProvider({ children }) {
     setPaymentSettings((current) => {
       const updated = typeof nextSettings === 'function' ? nextSettings(current) : nextSettings;
       saveSettingApi('paymentSettings', updated);
+      return updated;
+    });
+  };
+
+  const updateBusRoutesConfig = (nextConfig) => {
+    setBusRoutesConfig((current) => {
+      const updated = typeof nextConfig === 'function' ? nextConfig(current) : nextConfig;
+      saveSettingApi('busRoutesConfig', updated);
+      writeStorage(STORAGE_KEYS.cmsBusRoutesConfig, updated);
       return updated;
     });
   };
@@ -471,7 +514,9 @@ export function AppProvider({ children }) {
     refreshFeeConfig,
     calculateLiveFee,
     activeFeeBreakdown,
-  }), [auth, draft, applications, isLiveConnected, backgroundSettings, paymentSettings, courseSeats, getSeatInfo, correctionHistory, lastSubmitted, saveDraft, refreshFromDatabase, feeConfig, refreshFeeConfig, calculateLiveFee, activeFeeBreakdown]);
+    busRoutesConfig,
+    updateBusRoutesConfig,
+  }), [auth, draft, applications, isLiveConnected, backgroundSettings, paymentSettings, courseSeats, getSeatInfo, correctionHistory, lastSubmitted, saveDraft, refreshFromDatabase, feeConfig, refreshFeeConfig, calculateLiveFee, activeFeeBreakdown, busRoutesConfig]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

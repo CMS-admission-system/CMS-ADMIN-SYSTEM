@@ -547,7 +547,7 @@ function formatAadhaar(value) {
 
 export default function RegisterPage() {
   const navigate = useNavigate();
-  const { draft, saveDraft, getSeatInfo, courseSeats, paymentSettings } = useAppContext();
+  const { draft, saveDraft, getSeatInfo, courseSeats, paymentSettings, busRoutesConfig: dynamicBusRoutes } = useAppContext();
   const savedProgramme = draft?.programme || '';
   const savedDegree = PROGRAMME_COURSES[savedProgramme]?.[draft?.degree] ? draft.degree : '';
   const savedCourses = PROGRAMME_COURSES[savedProgramme]?.[savedDegree] || [];
@@ -1647,12 +1647,21 @@ export default function RegisterPage() {
   );
 
   const renderAccommodationStep = () => {
-    const selectedPointInfo = PICKUP_POINTS.find(
+    const currentBusRoutesConfig = dynamicBusRoutes || BUS_ROUTES_CONFIG;
+    const currentPickupPoints = Object.values(currentBusRoutesConfig).map((b) => ({
+      id: b.busNumber,
+      busNumber: b.busNumber,
+      label: `${b.startingPoint} (${b.busNumber})`,
+      displayLabel: `${b.busNumber} - ${b.startingPoint}`,
+      startingPoint: b.startingPoint,
+      endingPoint: b.endingPoint,
+    }));
+    const selectedPointInfo = currentPickupPoints.find(
       (p) => p.busNumber === formData.busNumber || p.label === formData.pickupPoint || p.id === formData.busNumber
     );
-    const activeRoute = (formData.busNumber && BUS_ROUTES_CONFIG[formData.busNumber])
-      || (selectedPointInfo?.busNumber && BUS_ROUTES_CONFIG[selectedPointInfo.busNumber]);
-    const assignedPlaces = activeRoute ? activeRoute.places : [];
+    const activeRoute = (formData.busNumber && currentBusRoutesConfig[formData.busNumber])
+      || (selectedPointInfo?.busNumber && currentBusRoutesConfig[selectedPointInfo.busNumber]);
+    const assignedPlaces = activeRoute ? (activeRoute.places || []) : [];
     const isR7 = (formData.busNumber === 'R7' || selectedPointInfo?.busNumber === 'R7');
 
     return (
@@ -1740,7 +1749,7 @@ export default function RegisterPage() {
                     value={formData.busNumber || ''}
                     onChange={(event) => {
                       const busId = event.target.value;
-                      const matched = PICKUP_POINTS.find((p) => p.busNumber === busId);
+                      const matched = currentPickupPoints.find((p) => p.busNumber === busId);
                       if (matched) {
                         setFormData((prev) => ({
                           ...prev,
@@ -1775,7 +1784,7 @@ export default function RegisterPage() {
                     }}
                   >
                     <option value="">-- Select Bus Route (R1 to R12) --</option>
-                    {PICKUP_POINTS.map((pt) => (
+                    {currentPickupPoints.map((pt) => (
                       <option key={pt.id} value={pt.busNumber}>
                         {pt.displayLabel || `${pt.busNumber} - ${pt.startingPoint}`}
                       </option>

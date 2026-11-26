@@ -88,7 +88,12 @@ export default function OfficerDashboardPage() {
     }
   };
 
-  const filteredApplications = applications.filter((app) => {
+  const safeApplications = (Array.isArray(applications) ? applications : []).filter((app) => (
+    app && typeof app === 'object' && (app.id || app.formNumber)
+  ));
+
+  const filteredApplications = safeApplications.filter((app) => {
+    if (!app) return false;
     const searchableFields = [
       app.id,
       app.formNumber,
@@ -140,20 +145,20 @@ export default function OfficerDashboardPage() {
   });
 
   // 3 distinct status lists with zero overlap / duplicate records
-  const enquiring = filteredApplications.filter((app) => app.status === 'Enquiring');
-  const confirmed = filteredApplications.filter((app) => (app.status === 'Confirmed' || app.status === 'Confirm') && app.status !== 'Sent to VC');
-  const sentToVC = filteredApplications.filter((app) => app.status === 'Sent to VC' || app.status === 'Forwarded to VC');
+  const enquiring = filteredApplications.filter((app) => app && app.status === 'Enquiring');
+  const confirmed = filteredApplications.filter((app) => app && (app.status === 'Confirmed' || app.status === 'Confirm') && app.status !== 'Sent to VC');
+  const sentToVC = filteredApplications.filter((app) => app && (app.status === 'Sent to VC' || app.status === 'Forwarded to VC'));
 
   // 7 Categories for Category Overview:
   // FG, Management Quota, 7.5% Reservation, PMSS Students, ST Students, Transport, Hostel (+ Sports)
-  const fgStudents = applications.filter((a) => matchesPortalCategory(a, 'fg'));
-  const managementStudents = applications.filter((a) => matchesPortalCategory(a, 'management'));
-  const reservation75Students = applications.filter((a) => matchesPortalCategory(a, '7.5% Reservation'));
-  const pmssStudents = applications.filter((a) => matchesPortalCategory(a, 'pmss'));
-  const stStudents = applications.filter((a) => matchesPortalCategory(a, 'st'));
-  const transportStudents = applications.filter((a) => matchesPortalCategory(a, 'transport'));
-  const hostelStudents = applications.filter((a) => matchesPortalCategory(a, 'hostel'));
-  const sportsStudents = applications.filter((a) => matchesPortalCategory(a, 'sports'));
+  const fgStudents = safeApplications.filter((a) => matchesPortalCategory(a, 'fg'));
+  const managementStudents = safeApplications.filter((a) => matchesPortalCategory(a, 'management'));
+  const reservation75Students = safeApplications.filter((a) => matchesPortalCategory(a, '7.5% Reservation'));
+  const pmssStudents = safeApplications.filter((a) => matchesPortalCategory(a, 'pmss'));
+  const stStudents = safeApplications.filter((a) => matchesPortalCategory(a, 'st'));
+  const transportStudents = safeApplications.filter((a) => matchesPortalCategory(a, 'transport'));
+  const hostelStudents = safeApplications.filter((a) => matchesPortalCategory(a, 'hostel'));
+  const sportsStudents = safeApplications.filter((a) => matchesPortalCategory(a, 'sports'));
 
   const fgCount = fgStudents.length;
   const managementCount = managementStudents.length;
@@ -242,7 +247,8 @@ export default function OfficerDashboardPage() {
 
   const currentCategoryObj = adminCategoryDefs.find((c) => c.key === selectedAdminCategory) || adminCategoryDefs[0];
   const normalizedCategorySearch = categorySearchTerm.trim().toLowerCase();
-  const displayedCategoryStudents = currentCategoryObj.list.filter((app) => {
+  const displayedCategoryStudents = (currentCategoryObj?.list || []).filter((app) => {
+    if (!app || typeof app !== 'object') return false;
     if (!normalizedCategorySearch) return true;
     const fields = [
       app.id,
@@ -259,7 +265,7 @@ export default function OfficerDashboardPage() {
     return fields.some((f) => String(f || '').toLowerCase().includes(normalizedCategorySearch));
   });
 
-  const dynamicExtraCategories = [...new Set(applications.map((app) => app.admissionCategory).filter(Boolean))]
+  const dynamicExtraCategories = [...new Set(safeApplications.map((app) => app?.admissionCategory).filter(Boolean))]
     .filter((c) => !['Management', 'MQ', 'Government / Counselling', '7.5% Reservation', 'General'].includes(c))
     .sort();
 
@@ -702,15 +708,15 @@ export default function OfficerDashboardPage() {
             <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '24px', width: '100%', alignItems: 'stretch' }}>
               <div className="stat-card" style={{ minHeight: '84px', height: '84px', color: '#000000', boxSizing: 'border-box' }}>
                 <span style={{ color: '#000000', fontWeight: 700, fontSize: '1rem' }}>Enquiring</span>
-                <strong style={{ color: '#000000', fontWeight: 800, fontSize: '1.4rem' }}>{categoryFilter || courseFilter || normalizedSearch ? enquiring.length : applications.filter((app) => app && app.status === 'Enquiring').length}</strong>
+                <strong style={{ color: '#000000', fontWeight: 800, fontSize: '1.4rem' }}>{categoryFilter || courseFilter || normalizedSearch ? enquiring.length : safeApplications.filter((app) => app && app.status === 'Enquiring').length}</strong>
               </div>
               <div className="stat-card" style={{ minHeight: '84px', height: '84px', color: '#000000', boxSizing: 'border-box' }}>
                 <span style={{ color: '#000000', fontWeight: 700, fontSize: '1rem' }}>Confirm</span>
-                <strong style={{ color: '#000000', fontWeight: 800, fontSize: '1.4rem' }}>{categoryFilter || courseFilter || normalizedSearch ? confirmed.length : applications.filter((app) => app && (app.status === 'Confirmed' || app.status === 'Confirm') && app.status !== 'Sent to VC').length}</strong>
+                <strong style={{ color: '#000000', fontWeight: 800, fontSize: '1.4rem' }}>{categoryFilter || courseFilter || normalizedSearch ? confirmed.length : safeApplications.filter((app) => app && (app.status === 'Confirmed' || app.status === 'Confirm') && app.status !== 'Sent to VC').length}</strong>
               </div>
               <div className="stat-card" style={{ minHeight: '84px', height: '84px', color: '#000000', boxSizing: 'border-box' }}>
                 <span style={{ color: '#000000', fontWeight: 700, fontSize: '1rem' }}>Sent to VC</span>
-                <strong style={{ color: '#000000', fontWeight: 800, fontSize: '1.4rem' }}>{categoryFilter || courseFilter || normalizedSearch ? sentToVC.length : applications.filter((app) => app && (app.status === 'Sent to VC' || app.status === 'Forwarded to VC')).length}</strong>
+                <strong style={{ color: '#000000', fontWeight: 800, fontSize: '1.4rem' }}>{categoryFilter || courseFilter || normalizedSearch ? sentToVC.length : safeApplications.filter((app) => app && (app.status === 'Sent to VC' || app.status === 'Forwarded to VC')).length}</strong>
               </div>
             </div>
 

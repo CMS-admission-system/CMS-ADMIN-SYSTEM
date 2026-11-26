@@ -1,10 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
+  Archive,
   ArrowLeft,
   Building2,
   Bus,
+  Check,
   CheckCircle2,
+  Clock,
   Download,
+  Edit2,
   Eye,
   FileEdit,
   FileText,
@@ -14,18 +18,26 @@ import {
   LayoutGrid,
   List,
   LogOut,
+  Plus,
   Printer,
+  QrCode,
+  RotateCcw,
   Save,
   Search,
+  Send,
   Trash2,
   Trophy,
   Upload,
+  UserX,
   X,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import AdmissionPaperView from '../components/AdmissionPaperView';
 import ApplicationDocuments from '../components/ApplicationDocuments';
+import { BUS_ROUTES_CONFIG } from './RegisterPage';
+import { writeStorage, STORAGE_KEYS } from '../services/storage';
+import { saveSettingApi } from '../services/api';
 import {
   downloadApplicationsCsv,
   downloadElementAsPdf,
@@ -79,6 +91,7 @@ export default function VCDashboardPage() {
   const {
     applications,
     deleteApplication,
+    updateApplication,
     logoutDemoUser,
     courseSeats,
     updateCourseSeats,
@@ -86,6 +99,8 @@ export default function VCDashboardPage() {
     setBackgroundSettings,
     paymentSettings,
     setPaymentSettings,
+    busRoutesConfig,
+    updateBusRoutesConfig,
   } = useAppContext();
 
   // Navigation tab state: 'home' (Overall Forwarded Student List), 'overview' (Category Overview), 'seats' (Course Seats Quotas), or 'edit' (VC Portal Settings)
@@ -94,8 +109,9 @@ export default function VCDashboardPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [courseFilter, setCourseFilter] = useState('');
-  const [vcListFilter, setVcListFilter] = useState('Sent by AO'); // 'Sent by AO' | 'Enquiry List' | 'Confirmed List'
-  const [isListMenuOpen, setIsListMenuOpen] = useState(false);
+  const [vcListFilter, setVcListFilter] = useState('Sent by AO'); // 'Sent by AO' | 'Enquiry List' | 'Confirmed List' | 'Deleted List' | 'Discontinue List'
+  const [isInactiveMenuOpen, setIsInactiveMenuOpen] = useState(false);
+  const [selectedStudentIds, setSelectedStudentIds] = useState([]);
   const [categorySearchTerm, setCategorySearchTerm] = useState('');
   const [selectedStudentPreview, setSelectedStudentPreview] = useState(null);
   const [selectedFileModal, setSelectedFileModal] = useState(null);
@@ -104,10 +120,44 @@ export default function VCDashboardPage() {
   const [downloadingStudentId, setDownloadingStudentId] = useState(null);
   const [settingsNotice, setSettingsNotice] = useState('');
 
+  // Bus Details Management state (Requirement 5)
+  const [selectedBusRouteKey, setSelectedBusRouteKey] = useState('R1');
+  const [newStopName, setNewStopName] = useState('');
+  const [editingStopIndex, setEditingStopIndex] = useState(null);
+  const [editingStopText, setEditingStopText] = useState('');
+
   // Exclusive VC Course Seat Editor state
   const [editableSeats, setEditableSeats] = useState({});
   const [isSavingSeats, setIsSavingSeats] = useState(false);
   const [saveSuccessMsg, setSaveSuccessMsg] = useState('');
+
+  // Bulletproof sanitized applications array
+  const safeApplications = useMemo(() => {
+    return (Array.isArray(applications) ? applications : []).filter(
+      (app) => app && typeof app === 'object' && (app.id || app.formNumber)
+    );
+  }, [applications]);
+
+  // Counts for all 5 VC list categories (Requirements 1 & 3)
+  const sentByAoCount = useMemo(() => {
+    return safeApplications.filter((app) => app.status === 'Sent to VC' || app.status === 'Forwarded to VC').length;
+  }, [safeApplications]);
+
+  const enquiryCount = useMemo(() => {
+    return safeApplications.filter((app) => app.status === 'Enquiring').length;
+  }, [safeApplications]);
+
+  const confirmedCount = useMemo(() => {
+    return safeApplications.filter((app) => (app.status === 'Confirmed' || app.status === 'Confirm' || app.paymentStatus === 'Paid') && app.status !== 'Sent to VC').length;
+  }, [safeApplications]);
+
+  const deletedCount = useMemo(() => {
+    return safeApplications.filter((app) => app.status === 'Deleted').length;
+  }, [safeApplications]);
+
+  const discontinuedCount = useMemo(() => {
+    return safeApplications.filter((app) => app.status === 'Discontinued').length;
+  }, [safeApplications]);
 
   // Sync draft seat quotas from context state
   useEffect(() => {
@@ -160,19 +210,220 @@ export default function VCDashboardPage() {
     }
   };
 
-  // Applications list filtered by VC List option (Requirement 5)
-  // Options: 'Sent by AO' | 'Enquiry List' | 'Confirmed List'
-  const baseVCApplications = applications.filter((app) => {
-    if (!app) return false;
-    if (vcListFilter === 'Enquiry List') {
-      return app.status === 'Enquiring';
+  // Bulk Discontinue Action (Requirement 2)
+  const handleBulkDiscontinue = async () => {
+    if (selectedStudentIds.length === 0) {
+      window.alert('Please select at least one student from the checklist to discontinue.');
+      return;
     }
-    if (vcListFilter === 'Confirmed List') {
-      return (app.status === 'Confirmed' || app.status === 'Confirm' || app.paymentStatus === 'Paid') && app.status !== 'Sent to VC';
+    const count = selectedStudentIds.length;
+    const conf = window.confirm(
+      `Are you sure you want to discontinue ${count} selected student application${count > 1 ? 's' : ''}? They will remain accessible via Inactive List -> Discontinue List.`
+    );
+    if (!conf) return;
+
+    for (const id of selectedStudentIds) {
+      await updateApplication(id, {
+        status: 'Discontinued',
+        discontinuedAt: new Date().toISOString(),
+        inactiveReason: 'Discontinued by Vice-Chairman',
+      }, 'Marked as Discontinued by Vice-Chairman', 'Vice-Chairman');
     }
-    // Default: 'Sent by AO'
-    return app.status === 'Sent to VC' || app.status === 'Forwarded to VC';
-  });
+    setSelectedStudentIds([]);
+    setSettingsNotice(`${count} student application${count > 1 ? 's' : ''} moved to Discontinue List.`);
+    setTimeout(() => setSettingsNotice(''), 4000);
+  };
+
+  // Bulk Delete Action (Requirement 2)
+  const handleBulkDelete = async () => {
+    if (selectedStudentIds.length === 0) {
+      window.alert('Please select at least one student from the checklist to delete.');
+      return;
+    }
+    const count = selectedStudentIds.length;
+    const conf = window.confirm(
+      `Are you sure you want to mark ${count} selected student application${count > 1 ? 's' : ''} as deleted? They will remain accessible via Inactive List -> Deleted List.`
+    );
+    if (!conf) return;
+
+    for (const id of selectedStudentIds) {
+      await updateApplication(id, {
+        status: 'Deleted',
+        deletedAt: new Date().toISOString(),
+        inactiveReason: 'Deleted by Vice-Chairman',
+      }, 'Marked as Deleted by Vice-Chairman', 'Vice-Chairman');
+    }
+    setSelectedStudentIds([]);
+    setSettingsNotice(`${count} student application${count > 1 ? 's' : ''} moved to Deleted List.`);
+    setTimeout(() => setSettingsNotice(''), 4000);
+  };
+
+  // Bulk Restore Action (from Inactive List back to active list)
+  const handleBulkRestore = async () => {
+    if (selectedStudentIds.length === 0) {
+      window.alert('Please select at least one student from the checklist to restore.');
+      return;
+    }
+    const count = selectedStudentIds.length;
+    const conf = window.confirm(
+      `Restore ${count} selected student application${count > 1 ? 's' : ''} back to active Sent to VC list?`
+    );
+    if (!conf) return;
+
+    for (const id of selectedStudentIds) {
+      await updateApplication(id, {
+        status: 'Sent to VC',
+        restoredAt: new Date().toISOString(),
+        inactiveReason: null,
+      }, 'Restored to active Sent to VC list by Vice-Chairman', 'Vice-Chairman');
+    }
+    setSelectedStudentIds([]);
+    setSettingsNotice(`${count} student application${count > 1 ? 's' : ''} restored to active list.`);
+    setTimeout(() => setSettingsNotice(''), 4000);
+  };
+
+  // Payment QR Code Management (Requirement 4)
+  const handlePaymentQrUpload = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const dataUrl = reader.result;
+      const updatedQrs = [dataUrl, paymentSettings?.paymentQrs?.[1] || null];
+      const updatedSettings = {
+        ...paymentSettings,
+        paymentQr: dataUrl,
+        paymentQrs: updatedQrs,
+      };
+      setPaymentSettings(updatedSettings);
+      writeStorage(STORAGE_KEYS.cmsPaymentSettings, updatedSettings);
+      await saveSettingApi('paymentSettings', updatedSettings);
+      setSettingsNotice('Admission payment QR code updated successfully!');
+      setTimeout(() => setSettingsNotice(''), 4000);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleResetPaymentQr = async () => {
+    const conf = window.confirm('Reset Admission Payment QR Code to institutional default?');
+    if (!conf) return;
+    const updatedSettings = {
+      ...paymentSettings,
+      paymentQr: null,
+      paymentQrs: [null, null],
+    };
+    setPaymentSettings(updatedSettings);
+    writeStorage(STORAGE_KEYS.cmsPaymentSettings, updatedSettings);
+    await saveSettingApi('paymentSettings', updatedSettings);
+    setSettingsNotice('Payment QR code reset to default institutional QR code.');
+    setTimeout(() => setSettingsNotice(''), 4000);
+  };
+
+  // Bus Details Management helpers (Requirement 5)
+  const activeBusConfig = useMemo(() => {
+    return busRoutesConfig || BUS_ROUTES_CONFIG;
+  }, [busRoutesConfig]);
+
+  const currentBusRoute = activeBusConfig[selectedBusRouteKey] || activeBusConfig['R1'] || {
+    busNumber: 'R1',
+    label: 'R1 - Eragudi',
+    startingPoint: 'Eragudi',
+    endingPoint: 'CMS College',
+    places: [],
+  };
+
+  const handleAddBusStop = async () => {
+    const stopTrimmed = newStopName.trim();
+    if (!stopTrimmed) return;
+
+    const route = currentBusRoute;
+    if (route.places.includes(stopTrimmed)) {
+      window.alert(`Stop "${stopTrimmed}" already exists in route ${route.busNumber}.`);
+      return;
+    }
+
+    const nextConfig = {
+      ...activeBusConfig,
+      [selectedBusRouteKey]: {
+        ...route,
+        places: [...route.places, stopTrimmed],
+      },
+    };
+
+    await updateBusRoutesConfig(nextConfig);
+    setNewStopName('');
+    setSettingsNotice(`Route stop "${stopTrimmed}" added to route ${route.busNumber}.`);
+    setTimeout(() => setSettingsNotice(''), 4000);
+  };
+
+  const handleSaveBusStopEdit = async (index) => {
+    const stopTrimmed = editingStopText.trim();
+    if (!stopTrimmed) return;
+
+    const route = currentBusRoute;
+    const updatedPlaces = [...route.places];
+    updatedPlaces[index] = stopTrimmed;
+
+    const nextConfig = {
+      ...activeBusConfig,
+      [selectedBusRouteKey]: {
+        ...route,
+        places: updatedPlaces,
+      },
+    };
+
+    await updateBusRoutesConfig(nextConfig);
+    setEditingStopIndex(null);
+    setEditingStopText('');
+    setSettingsNotice(`Route stop updated to "${stopTrimmed}".`);
+    setTimeout(() => setSettingsNotice(''), 4000);
+  };
+
+  const handleDeleteBusStop = async (index, stopName) => {
+    const conf = window.confirm(`Are you sure you want to delete stop "${stopName}" from route ${currentBusRoute.busNumber}?`);
+    if (!conf) return;
+
+    const route = currentBusRoute;
+    const updatedPlaces = route.places.filter((_, i) => i !== index);
+
+    const nextConfig = {
+      ...activeBusConfig,
+      [selectedBusRouteKey]: {
+        ...route,
+        places: updatedPlaces,
+      },
+    };
+
+    await updateBusRoutesConfig(nextConfig);
+    if (editingStopIndex === index) {
+      setEditingStopIndex(null);
+      setEditingStopText('');
+    }
+    setSettingsNotice(`Route stop "${stopName}" removed from route ${route.busNumber}.`);
+    setTimeout(() => setSettingsNotice(''), 4000);
+  };
+
+  // Applications list filtered by VC List option (Requirements 1, 3, 5)
+  // Options: 'Sent by AO' | 'Enquiry List' | 'Confirmed List' | 'Deleted List' | 'Discontinue List'
+  const baseVCApplications = useMemo(() => {
+    return safeApplications.filter((app) => {
+      if (!app) return false;
+      if (vcListFilter === 'Enquiry List') {
+        return app.status === 'Enquiring';
+      }
+      if (vcListFilter === 'Confirmed List') {
+        return (app.status === 'Confirmed' || app.status === 'Confirm' || app.paymentStatus === 'Paid') && app.status !== 'Sent to VC';
+      }
+      if (vcListFilter === 'Deleted List') {
+        return app.status === 'Deleted';
+      }
+      if (vcListFilter === 'Discontinue List') {
+        return app.status === 'Discontinued';
+      }
+      // Default: 'Sent by AO'
+      return app.status === 'Sent to VC' || app.status === 'Forwarded to VC';
+    });
+  }, [safeApplications, vcListFilter]);
 
   const normalizedSearch = searchTerm.trim().toLocaleLowerCase();
   const filteredSentToVC = baseVCApplications.filter((app) => {
@@ -232,7 +483,8 @@ export default function VCDashboardPage() {
           ? Number(editableSeats[course.code])
           : (courseSeats?.[course.code]?.total ?? course.defaultSeats);
 
-        const filled = applications.filter((app) => {
+        const filled = safeApplications.filter((app) => {
+          if (!app) return false;
           const c = app.coursePreference?.firstPreference || app.courseName || '';
           return normalizeCourseName(c) === normalizeCourseName(course.code);
         }).length;
@@ -249,10 +501,10 @@ export default function VCDashboardPage() {
     }
 
     return { totalCap, totalFilled, totalBal, aidsBal };
-  }, [editableSeats, courseSeats, applications]);
+  }, [editableSeats, courseSeats, safeApplications]);
 
   // Category counts calculated exclusively from forwarded student records ("Sent to VC")
-  const confirmedStudents = applications.filter(
+  const confirmedStudents = safeApplications.filter(
     (app) => (app.status === 'Sent to VC' || app.status === 'Forwarded to VC')
   );
 
@@ -618,14 +870,26 @@ export default function VCDashboardPage() {
               <div>
                 <p className="eyebrow accent" style={{ margin: 0 }}>Vice Chairman View</p>
                 <h3 style={{ margin: '4px 0 0', fontSize: '1.25rem', color: '#000000', fontWeight: 800, textShadow: 'none' }}>
-                  {vcListFilter === 'Sent by AO' ? 'Sent by AO (Forwarded Applications)' : vcListFilter === 'Enquiry List' ? 'Enquiry Student List' : 'Confirmed Student List'} ({filteredSentToVC.length})
+                  {vcListFilter === 'Sent by AO'
+                    ? 'Sent by AO (Forwarded Applications)'
+                    : vcListFilter === 'Enquiry List'
+                    ? 'Enquiry Student List'
+                    : vcListFilter === 'Confirmed List'
+                    ? 'Confirmed Student List'
+                    : vcListFilter === 'Deleted List'
+                    ? 'Inactive: Deleted Applications List'
+                    : 'Inactive: Discontinued Applications List'} ({filteredSentToVC.length})
                 </h3>
                 <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: '#6b7280' }}>
                   {vcListFilter === 'Sent by AO'
                     ? 'Complete list of student applications verified and forwarded by Admission Office to Vice Chairman'
                     : vcListFilter === 'Enquiry List'
                     ? 'Candidates currently inquiring / awaiting seat confirmation payment'
-                    : 'Candidates with payment completed and seat confirmed'}
+                    : vcListFilter === 'Confirmed List'
+                    ? 'Candidates with payment completed and seat confirmed'
+                    : vcListFilter === 'Deleted List'
+                    ? 'Student applications marked as deleted (preserved and restorable)'
+                    : 'Student applications marked as discontinued (preserved and restorable)'}
                 </p>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -635,94 +899,164 @@ export default function VCDashboardPage() {
               </div>
             </div>
 
-            {/* Search Box & Filters (Integrated from Admin Dashboard) */}
-            <div className="content-panel dashboard-filters" style={{ margin: '14px 0 20px', padding: '16px 20px', borderRadius: '16px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+            {/* Requirement 3: Separate VC Lists displayed outside the search box */}
+            <div style={{ padding: '0 20px', marginTop: '16px' }}>
+              <div className="vc-list-nav-pills" style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className={`pill-btn ${vcListFilter === 'Sent by AO' ? 'active' : ''}`}
+                  onClick={() => { setVcListFilter('Sent by AO'); setSelectedStudentIds([]); }}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '8px 16px',
+                    borderRadius: '999px',
+                    border: vcListFilter === 'Sent by AO' ? '2px solid #004d38' : '1.5px solid #cbd5e1',
+                    background: vcListFilter === 'Sent by AO' ? '#004d38' : '#ffffff',
+                    color: vcListFilter === 'Sent by AO' ? '#ffffff' : '#334155',
+                    fontWeight: 700,
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                    boxShadow: vcListFilter === 'Sent by AO' ? '0 2px 6px rgba(0,77,56,0.2)' : 'none',
+                  }}
+                >
+                  <Send size={15} />
+                  <span>Sent by AO</span>
+                  <span style={{
+                    background: vcListFilter === 'Sent by AO' ? 'rgba(255,255,255,0.25)' : '#e2e8f0',
+                    color: vcListFilter === 'Sent by AO' ? '#ffffff' : '#1e293b',
+                    padding: '2px 8px',
+                    borderRadius: '999px',
+                    fontSize: '0.75rem',
+                    fontWeight: 800,
+                  }}>
+                    {sentByAoCount}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  className={`pill-btn ${vcListFilter === 'Enquiry List' ? 'active' : ''}`}
+                  onClick={() => { setVcListFilter('Enquiry List'); setSelectedStudentIds([]); }}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '8px 16px',
+                    borderRadius: '999px',
+                    border: vcListFilter === 'Enquiry List' ? '2px solid #004d38' : '1.5px solid #cbd5e1',
+                    background: vcListFilter === 'Enquiry List' ? '#004d38' : '#ffffff',
+                    color: vcListFilter === 'Enquiry List' ? '#ffffff' : '#334155',
+                    fontWeight: 700,
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                    boxShadow: vcListFilter === 'Enquiry List' ? '0 2px 6px rgba(0,77,56,0.2)' : 'none',
+                  }}
+                >
+                  <Clock size={15} />
+                  <span>Enquiry List</span>
+                  <span style={{
+                    background: vcListFilter === 'Enquiry List' ? 'rgba(255,255,255,0.25)' : '#e2e8f0',
+                    color: vcListFilter === 'Enquiry List' ? '#ffffff' : '#1e293b',
+                    padding: '2px 8px',
+                    borderRadius: '999px',
+                    fontSize: '0.75rem',
+                    fontWeight: 800,
+                  }}>
+                    {enquiryCount}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  className={`pill-btn ${vcListFilter === 'Confirmed List' ? 'active' : ''}`}
+                  onClick={() => { setVcListFilter('Confirmed List'); setSelectedStudentIds([]); }}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '8px 16px',
+                    borderRadius: '999px',
+                    border: vcListFilter === 'Confirmed List' ? '2px solid #004d38' : '1.5px solid #cbd5e1',
+                    background: vcListFilter === 'Confirmed List' ? '#004d38' : '#ffffff',
+                    color: vcListFilter === 'Confirmed List' ? '#ffffff' : '#334155',
+                    fontWeight: 700,
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                    boxShadow: vcListFilter === 'Confirmed List' ? '0 2px 6px rgba(0,77,56,0.2)' : 'none',
+                  }}
+                >
+                  <CheckCircle2 size={15} />
+                  <span>Confirmed List</span>
+                  <span style={{
+                    background: vcListFilter === 'Confirmed List' ? 'rgba(255,255,255,0.25)' : '#e2e8f0',
+                    color: vcListFilter === 'Confirmed List' ? '#ffffff' : '#1e293b',
+                    padding: '2px 8px',
+                    borderRadius: '999px',
+                    fontSize: '0.75rem',
+                    fontWeight: 800,
+                  }}>
+                    {confirmedCount}
+                  </span>
+                </button>
+
+                {/* Inactive Mode Active Banner Pill */}
+                {(vcListFilter === 'Deleted List' || vcListFilter === 'Discontinue List') && (
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '6px 14px',
+                    borderRadius: '999px',
+                    background: vcListFilter === 'Deleted List' ? '#fef2f2' : '#fff7ed',
+                    border: vcListFilter === 'Deleted List' ? '1.5px solid #dc2626' : '1.5px solid #ea580c',
+                    color: vcListFilter === 'Deleted List' ? '#991b1b' : '#c2410c',
+                    fontWeight: 700,
+                    fontSize: '0.82rem',
+                  }}>
+                    {vcListFilter === 'Deleted List' ? <Trash2 size={14} /> : <UserX size={14} />}
+                    <span>Active Inactive View: <strong>{vcListFilter}</strong> ({filteredSentToVC.length})</span>
+                    <button
+                      type="button"
+                      onClick={() => { setVcListFilter('Sent by AO'); setSelectedStudentIds([]); }}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        padding: '0 4px',
+                        color: 'inherit',
+                        fontWeight: 800,
+                        textDecoration: 'underline',
+                        fontSize: '0.78rem',
+                      }}
+                      title="Return to Sent by AO"
+                    >
+                      Exit Inactive View
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Search Box & Filters */}
+            <div className="content-panel dashboard-filters" style={{ margin: '14px 20px 20px', padding: '16px 20px', borderRadius: '16px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
               <div className="field-group" style={{ marginBottom: 0 }}>
                 <label htmlFor="vcApplicationSearch" style={{ fontWeight: 700, color: '#000000', marginBottom: '6px', textShadow: 'none' }}>
                   Search {vcListFilter}
                 </label>
-                <div className="search-input-wrapper" style={{ position: 'relative' }}>
-                  <Search size={18} color="#006747" style={{ flexShrink: 0 }} />
-                  {/* List Icon & Dropdown next to Search (Requirement 5) */}
-                  <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
-                    <button
-                      type="button"
-                      onClick={() => setIsListMenuOpen((prev) => !prev)}
-                      style={{
-                        background: isListMenuOpen ? '#e2e8f0' : '#f1f5f9',
-                        border: '1.5px solid #006747',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        padding: '4px 8px',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '5px',
-                        color: '#006747',
-                        fontSize: '0.8rem',
-                        fontWeight: 700,
-                        marginRight: '6px',
-                        flexShrink: 0,
-                      }}
-                      title="Select list: Sent by AO, Enquiry List, or Confirmed List"
-                      aria-label="List options"
-                    >
-                      <List size={16} color="#006747" />
-                      <span>{vcListFilter}</span>
-                    </button>
+                <div className="search-input-wrapper" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <Search size={18} color="#006747" style={{ flexShrink: 0, marginLeft: '4px' }} />
 
-                    {isListMenuOpen && (
-                      <div
-                        style={{
-                          position: 'absolute',
-                          top: '100%',
-                          left: 0,
-                          marginTop: '4px',
-                          background: '#ffffff',
-                          border: '1.5px solid #006747',
-                          borderRadius: '8px',
-                          boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
-                          zIndex: 9999,
-                          minWidth: '160px',
-                          overflow: 'hidden',
-                        }}
-                      >
-                        {['Sent by AO', 'Enquiry List', 'Confirmed List'].map((option) => (
-                          <button
-                            key={option}
-                            type="button"
-                            onClick={() => {
-                              setVcListFilter(option);
-                              setIsListMenuOpen(false);
-                            }}
-                            style={{
-                              width: '100%',
-                              textAlign: 'left',
-                              padding: '8px 14px',
-                              background: vcListFilter === option ? '#f0fdf4' : 'transparent',
-                              color: vcListFilter === option ? '#006747' : '#1e293b',
-                              fontWeight: vcListFilter === option ? 800 : 500,
-                              border: 'none',
-                              cursor: 'pointer',
-                              fontSize: '0.82rem',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                            }}
-                          >
-                            <span>{option}</span>
-                            {vcListFilter === option && <CheckCircle2 size={13} color="#006747" />}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
                   <input
                     id="vcApplicationSearch"
                     value={searchTerm}
                     onChange={(event) => setSearchTerm(event.target.value)}
                     placeholder={`Search within ${vcListFilter} by name, admin no, course...`}
                     aria-label={`Search ${vcListFilter}`}
+                    style={{ flex: 1 }}
                   />
+
                   {searchTerm ? (
                     <button
                       type="button"
@@ -733,6 +1067,112 @@ export default function VCDashboardPage() {
                       <X size={16} />
                     </button>
                   ) : null}
+
+                  {/* Requirement 1: Inactive List Icon at the LAST position in the search input wrapper */}
+                  <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', flexShrink: 0, marginLeft: '6px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setIsInactiveMenuOpen((prev) => !prev)}
+                      style={{
+                        background: isInactiveMenuOpen || vcListFilter === 'Deleted List' || vcListFilter === 'Discontinue List' ? '#fee2e2' : '#f1f5f9',
+                        border: isInactiveMenuOpen || vcListFilter === 'Deleted List' || vcListFilter === 'Discontinue List' ? '1.5px solid #dc2626' : '1px solid #cbd5e1',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        padding: '6px 12px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        color: isInactiveMenuOpen || vcListFilter === 'Deleted List' || vcListFilter === 'Discontinue List' ? '#dc2626' : '#475569',
+                        fontSize: '0.82rem',
+                        fontWeight: 700,
+                        transition: 'all 0.15s ease',
+                      }}
+                      title="Inactive List: Deleted List & Discontinue List"
+                      aria-label="Inactive List"
+                    >
+                      <Archive size={16} />
+                      <span>Inactive List</span>
+                    </button>
+
+                    {isInactiveMenuOpen && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: '100%',
+                          right: 0,
+                          marginTop: '6px',
+                          background: '#ffffff',
+                          border: '1.5px solid #e2e8f0',
+                          borderRadius: '10px',
+                          boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
+                          zIndex: 9999,
+                          minWidth: '190px',
+                          overflow: 'hidden',
+                        }}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setVcListFilter('Deleted List');
+                            setSelectedStudentIds([]);
+                            setIsInactiveMenuOpen(false);
+                          }}
+                          style={{
+                            width: '100%',
+                            textAlign: 'left',
+                            padding: '10px 14px',
+                            background: vcListFilter === 'Deleted List' ? '#fef2f2' : 'transparent',
+                            color: vcListFilter === 'Deleted List' ? '#dc2626' : '#1e293b',
+                            fontWeight: vcListFilter === 'Deleted List' ? 800 : 600,
+                            border: 'none',
+                            borderBottom: '1px solid #f1f5f9',
+                            cursor: 'pointer',
+                            fontSize: '0.82rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                          }}
+                        >
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                            <Trash2 size={14} color="#dc2626" /> Deleted List
+                          </span>
+                          <span style={{ fontSize: '0.75rem', background: '#fee2e2', color: '#991b1b', padding: '1px 7px', borderRadius: '999px', fontWeight: 800 }}>
+                            {deletedCount}
+                          </span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setVcListFilter('Discontinue List');
+                            setSelectedStudentIds([]);
+                            setIsInactiveMenuOpen(false);
+                          }}
+                          style={{
+                            width: '100%',
+                            textAlign: 'left',
+                            padding: '10px 14px',
+                            background: vcListFilter === 'Discontinue List' ? '#fff7ed' : 'transparent',
+                            color: vcListFilter === 'Discontinue List' ? '#ea580c' : '#1e293b',
+                            fontWeight: vcListFilter === 'Discontinue List' ? 800 : 600,
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '0.82rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                          }}
+                        >
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                            <UserX size={14} color="#ea580c" /> Discontinue List
+                          </span>
+                          <span style={{ fontSize: '0.75rem', background: '#ffedd5', color: '#9a3412', padding: '1px 7px', borderRadius: '999px', fontWeight: 800 }}>
+                            {discontinuedCount}
+                          </span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -789,9 +1229,25 @@ export default function VCDashboardPage() {
               </div>
             </div>
 
+            {/* Students Table with Checkbox Selection */}
             <table className="data-table">
               <thead>
                 <tr>
+                  <th style={{ width: '40px', textAlign: 'center' }}>
+                    <input
+                      type="checkbox"
+                      checked={filteredSentToVC.length > 0 && selectedStudentIds.length === filteredSentToVC.length}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedStudentIds(filteredSentToVC.map((app) => app.id));
+                        } else {
+                          setSelectedStudentIds([]);
+                        }
+                      }}
+                      aria-label="Select all students in this list"
+                      style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                    />
+                  </th>
                   <th style={{ width: '56px' }}>S.No</th>
                   <th>Admin No</th>
                   <th>Student Name</th>
@@ -803,49 +1259,99 @@ export default function VCDashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredSentToVC.length ? filteredSentToVC.map((app, index) => (
-                  <tr key={app.id}>
-                    <td><strong>{index + 1}</strong></td>
-                    <td>{app.formNumber || app.id}</td>
-                    <td><strong>{app.studentName}</strong></td>
-                    <td>{app.coursePreference?.firstPreference || '—'}</td>
-                    <td>{app.admissionCategory || '—'}</td>
-                    <td>{formatDate(app.forwardedAt || app.confirmedAt || app.submittedAt)}</td>
-                    <td><span className="badge badge-success">Sent by AO</span></td>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                        <button
-                          type="button"
-                          className="btn-review"
-                          onClick={() => setSelectedStudentPreview(app)}
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#004d38', color: '#ffffff', fontWeight: 700, border: 'none', cursor: 'pointer' }}
-                          title="Open Full Application Preview"
-                        >
-                          <Eye size={13} /> View
-                        </button>
-                        <button
-                          type="button"
-                          className="btn-review"
-                          onClick={() => handleDownloadPdf(app)}
-                          disabled={downloadingStudentId === app.id}
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
-                          title="Download Complete Student Application Form PDF"
-                        >
-                          <Download size={13} /> {downloadingStudentId === app.id ? 'Saving...' : 'PDF'}
-                        </button>
-                        <button
-                          type="button"
-                          className="btn-review"
-                          onClick={() => handleDeleteApplication(app.id, app.studentName)}
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#dc2626', color: '#ffffff', fontWeight: 700, border: 'none', cursor: 'pointer' }}
-                          title="Delete student application"
-                        >
-                          <Trash2 size={13} /> Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                )) : (
+                {filteredSentToVC.length ? filteredSentToVC.map((app, index) => {
+                  const isSelected = selectedStudentIds.includes(app.id);
+                  return (
+                    <tr key={app.id} style={{ backgroundColor: isSelected ? 'rgba(22, 101, 52, 0.06)' : undefined }}>
+                      <td style={{ textAlign: 'center' }}>
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedStudentIds((prev) => [...prev, app.id]);
+                            } else {
+                              setSelectedStudentIds((prev) => prev.filter((id) => id !== app.id));
+                            }
+                          }}
+                          aria-label={`Select student ${app.studentName}`}
+                          style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                        />
+                      </td>
+                      <td><strong>{index + 1}</strong></td>
+                      <td>{app.formNumber || app.id}</td>
+                      <td><strong>{app.studentName}</strong></td>
+                      <td>{app.coursePreference?.firstPreference || '—'}</td>
+                      <td>{app.admissionCategory || '—'}</td>
+                      <td>{formatDate(app.forwardedAt || app.confirmedAt || app.submittedAt)}</td>
+                      <td>
+                        {app.status === 'Deleted' ? (
+                          <span className="badge badge-danger" style={{ background: '#fee2e2', color: '#991b1b', fontWeight: 700 }}>Deleted</span>
+                        ) : app.status === 'Discontinued' ? (
+                          <span className="badge badge-warning" style={{ background: '#ffedd5', color: '#9a3412', fontWeight: 700 }}>Discontinued</span>
+                        ) : app.status === 'Enquiring' ? (
+                          <span className="badge badge-warning">{app.status}</span>
+                        ) : (
+                          <span className="badge badge-success">{app.status || 'Sent by AO'}</span>
+                        )}
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                          <button
+                            type="button"
+                            className="btn-review"
+                            onClick={() => setSelectedStudentPreview(app)}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#004d38', color: '#ffffff', fontWeight: 700, border: 'none', cursor: 'pointer' }}
+                            title="Open Full Application Preview"
+                          >
+                            <Eye size={13} /> View
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-review"
+                            onClick={() => handleDownloadPdf(app)}
+                            disabled={downloadingStudentId === app.id}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
+                            title="Download Complete Student Application Form PDF"
+                          >
+                            <Download size={13} /> {downloadingStudentId === app.id ? 'Saving...' : 'PDF'}
+                          </button>
+                          {(app.status === 'Deleted' || app.status === 'Discontinued') ? (
+                            <button
+                              type="button"
+                              className="btn-review"
+                              onClick={async () => {
+                                const conf = window.confirm(`Restore application #${app.formNumber || app.id} (${app.studentName}) back to active Sent to VC list?`);
+                                if (!conf) return;
+                                await updateApplication(app.id, {
+                                  status: 'Sent to VC',
+                                  restoredAt: new Date().toISOString(),
+                                  inactiveReason: null,
+                                }, 'Restored to active Sent to VC list', 'Vice-Chairman');
+                                setSettingsNotice(`Student #${app.formNumber || app.id} restored to active list.`);
+                                setTimeout(() => setSettingsNotice(''), 4000);
+                              }}
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#16a34a', color: '#ffffff', fontWeight: 700, border: 'none', cursor: 'pointer' }}
+                              title="Restore student application to active list"
+                            >
+                              <RotateCcw size={13} /> Restore
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              className="btn-review"
+                              onClick={() => handleDeleteApplication(app.id, app.studentName)}
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#dc2626', color: '#ffffff', fontWeight: 700, border: 'none', cursor: 'pointer' }}
+                              title="Delete student application"
+                            >
+                              <Trash2 size={13} /> Delete
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                }) : (
                   <tr>
                     <td colSpan="9" style={{ textAlign: 'center', padding: '24px' }}>
                       {baseVCApplications.length
@@ -856,6 +1362,108 @@ export default function VCDashboardPage() {
                 )}
               </tbody>
             </table>
+
+            {/* Requirement 2: Discontinue and Delete Action Icons / Toolbar below student checklist/list area */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '14px 20px',
+              margin: '16px 20px 20px',
+              background: selectedStudentIds.length > 0 ? '#f0fdf4' : '#f8fafc',
+              border: selectedStudentIds.length > 0 ? '1.5px solid #16a34a' : '1px solid #e2e8f0',
+              borderRadius: '12px',
+              flexWrap: 'wrap',
+              gap: '12px',
+              transition: 'all 0.2s ease',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '0.9rem', color: selectedStudentIds.length > 0 ? '#166534' : '#64748b', fontWeight: 700 }}>
+                  {selectedStudentIds.length} of {filteredSentToVC.length} student{filteredSentToVC.length === 1 ? '' : 's'} selected
+                </span>
+                {selectedStudentIds.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedStudentIds([])}
+                    style={{ background: 'transparent', border: 'none', color: '#64748b', fontSize: '0.8rem', textDecoration: 'underline', cursor: 'pointer' }}
+                  >
+                    Clear Selection
+                  </button>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                {vcListFilter === 'Deleted List' || vcListFilter === 'Discontinue List' ? (
+                  /* Restore Action when viewing Inactive List */
+                  <button
+                    type="button"
+                    disabled={selectedStudentIds.length === 0}
+                    onClick={handleBulkRestore}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '8px 18px',
+                      background: selectedStudentIds.length > 0 ? '#166534' : '#cbd5e1',
+                      color: selectedStudentIds.length > 0 ? '#ffffff' : '#64748b',
+                      fontWeight: 700,
+                      border: 'none',
+                      borderRadius: '8px',
+                      cursor: selectedStudentIds.length > 0 ? 'pointer' : 'not-allowed',
+                    }}
+                    title="Restore selected applications back to active Sent to VC list"
+                  >
+                    <RotateCcw size={15} /> Restore Selected {selectedStudentIds.length > 0 ? `(${selectedStudentIds.length})` : ''}
+                  </button>
+                ) : (
+                  <>
+                    {/* Discontinue Action Icon Button */}
+                    <button
+                      type="button"
+                      disabled={selectedStudentIds.length === 0}
+                      onClick={handleBulkDiscontinue}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '8px 18px',
+                        background: selectedStudentIds.length > 0 ? '#ea580c' : '#cbd5e1',
+                        color: selectedStudentIds.length > 0 ? '#ffffff' : '#64748b',
+                        fontWeight: 700,
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: selectedStudentIds.length > 0 ? 'pointer' : 'not-allowed',
+                      }}
+                      title="Discontinue selected student applications (accessible in Inactive List)"
+                    >
+                      <UserX size={15} /> Discontinue {selectedStudentIds.length > 0 ? `(${selectedStudentIds.length})` : ''}
+                    </button>
+
+                    {/* Delete Action Icon Button */}
+                    <button
+                      type="button"
+                      disabled={selectedStudentIds.length === 0}
+                      onClick={handleBulkDelete}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '8px 18px',
+                        background: selectedStudentIds.length > 0 ? '#dc2626' : '#cbd5e1',
+                        color: selectedStudentIds.length > 0 ? '#ffffff' : '#64748b',
+                        fontWeight: 700,
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: selectedStudentIds.length > 0 ? 'pointer' : 'not-allowed',
+                      }}
+                      title="Delete selected student applications (accessible in Inactive List)"
+                    >
+                      <Trash2 size={15} /> Delete {selectedStudentIds.length > 0 ? `(${selectedStudentIds.length})` : ''}
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
         ) : activeTab === 'overview' ? (
           <div>
@@ -1481,7 +2089,8 @@ export default function VCDashboardPage() {
                           ? Number(editableSeats[course.code])
                           : (courseSeats?.[course.code]?.total ?? course.defaultSeats);
 
-                        const filled = applications.filter((app) => {
+                        const filled = safeApplications.filter((app) => {
+                          if (!app) return false;
                           const c = app.coursePreference?.firstPreference || app.courseName || '';
                           return normalizeCourseName(c) === normalizeCourseName(course.code);
                         }).length;
@@ -1792,6 +2401,395 @@ export default function VCDashboardPage() {
                       <Trash2 size={14} /> Reset to Default
                     </button>
                   )}
+                </div>
+              </div>
+
+              {/* Box 3: Admission Payment QR Code (Requirement 4) */}
+              <div style={{
+                background: '#f8fafc',
+                border: '1.5px solid #cbd5e1',
+                borderRadius: '16px',
+                padding: '20px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+              }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#004d38', marginBottom: '10px' }}>
+                    <QrCode size={22} color="#004d38" />
+                    <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#0f172a', fontWeight: 800 }}>
+                      Admission Payment QR Code
+                    </h3>
+                  </div>
+                  <p style={{ fontSize: '0.86rem', color: '#64748b', marginBottom: '16px' }}>
+                    View and update the official bank payment QR code scanned by students and parents during admission payment.
+                  </p>
+
+                  <div style={{
+                    background: '#ffffff',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '12px',
+                    padding: '12px',
+                    marginBottom: '16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '14px',
+                  }}>
+                    <div style={{
+                      width: '80px',
+                      height: '80px',
+                      borderRadius: '8px',
+                      overflow: 'hidden',
+                      border: '1px solid #e2e8f0',
+                      flexShrink: 0,
+                      background: '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '4px',
+                    }}>
+                      <img
+                        src={paymentSettings?.paymentQrs?.[0] || paymentSettings?.paymentQr || '/cms-admission-qr.png'}
+                        alt="Payment QR Code Preview"
+                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                      />
+                    </div>
+                    <div>
+                      <span style={{
+                        fontSize: '0.75rem',
+                        background: (paymentSettings?.paymentQrs?.[0] || paymentSettings?.paymentQr) ? '#dcfce7' : '#f1f5f9',
+                        color: (paymentSettings?.paymentQrs?.[0] || paymentSettings?.paymentQr) ? '#166534' : '#475569',
+                        padding: '2px 8px',
+                        borderRadius: '6px',
+                        fontWeight: 700,
+                        display: 'inline-block',
+                        marginBottom: '4px',
+                      }}>
+                        {(paymentSettings?.paymentQrs?.[0] || paymentSettings?.paymentQr) ? 'Custom QR Code Active' : 'Default College QR'}
+                      </span>
+                      <p style={{ margin: 0, fontSize: '0.78rem', color: '#64748b' }}>
+                        UPI ID: <strong>{paymentSettings?.upiId || 'cms@bank'}</strong>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                  <label
+                    className="primary-btn compact"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      cursor: 'pointer',
+                      margin: 0,
+                      background: '#004d38',
+                      borderColor: '#003325',
+                    }}
+                  >
+                    <Upload size={14} />
+                    {(paymentSettings?.paymentQrs?.[0] || paymentSettings?.paymentQr) ? 'Edit / Replace QR' : 'Upload QR Code'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePaymentQrUpload}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+
+                  <button
+                    type="button"
+                    className="secondary-btn compact"
+                    onClick={() => {
+                      const qrSrc = paymentSettings?.paymentQrs?.[0] || paymentSettings?.paymentQr || '/cms-admission-qr.png';
+                      setSelectedFileModal({
+                        title: 'Official Admission Payment QR Code',
+                        file: { name: 'Payment QR Code', dataUrl: qrSrc, mimeType: 'image/png' },
+                      });
+                    }}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <Eye size={14} /> View
+                  </button>
+
+                  {(paymentSettings?.paymentQrs?.[0] || paymentSettings?.paymentQr) && (
+                    <button
+                      type="button"
+                      className="secondary-btn compact"
+                      onClick={handleResetPaymentQr}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#dc2626', borderColor: '#fca5a5' }}
+                    >
+                      <Trash2 size={14} /> Reset
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Box 4: Bus Details Management (Requirement 5) */}
+              <div style={{
+                background: '#f8fafc',
+                border: '1.5px solid #cbd5e1',
+                borderRadius: '16px',
+                padding: '20px',
+                display: 'flex',
+                flexDirection: 'column',
+                gridColumn: '1 / -1',
+              }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#004d38' }}>
+                      <Bus size={22} color="#004d38" />
+                      <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#0f172a', fontWeight: 800 }}>
+                        Bus Details Management
+                      </h3>
+                    </div>
+                    <span style={{
+                      fontSize: '0.8rem',
+                      background: '#dcfce7',
+                      color: '#166534',
+                      padding: '3px 10px',
+                      borderRadius: '999px',
+                      fontWeight: 700,
+                      border: '1px solid #bbf7d0',
+                    }}>
+                      {Object.keys(activeBusConfig).length} Routes Active
+                    </span>
+                  </div>
+                  <p style={{ fontSize: '0.86rem', color: '#64748b', marginBottom: '16px' }}>
+                    Manage institutional bus routes and pickup stop locations. Add, edit stop names directly, or remove stops. Updates are instantaneously available on the Student Transport registration interface.
+                  </p>
+
+                  {/* Route / Location Selector */}
+                  <div style={{ display: 'flex', gap: '14px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '16px' }}>
+                    <label style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.9rem' }}>
+                      Select Location / Bus Route:
+                    </label>
+                    <select
+                      value={selectedBusRouteKey}
+                      onChange={(e) => {
+                        setSelectedBusRouteKey(e.target.value);
+                        setEditingStopIndex(null);
+                        setEditingStopText('');
+                      }}
+                      style={{
+                        padding: '8px 14px',
+                        border: '2px solid #006747',
+                        borderRadius: '8px',
+                        fontWeight: 700,
+                        fontSize: '0.92rem',
+                        color: '#004d38',
+                        background: '#ffffff',
+                        cursor: 'pointer',
+                        minWidth: '280px',
+                      }}
+                    >
+                      {Object.entries(activeBusConfig).map(([key, route]) => (
+                        <option key={key} value={key}>
+                          {route.label} ({route.places?.length || 0} stops)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Selected Route Info Banner */}
+                  <div style={{
+                    background: '#ffffff',
+                    border: '1.5px solid #bbf7d0',
+                    borderRadius: '12px',
+                    padding: '12px 16px',
+                    marginBottom: '16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: '10px',
+                  }}>
+                    <div>
+                      <strong style={{ fontSize: '1rem', color: '#004d38' }}>{currentBusRoute.label}</strong>
+                      <div style={{ fontSize: '0.82rem', color: '#64748b', marginTop: '2px' }}>
+                        Starting Point: <strong>{currentBusRoute.startingPoint}</strong> · Destination: <strong>{currentBusRoute.endingPoint}</strong>
+                      </div>
+                    </div>
+                    <span style={{ fontSize: '0.84rem', color: '#166534', fontWeight: 700, background: '#f0fdf4', padding: '4px 10px', borderRadius: '8px' }}>
+                      {currentBusRoute.places?.length || 0} Route Stops
+                    </span>
+                  </div>
+
+                  {/* Stops List */}
+                  <div style={{ marginBottom: '18px' }}>
+                    <strong style={{ display: 'block', fontSize: '0.88rem', color: '#334155', marginBottom: '8px' }}>
+                      Route Stops belonging to {currentBusRoute.label}:
+                    </strong>
+                    {currentBusRoute.places?.length ? (
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+                        gap: '8px',
+                        maxHeight: '300px',
+                        overflowY: 'auto',
+                        padding: '4px',
+                        background: '#ffffff',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '10px',
+                      }}>
+                        {currentBusRoute.places.map((stop, idx) => (
+                          <div
+                            key={`${stop}-${idx}`}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              padding: '8px 12px',
+                              background: '#f8fafc',
+                              border: '1px solid #e2e8f0',
+                              borderRadius: '8px',
+                              gap: '8px',
+                            }}
+                          >
+                            {editingStopIndex === idx ? (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', width: '100%' }}>
+                                <input
+                                  type="text"
+                                  value={editingStopText}
+                                  onChange={(e) => setEditingStopText(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleSaveBusStopEdit(idx);
+                                    if (e.key === 'Escape') setEditingStopIndex(null);
+                                  }}
+                                  autoFocus
+                                  style={{
+                                    flex: 1,
+                                    padding: '4px 8px',
+                                    border: '1.5px solid #006747',
+                                    borderRadius: '6px',
+                                    fontSize: '0.84rem',
+                                    fontWeight: 600,
+                                  }}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleSaveBusStopEdit(idx)}
+                                  style={{ background: '#16a34a', border: 'none', color: '#fff', borderRadius: '4px', padding: '4px 8px', cursor: 'pointer' }}
+                                  title="Save stop name"
+                                >
+                                  <Check size={13} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingStopIndex(null)}
+                                  style={{ background: '#94a3b8', border: 'none', color: '#fff', borderRadius: '4px', padding: '4px 8px', cursor: 'pointer' }}
+                                  title="Cancel edit"
+                                >
+                                  <X size={13} />
+                                </button>
+                              </div>
+                            ) : (
+                              <>
+                                <span style={{ fontSize: '0.85rem', color: '#1e293b', fontWeight: 600 }}>
+                                  <span style={{ color: '#94a3b8', marginRight: '6px', fontSize: '0.78rem' }}>{idx + 1}.</span>
+                                  {stop}
+                                </span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setEditingStopIndex(idx);
+                                      setEditingStopText(stop);
+                                    }}
+                                    style={{
+                                      background: 'transparent',
+                                      border: 'none',
+                                      cursor: 'pointer',
+                                      padding: '3px 6px',
+                                      color: '#0284c7',
+                                      borderRadius: '4px',
+                                    }}
+                                    title={`Edit stop name "${stop}"`}
+                                  >
+                                    <Edit2 size={13} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteBusStop(idx, stop)}
+                                    style={{
+                                      background: 'transparent',
+                                      border: 'none',
+                                      cursor: 'pointer',
+                                      padding: '3px 6px',
+                                      color: '#dc2626',
+                                      borderRadius: '4px',
+                                    }}
+                                    title={`Delete stop "${stop}"`}
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{
+                        padding: '16px',
+                        background: '#ffffff',
+                        border: '1.5px dashed #cbd5e1',
+                        borderRadius: '8px',
+                        textAlign: 'center',
+                        color: '#64748b',
+                        fontSize: '0.84rem',
+                      }}>
+                        No route stops added for this route yet. Add stops using the form below.
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Add New Route Stop Form */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    flexWrap: 'wrap',
+                    padding: '12px 14px',
+                    background: '#ffffff',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '10px',
+                  }}>
+                    <strong style={{ fontSize: '0.86rem', color: '#1e293b' }}>Add Route Stop:</strong>
+                    <input
+                      type="text"
+                      value={newStopName}
+                      onChange={(e) => setNewStopName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleAddBusStop();
+                      }}
+                      placeholder={`Enter new stop name for ${currentBusRoute.busNumber}...`}
+                      style={{
+                        flex: 1,
+                        minWidth: '220px',
+                        padding: '8px 12px',
+                        border: '1.5px solid #cbd5e1',
+                        borderRadius: '6px',
+                        fontSize: '0.86rem',
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddBusStop}
+                      disabled={!newStopName.trim()}
+                      className="primary-btn compact"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        background: newStopName.trim() ? '#004d38' : '#cbd5e1',
+                        borderColor: newStopName.trim() ? '#003325' : '#cbd5e1',
+                        cursor: newStopName.trim() ? 'pointer' : 'not-allowed',
+                      }}
+                    >
+                      <Plus size={15} /> Add Stop
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
