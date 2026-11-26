@@ -145,7 +145,7 @@ export default function OfficerDashboardPage() {
   const sentToVC = filteredApplications.filter((app) => app.status === 'Sent to VC' || app.status === 'Forwarded to VC');
 
   // 7 Categories for Category Overview:
-  // FG, Management Quota, 7.5% Reservation, PMSS Students, ST Students, Transport, Hostel
+  // FG, Management Quota, 7.5% Reservation, PMSS Students, ST Students, Transport, Hostel (+ Sports)
   const fgStudents = applications.filter((a) => matchesPortalCategory(a, 'fg'));
   const managementStudents = applications.filter((a) => matchesPortalCategory(a, 'management'));
   const reservation75Students = applications.filter((a) => matchesPortalCategory(a, '7.5% Reservation'));
@@ -153,6 +153,26 @@ export default function OfficerDashboardPage() {
   const stStudents = applications.filter((a) => matchesPortalCategory(a, 'st'));
   const transportStudents = applications.filter((a) => matchesPortalCategory(a, 'transport'));
   const hostelStudents = applications.filter((a) => matchesPortalCategory(a, 'hostel'));
+  const sportsStudents = applications.filter((a) => matchesPortalCategory(a, 'sports'));
+
+  const fgCount = fgStudents.length;
+  const managementCount = managementStudents.length;
+  const reservation75Count = reservation75Students.length;
+  const pmssCount = pmssStudents.length;
+  const stCount = stStudents.length;
+  const transportCount = transportStudents.length;
+  const hostelCount = hostelStudents.length;
+  const sportsCount = sportsStudents.length;
+
+  const modalCategoryStudents = activeCategoryModal === 'Transport'
+    ? transportStudents
+    : activeCategoryModal === 'Hostel'
+    ? hostelStudents
+    : activeCategoryModal === 'FG'
+    ? fgStudents
+    : activeCategoryModal === 'Sports'
+    ? sportsStudents
+    : [];
 
   const adminCategoryDefs = [
     {
